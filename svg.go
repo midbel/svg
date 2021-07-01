@@ -176,6 +176,17 @@ type TextPath struct {
 	Transform
 }
 
+func NewTextPath(literal, path string, options ...Option) TextPath {
+	t := TextPath{
+		Literal: literal,
+		Path:    path,
+	}
+	for _, o := range options {
+		o(&t)
+	}
+	return t
+}
+
 func (t *TextPath) Render(w Writer) {
 	if t.Path == "" {
 		return
@@ -459,6 +470,39 @@ func (t *Text) Attributes() []string {
 	}
 	a := appendString("text-anchor", t.Anchor)
 	return []string{a}
+}
+
+type TextSpan struct {
+	node
+	Literal string
+
+	Pos
+	Shift  Pos
+	Adjust string
+	Length float64
+	Rotate []float64
+}
+
+func (t *TextSpan) Render(w Writer) {
+	list := NewList(literal(t.Literal))
+	t.render(w, "tspan", list, t, t.Pos)
+}
+
+func (t *TextSpan) AsElement() Element {
+	return t
+}
+
+func (t *TextSpan) Attributes() []string {
+	var attrs []string
+	attrs = append(attrs, appendFloat("dx", t.Pos.X))
+	attrs = append(attrs, appendFloat("dy", t.Pos.Y))
+	if t.Adjust != "" {
+		attrs = append(attrs, appendString("lengthAdjust", t.Adjust))
+	}
+	if t.Length != 0 {
+		attrs = append(attrs, appendFloat("textLength", t.Length))
+	}
+	return attrs
 }
 
 type Line struct {
