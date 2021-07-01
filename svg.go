@@ -27,15 +27,19 @@ type Element interface {
 	setStyle(string, []string)
 }
 
-type literal string
+type Literal string
 
-func (i literal) Render(w Writer) {
+func NewLiteral(str string) Literal {
+	return Literal(str)
+}
+
+func (i Literal) Render(w Writer) {
 	w.WriteString(string(i))
 }
 
-func (_ literal) setId(_ string)                {}
-func (_ literal) setClass(_ []string)           {}
-func (_ literal) setStyle(_ string, _ []string) {}
+func (_ Literal) setId(_ string)                {}
+func (_ Literal) setClass(_ []string)           {}
+func (_ Literal) setStyle(_ string, _ []string) {}
 
 type List struct {
 	node
@@ -191,7 +195,7 @@ func (t *TextPath) Render(w Writer) {
 	if t.Path == "" {
 		return
 	}
-	list := NewList(literal(t.Literal))
+	list := NewList(Literal(t.Literal))
 	t.render(w, "textPath", list, t, t.Fill, t.Stroke, t.Transform)
 }
 
@@ -433,9 +437,13 @@ func (c *Circle) Attributes() []string {
 
 type Text struct {
 	node
-	Literal string
+	List
 
+	Shift  Pos
 	Anchor string
+	Adjust string
+	Length float64
+	Rotate []float64
 	Fill
 	Pos
 	Font
@@ -445,10 +453,10 @@ type Text struct {
 
 func NewText(str string, options ...Option) Text {
 	t := Text{
-		Literal: str,
-		Font:    DefaultFont,
-		Fill:    DefaultFill,
+		Font: DefaultFont,
+		Fill: DefaultFill,
 	}
+	t.Append(Literal(str))
 	for _, o := range options {
 		o(&t)
 	}
@@ -456,8 +464,7 @@ func NewText(str string, options ...Option) Text {
 }
 
 func (t *Text) Render(w Writer) {
-	list := NewList(literal(t.Literal))
-	t.render(w, "text", list, t, t.Pos, t.Font, t.Fill, t.Stroke, t.Transform)
+	t.render(w, "text", t.List, t, t.Pos, t.Font, t.Fill, t.Stroke, t.Transform)
 }
 
 func (t *Text) AsElement() Element {
@@ -465,11 +472,19 @@ func (t *Text) AsElement() Element {
 }
 
 func (t *Text) Attributes() []string {
-	if t.Anchor == "" {
-		return nil
+	var attrs []string
+	attrs = append(attrs, appendFloat("dx", t.Shift.X))
+	attrs = append(attrs, appendFloat("dy", t.Shift.Y))
+	if t.Anchor != "" {
+		attrs = append(attrs, appendString("text-anchor", t.Anchor))
 	}
-	a := appendString("text-anchor", t.Anchor)
-	return []string{a}
+	if t.Adjust != "" {
+		attrs = append(attrs, appendString("lengthAdjust", t.Adjust))
+	}
+	if t.Length != 0 {
+		attrs = append(attrs, appendFloat("textLength", t.Length))
+	}
+	return attrs
 }
 
 type TextSpan struct {
@@ -484,7 +499,7 @@ type TextSpan struct {
 }
 
 func (t *TextSpan) Render(w Writer) {
-	list := NewList(literal(t.Literal))
+	list := NewList(Literal(t.Literal))
 	t.render(w, "tspan", list, t, t.Pos)
 }
 
@@ -494,8 +509,8 @@ func (t *TextSpan) AsElement() Element {
 
 func (t *TextSpan) Attributes() []string {
 	var attrs []string
-	attrs = append(attrs, appendFloat("dx", t.Pos.X))
-	attrs = append(attrs, appendFloat("dy", t.Pos.Y))
+	attrs = append(attrs, appendFloat("dx", t.Shift.X))
+	attrs = append(attrs, appendFloat("dy", t.Shift.Y))
 	if t.Adjust != "" {
 		attrs = append(attrs, appendString("lengthAdjust", t.Adjust))
 	}
@@ -752,6 +767,9 @@ func (c command) String() string {
 type node struct {
 	Title string
 	Desc  string
+
+	Display    string
+	Visibility string
 
 	Id     string
 	Class  []string

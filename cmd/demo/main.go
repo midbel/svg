@@ -57,7 +57,6 @@ func makeRectangle(label, ip string, x, y float64, up bool) svg.Element {
 	options := []svg.Option{
 		svg.WithStroke(svg.NewStroke("black", 1)),
 		svg.WithDimension(rectWidth, rectHeight),
-		// svg.WithPosition(x, y),
 		svg.WithFill(svg.NewFill("none")),
 		svg.WithClass("device"),
 	}
@@ -70,8 +69,8 @@ func makeRectangle(label, ip string, x, y float64, up bool) svg.Element {
 		fill = "red"
 	}
 	options = []svg.Option{
-		svg.WithPosition(rectWidth-10, 10),
-		svg.WithRadius(5),
+		svg.WithPosition(rectWidth-6, 10),
+		svg.WithRadius(4),
 		svg.WithFill(svg.NewFill(fill)),
 		svg.WithClass("status"),
 	}
