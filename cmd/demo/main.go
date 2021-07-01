@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"fmt"
 	"math/rand"
 	"os"
 
@@ -57,10 +58,11 @@ func makeRectangle(label, ip string, x, y float64, up bool) svg.Element {
 		svg.WithStroke(svg.NewStroke("black", 1)),
 		svg.WithDimension(rectWidth, rectHeight),
 		// svg.WithPosition(x, y),
-		svg.WithFill("none"),
+		svg.WithFill(svg.NewFill("none")),
 		svg.WithClass("device"),
 	}
 	r := svg.NewRect(options...)
+	r.Title = fmt.Sprintf("%s - %s (x: %.0f, y: %.0f)", label, ip, x, y)
 	g.Append(r.AsElement())
 
 	fill := "green"
@@ -70,7 +72,7 @@ func makeRectangle(label, ip string, x, y float64, up bool) svg.Element {
 	options = []svg.Option{
 		svg.WithPosition(rectWidth-10, 10),
 		svg.WithRadius(5),
-		svg.WithFill(fill),
+		svg.WithFill(svg.NewFill(fill)),
 		svg.WithClass("status"),
 	}
 	c := svg.NewCircle(options...)
@@ -103,7 +105,7 @@ func makeConnector(grp svg.Group, c int) svg.Element {
 		options = []svg.Option{
 			svg.WithRadius(4),
 			svg.WithPosition(6, 6+float64(i)*12),
-			svg.WithFill("black"),
+			svg.WithFill(svg.NewFill("black")),
 		}
 		c := svg.NewCircle(options...)
 		grp.Append(c.AsElement())

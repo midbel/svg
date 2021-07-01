@@ -31,6 +31,9 @@ type Element interface {
 }
 
 type node struct {
+	Title string
+	Desc  string
+
 	Id     string
 	Class  []string
 	Styles map[string][]string
@@ -64,25 +67,66 @@ func (n *node) attrs() []string {
 
 type List struct {
 	node
-	Elems []Element
+	List []Element
 }
 
 func NewList(es ...Element) List {
-	elems := make([]Element, len(es))
-	copy(elems, es)
+	list := make([]Element, len(es))
+	copy(list, es)
 	return List{
-		Elems: elems,
+		List: list,
 	}
 }
 
 func (i *List) Append(e Element) {
-	i.Elems = append(i.Elems, e)
+	i.List = append(i.List, e)
 }
 
 func (i *List) Render(w Writer) {
-	for _, e := range i.Elems {
+	for _, e := range i.List {
 		e.Render(w)
 	}
+}
+
+type Defs struct {
+	List
+}
+
+func (d *Defs) Render(w Writer) {
+	writeElement(w, "defs", nil, func() {
+		d.List.Render(w)
+	})
+}
+
+func (d *Defs) AsElement() Element {
+	return d
+}
+
+type Use struct {
+	node
+	Ref string
+
+	Pos
+	Dim
+	Stroke
+	Fill
+}
+
+func (u *Use) Render(w Writer) {
+	if u.Ref == "" {
+		return
+	}
+	attrs := u.node.attrs()
+	attrs = append(attrs, u.Pos.List()...)
+	attrs = append(attrs, u.Dim.List()...)
+	attrs = append(attrs, u.Stroke.List()...)
+	attrs = append(attrs, u.Fill.List()...)
+	attrs = append(attrs, appendString("href", u.Ref))
+	writeOpenElement(w, "use", true, attrs)
+}
+
+func (u *Use) AsElement() Element {
+	return u
 }
 
 type SVG struct {
@@ -108,6 +152,8 @@ func (s *SVG) Render(w Writer) {
 
 	w.WriteString(prolog)
 	writeElement(w, "svg", attrs, func() {
+		writeTitle(w, s.Title)
+		writeDesc(w, s.Desc)
 		s.List.Render(w)
 	})
 }
@@ -120,7 +166,7 @@ type Group struct {
 	node
 	List
 
-	Fill string
+	Fill
 	Stroke
 	Transform
 }
@@ -137,10 +183,10 @@ func (g *Group) Render(w Writer) {
 	attrs := g.node.attrs()
 	attrs = append(attrs, g.Stroke.List()...)
 	attrs = append(attrs, g.Transform.List()...)
-	if g.Fill != "" {
-		attrs = append(attrs, appendString("fill", g.Fill))
-	}
+	attrs = append(attrs, g.Fill.List()...)
 	writeElement(w, "g", attrs, func() {
+		writeTitle(w, g.Title)
+		writeDesc(w, g.Desc)
 		g.List.Render(w)
 	})
 }
@@ -153,9 +199,9 @@ type Rect struct {
 	node
 	List
 
-	Fill string
-	RX   float64
-	RY   float64
+	RX float64
+	RY float64
+	Fill
 	Dim
 	Pos
 	Stroke
@@ -163,10 +209,8 @@ type Rect struct {
 }
 
 func NewRect(options ...Option) Rect {
-	r := Rect{
-		Fill:   "none",
-		Stroke: DefaultStroke,
-	}
+	var r Rect
+	r.Stroke = DefaultStroke
 	for _, o := range options {
 		o(&r)
 	}
@@ -185,10 +229,10 @@ func (r *Rect) Render(w Writer) {
 	if r.RY > 0 {
 		attrs = append(attrs, appendFloat("ry", r.RY))
 	}
-	if r.Fill != "" {
-		attrs = append(attrs, appendString("fill", r.Fill))
-	}
+	attrs = append(attrs, r.Fill.List()...)
 	writeElement(w, "rect", attrs, func() {
+		writeTitle(w, r.Title)
+		writeDesc(w, r.Desc)
 		r.List.Render(w)
 	})
 }
@@ -202,7 +246,7 @@ type Polygon struct {
 	List
 
 	Points []Pos
-	Fill   string
+	Fill
 	Stroke
 	Transform
 }
@@ -212,10 +256,10 @@ func (p *Polygon) Render(w Writer) {
 	attrs = append(attrs, p.attrs()...)
 	attrs = append(attrs, p.Stroke.List()...)
 	attrs = append(attrs, p.Transform.List()...)
-	if p.Fill != "" {
-		attrs = append(attrs, appendString("fill", p.Fill))
-	}
+	attrs = append(attrs, p.Fill.List()...)
 	writeElement(w, "polygon", attrs, func() {
+		writeTitle(w, p.Title)
+		writeDesc(w, p.Desc)
 		p.List.Render(w)
 	})
 }
@@ -238,9 +282,9 @@ type Ellipse struct {
 	List
 
 	Pos
-	RX   float64
-	RY   float64
-	Fill string
+	RX float64
+	RY float64
+	Fill
 	Stroke
 	Transform
 }
@@ -251,10 +295,10 @@ func (e *Ellipse) Render(w Writer) {
 	attrs = append(attrs, e.Pos.Center()...)
 	attrs = append(attrs, e.Stroke.List()...)
 	attrs = append(attrs, e.Transform.List()...)
-	if e.Fill != "" {
-		attrs = append(attrs, appendString("fill", e.Fill))
-	}
+	attrs = append(attrs, e.Fill.List()...)
 	writeElement(w, "ellipse", attrs, func() {
+		writeTitle(w, e.Title)
+		writeDesc(w, e.Desc)
 		e.List.Render(w)
 	})
 }
@@ -274,9 +318,10 @@ type Circle struct {
 	node
 	List
 
-	Fill   string
 	Radius float64
 	Pos
+	Fill
+	Stroke
 	Transform
 }
 
@@ -294,10 +339,11 @@ func (c *Circle) Render(w Writer) {
 	if c.Radius != 0 {
 		attrs = append(attrs, appendFloat("r", c.Radius))
 	}
-	if c.Fill != "" {
-		attrs = append(attrs, appendString("fill", c.Fill))
-	}
+	attrs = append(attrs, c.Fill.List()...)
+	attrs = append(attrs, c.Stroke.List()...)
 	writeElement(w, "circle", attrs, func() {
+		writeTitle(w, c.Title)
+		writeDesc(w, c.Desc)
 		c.List.Render(w)
 	})
 }
@@ -310,8 +356,8 @@ type Text struct {
 	node
 	Literal string
 
-	Fill   string
 	Anchor string
+	Fill
 	Pos
 	Font
 	Stroke
@@ -332,13 +378,13 @@ func (t *Text) Render(w Writer) {
 	attrs = append(attrs, t.Font.List()...)
 	attrs = append(attrs, t.Stroke.List()...)
 	attrs = append(attrs, t.Transform.List()...)
-	if t.Fill != "" {
-		attrs = append(attrs, appendString("fill", t.Fill))
-	}
+	attrs = append(attrs, t.Fill.List()...)
 	if t.Anchor != "" {
 		attrs = append(attrs, appendString("text-anchor", t.Anchor))
 	}
 	writeElement(w, "text", attrs, func() {
+		writeTitle(w, t.Title)
+		writeDesc(w, t.Desc)
 		w.WriteString(t.Literal)
 	})
 }
@@ -352,8 +398,9 @@ type Line struct {
 
 	Starts Pos
 	Ends   Pos
-	Fill   string
+	Fill
 	Stroke
+	Transform
 }
 
 func NewLine(starts, ends Pos, options ...Option) Line {
@@ -372,10 +419,12 @@ func (i *Line) Render(w Writer) {
 	attrs := i.node.attrs()
 	attrs = append(attrs, i.attrs()...)
 	attrs = append(attrs, i.Stroke.List()...)
-	if i.Fill != "" {
-		attrs = append(attrs, appendString("fill", i.Fill))
-	}
-	writeOpenElement(w, "line", true, attrs)
+	attrs = append(attrs, i.Fill.List()...)
+	attrs = append(attrs, i.Transform.List()...)
+	writeElement(w, "line", attrs, func() {
+		writeTitle(w, i.Title)
+		writeDesc(w, i.Desc)
+	})
 }
 
 func (i *Line) AsElement() Element {
@@ -396,6 +445,7 @@ type PolyLine struct {
 
 	Points []Pos
 	Stroke
+	Fill
 	Transform
 }
 
@@ -403,8 +453,12 @@ func (p *PolyLine) Render(w Writer) {
 	attrs := p.node.attrs()
 	attrs = append(attrs, p.attrs()...)
 	attrs = append(attrs, p.Stroke.List()...)
+	attrs = append(attrs, p.Fill.List()...)
 	attrs = append(attrs, p.Transform.List()...)
-	writeOpenElement(w, "polyline", true, attrs)
+	writeElement(w, "polyline", attrs, func() {
+		writeTitle(w, p.Title)
+		writeDesc(w, p.Desc)
+	})
 }
 
 func (p *PolyLine) AsElement() Element {
@@ -477,7 +531,7 @@ type Path struct {
 	node
 	commands []command
 
-	Fill string
+	Fill
 	Stroke
 	Transform
 }
@@ -495,11 +549,13 @@ func (p *Path) Render(w Writer) {
 	attrs := p.node.attrs()
 	attrs = append(attrs, p.attrs()...)
 	attrs = append(attrs, p.Stroke.List()...)
+	attrs = append(attrs, p.Fill.List()...)
 	attrs = append(attrs, p.Transform.List()...)
-	if p.Fill != "" {
-		attrs = append(attrs, appendString("fill", p.Fill))
-	}
-	writeOpenElement(w, "path", true, attrs)
+	attrs = append(attrs, p.Fill.List()...)
+	writeElement(w, "path", attrs, func() {
+		writeTitle(w, p.Title)
+		writeDesc(w, p.Desc)
+	})
 }
 
 func (p *Path) AsElement() Element {
@@ -610,6 +666,26 @@ func writeElement(w Writer, name string, attrs []string, inner func()) {
 		inner()
 		writeCloseElement(w, name)
 	}
+}
+
+func writeTitle(w Writer, str string) {
+	if str == "" {
+		return
+	}
+	writeString(w, "title", str)
+}
+
+func writeDesc(w Writer, str string) {
+	if str == "" {
+		return
+	}
+	writeString(w, "desc", str)
+}
+
+func writeString(w Writer, name, str string) {
+	writeOpenElement(w, name, false, nil)
+	w.WriteString(str)
+	writeCloseElement(w, name)
 }
 
 func writeOpenElement(w Writer, name string, closed bool, attrs []string) {

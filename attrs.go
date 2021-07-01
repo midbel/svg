@@ -6,33 +6,71 @@ import (
 	"strings"
 )
 
-type Font struct {
-	Family []string
-	Fill   string
-	Size   float64
+const (
+	UnitEM  = "em"
+	UnitEX  = "ex"
+	UnitPX  = "px"
+	UnitPT  = "pt"
+	UnitPC  = "pc"
+	UnitCM  = "cm"
+	UnitMM  = "mm"
+	UnitIN  = "in"
+	UnitPer = "%"
+)
+
+type Number struct {
+	Value float64
+	unit  string
 }
 
-func NewFont(size float64) Font {
-	return Font{Size: size}
+type Font struct {
+	Family  []string
+	Style   string
+	Weight  string
+	Variant string
+	Stretch string
+	Fill    string
+	Size    float64
+	Adjust  float64
+}
+
+func NewFont(size float64, families ...string) Font {
+	return Font{
+		Size:   size,
+		Family: families,
+	}
 }
 
 func (f Font) List() []string {
 	var attrs []string
+	values := []struct {
+		Attr  string
+		Value string
+	}{
+		{Attr: "fill", Value: f.Fill},
+		{Attr: "font-style", Value: f.Style},
+		{Attr: "font-weight", Value: f.Weight},
+		{Attr: "font-variant", Value: f.Variant},
+		{Attr: "font-stretch", Value: f.Stretch},
+	}
+	for _, v := range values {
+		if v.Value == "" {
+			continue
+		}
+		attrs = append(attrs, appendString(v.Attr, v.Value))
+	}
 	if len(f.Family) > 0 {
 		attrs = append(attrs, appendStringArray("font-family", f.Family, comma))
 	}
-	if f.Fill != "" {
-		attrs = append(attrs, appendString("fill", f.Fill))
-	}
-	if f.Size > 0 {
-		attrs = append(attrs, appendFloat("font-size", f.Size))
-	}
+	attrs = append(attrs, appendFloat("font-size", f.Size))
+	attrs = append(attrs, appendFloat("font-size-adjust", f.Adjust))
 	return attrs
 }
 
 type Pos struct {
-	X float64
-	Y float64
+	X    float64
+	Y    float64
+	unit string
 }
 
 func NewPos(x, y float64) Pos {
@@ -56,13 +94,59 @@ func (p Pos) Center() []string {
 	return attrs
 }
 
+func (p Pos) InPercent() Pos {
+	p.unit = UnitPer
+	return p
+}
+
+func (p Pos) InPX() Pos {
+	p.unit = UnitPX
+	return p
+}
+
+func (p Pos) InEM() Pos {
+	p.unit = UnitEM
+	return p
+}
+
+func (p Pos) InEX() Pos {
+	p.unit = UnitEX
+	return p
+}
+
+func (p Pos) InPT() Pos {
+	p.unit = UnitPT
+	return p
+}
+
+func (p Pos) InPC() Pos {
+	p.unit = UnitPC
+	return p
+}
+
+func (p Pos) InCM() Pos {
+	p.unit = UnitCM
+	return p
+}
+
+func (p Pos) InMM() Pos {
+	p.unit = UnitMM
+	return p
+}
+
+func (p Pos) InIN() Pos {
+	p.unit = UnitIN
+	return p
+}
+
 func (p Pos) array() []float64 {
 	return []float64{p.X, p.Y}
 }
 
 type Dim struct {
-	W float64
-	H float64
+	W    float64
+	H    float64
+	unit string
 }
 
 func NewDim(w, h float64) Dim {
@@ -79,30 +163,121 @@ func (d Dim) List() []string {
 	return attrs
 }
 
+func (d Dim) InPercent() Dim {
+	d.unit = UnitPer
+	return d
+}
+
+func (d Dim) InPX() Dim {
+	d.unit = UnitPX
+	return d
+}
+
+func (d Dim) InEM() Dim {
+	d.unit = UnitEM
+	return d
+}
+
+func (d Dim) InEX() Dim {
+	d.unit = UnitEX
+	return d
+}
+
+func (d Dim) InPT() Dim {
+	d.unit = UnitPT
+	return d
+}
+
+func (d Dim) InPC() Dim {
+	d.unit = UnitPC
+	return d
+}
+
+func (d Dim) InCM() Dim {
+	d.unit = UnitCM
+	return d
+}
+
+func (d Dim) InMM() Dim {
+	d.unit = UnitMM
+	return d
+}
+
+func (d Dim) InIN() Dim {
+	d.unit = UnitIN
+	return d
+}
+
 type Stroke struct {
-	Dash  []int
-	Width float64
-	Color string
+	Dash struct {
+		Array  []int
+		Offset []int
+	}
+	Line struct {
+		Cap  string
+		Join string
+	}
+	Width   float64
+	Opacity float64
+	Miter   float64
+	Fill    string
 }
 
 func NewStroke(fill string, width int) Stroke {
 	return Stroke{
-		Color: fill,
+		Fill:  fill,
 		Width: float64(width),
 	}
 }
 
 func (s Stroke) List() []string {
 	var attrs []string
-	if len(s.Dash) > 0 {
-		attrs = append(attrs, appendIntArray("stroke-dasharray", s.Dash, space))
+	if len(s.Dash.Array) > 0 {
+		attrs = append(attrs, appendIntArray("stroke-dasharray", s.Dash.Array, space))
+	}
+	if len(s.Dash.Offset) > 0 {
+		attrs = append(attrs, appendIntArray("stroke-dashoffset", s.Dash.Offset, space))
+	}
+	if s.Line.Cap != "" {
+		attrs = append(attrs, appendString("stroke-linecap", s.Line.Cap))
+	}
+	if s.Line.Join != "" {
+		attrs = append(attrs, appendString("stroke-linejoin", s.Line.Join))
 	}
 	if s.Width > 0 {
 		attrs = append(attrs, appendFloat("stroke-width", s.Width))
 	}
-	if s.Color != "" {
-		attrs = append(attrs, appendString("stroke", s.Color))
+	if s.Opacity > 0 {
+		attrs = append(attrs, appendFloat("stroke-opacity", s.Opacity))
 	}
+	if s.Miter > 0 {
+		attrs = append(attrs, appendFloat("stroke-miterlimit", s.Miter))
+	}
+	if s.Fill != "" {
+		attrs = append(attrs, appendString("stroke", s.Fill))
+	}
+	return attrs
+}
+
+type Fill struct {
+	Color   string
+	Rule    string
+	Opacity float64
+}
+
+func NewFill(color string) Fill {
+	return Fill{Color: color}
+}
+
+func (f Fill) List() []string {
+	var attrs []string
+	if f.Color != "" {
+		attrs = append(attrs, appendString("fill", f.Color))
+	}
+	if f.Rule != "" {
+		attrs = append(attrs, appendString("fill-rule", f.Rule))
+	}
+	attrs = append(attrs, appendFloat("fill-opacity", f.Opacity))
 	return attrs
 }
 

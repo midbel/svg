@@ -105,7 +105,7 @@ func WithAnchor(anchor string) Option {
 	}
 }
 
-func WithFill(fill string) Option {
+func WithFill(fill Fill) Option {
 	return func(e Element) error {
 		switch e := e.(type) {
 		case *Line:
