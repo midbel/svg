@@ -35,6 +35,22 @@ type Attribute interface {
 	Attributes() []string
 }
 
+type Clipping struct {
+	Path string
+	Rule string
+}
+
+func (c Clipping) Attributes() []string {
+	var attrs []string
+	if c.Path != "" {
+		attrs = append(attrs, appendString("clip-path", "")) // TBD
+	}
+	if c.Rule != "" {
+		attrs = append(attrs, appendString("clip-rule", c.Rule))
+	}
+	return attrs
+}
+
 type Font struct {
 	Family  []string
 	Style   string

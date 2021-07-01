@@ -117,6 +117,12 @@ func WithFill(fill Fill) Option {
 			e.Fill = fill
 		case *Ellipse:
 			e.Fill = fill
+		case *Mask:
+			e.Fill = fill
+		case *ClipPath:
+			e.Fill = fill
+		case *TextPath:
+			e.Fill = fill
 		default:
 		}
 		return nil
@@ -142,6 +148,10 @@ func WithDim(d Dim) Option {
 		case *SVG:
 			e.Dim = d
 		case *Use:
+			e.Dim = d
+		case *Image:
+			e.Dim = d
+		case *Mask:
 			e.Dim = d
 		default:
 		}
@@ -177,6 +187,10 @@ func WithPos(p Pos) Option {
 			e.Pos = p
 		case *Ellipse:
 			e.Pos = p
+		case *Image:
+			e.Pos = p
+		case *Mask:
+			e.Pos = p
 		}
 		return nil
 	}
@@ -210,6 +224,12 @@ func WithStroke(s Stroke) Option {
 		case *PolyLine:
 			e.Stroke = s
 		case *Path:
+			e.Stroke = s
+		case *Mask:
+			e.Stroke = s
+		case *ClipPath:
+			e.Stroke = s
+		case *TextPath:
 			e.Stroke = s
 		default:
 		}

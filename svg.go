@@ -33,8 +33,8 @@ func (i literal) Render(w Writer) {
 	w.WriteString(string(i))
 }
 
-func (_ literal) setId(_ string) {}
-func (_ literal) setClass(_ []string) {}
+func (_ literal) setId(_ string)                {}
+func (_ literal) setClass(_ []string)           {}
 func (_ literal) setStyle(_ string, _ []string) {}
 
 type List struct {
@@ -143,6 +143,75 @@ func (s *SVG) Attributes() []string {
 	return []string{a}
 }
 
+type ClipPath struct {
+	node
+	List
+
+	Fill
+	Stroke
+	Transform
+}
+
+func (c *ClipPath) Render(w Writer) {
+	c.render(w, "clipPath", c.List, c.Fill, c.Stroke, c.Transform)
+}
+
+func (c *ClipPath) AsElement() Element {
+	return c
+}
+
+type TextPath struct {
+	node
+	Literal string
+
+	Path    string
+	Adjust  string
+	Method  string
+	Side    string
+	Spacing string
+	Offset  float64
+	Length  float64
+	Fill
+	Stroke
+	Transform
+}
+
+func (t *TextPath) Render(w Writer) {
+	if t.Path == "" {
+		return
+	}
+	list := NewList(literal(t.Literal))
+	t.render(w, "textPath", list, t, t.Fill, t.Stroke, t.Transform)
+}
+
+func (t *TextPath) AsElement() Element {
+	return t
+}
+
+func (t *TextPath) Attributes() []string {
+	var attrs []string
+	attrs = append(attrs, appendString("path", t.Path))
+	if t.Method != "" {
+		attrs = append(attrs, appendString("method", t.Method))
+	}
+	if t.Adjust != "" {
+		attrs = append(attrs, appendString("lengthAdjust", t.Adjust))
+	}
+	if t.Side != "" {
+		attrs = append(attrs, appendString("side", t.Side))
+	}
+	if t.Spacing != "" {
+		attrs = append(attrs, appendString("spacing", t.Spacing))
+	}
+	if t.Length != 0 {
+		attrs = append(attrs, appendFloat("textLength", t.Length))
+	}
+	if t.Offset != 0 {
+		attrs = append(attrs, appendFloat("startOffset", t.Offset))
+	}
+	return nil
+}
+
 type Group struct {
 	node
 	List
@@ -166,6 +235,64 @@ func (g *Group) Render(w Writer) {
 
 func (g *Group) AsElement() Element {
 	return g
+}
+
+type Image struct {
+	node
+
+	Ref           string
+	PreserveRatio []string
+	Pos
+	Dim
+}
+
+func NewImage(ref string, options ...Option) Image {
+	i := Image{Ref: ref}
+	for _, o := range options {
+		o(&i)
+	}
+	return i
+}
+
+func (i *Image) Render(w Writer) {
+	if i.Ref == "" {
+		return
+	}
+	var list List
+	i.render(w, "image", list, i, i.Pos, i.Dim)
+}
+
+func (i *Image) AsElement() Element {
+	return i
+}
+
+func (i *Image) Attributes() []string {
+	var attrs []string
+	attrs = append(attrs, appendString("href", i.Ref))
+	if len(i.PreserveRatio) > 0 {
+		a := appendStringArray("preserveAspectRatio", i.PreserveRatio, space)
+		attrs = append(attrs, a)
+	}
+	return attrs
+}
+
+type Mask struct {
+	node
+	List
+
+	Pos
+	Dim
+	Fill
+	Stroke
+	Transform
+}
+
+func (m *Mask) Render(w Writer) {
+	m.render(w, "mask", m.List, m.Pos, m.Dim, m.Fill, m.Stroke, m.Transform)
+}
+
+func (m *Mask) AsElement() Element {
+	return m
 }
 
 type Rect struct {
