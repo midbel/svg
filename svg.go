@@ -11,12 +11,9 @@ const (
 )
 
 const (
-	defaultWidth    = 800
-	defaultHeight   = 600
-	defaultFontSize = 14
+	defaultWidth  = 800
+	defaultHeight = 600
 )
-
-var DefaultStroke = NewStroke("black", 1)
 
 type Writer interface {
 	io.ByteWriter
@@ -30,40 +27,15 @@ type Element interface {
 	setStyle(string, []string)
 }
 
-type node struct {
-	Title string
-	Desc  string
+type literal string
 
-	Id     string
-	Class  []string
-	Styles map[string][]string
+func (i literal) Render(w Writer) {
+	w.WriteString(string(i))
 }
 
-func (n *node) setId(id string) {
-	n.Id = id
-}
-
-func (n *node) setClass(class []string) {
-	n.Class = append(n.Class, class...)
-}
-
-func (n *node) setStyle(prop string, values []string) {
-	if n.Styles == nil {
-		n.Styles = make(map[string][]string)
-	}
-	n.Styles[prop] = append(n.Styles[prop], values...)
-}
-
-func (n *node) attrs() []string {
-	var attrs []string
-	if n.Id != "" {
-		attrs = append(attrs, appendString("id", n.Id))
-	}
-	if len(n.Class) > 0 {
-		attrs = append(attrs, appendStringArray("class", n.Class, space))
-	}
-	return attrs
-}
+func (_ literal) setId(_ string) {}
+func (_ literal) setClass(_ []string) {}
+func (_ literal) setStyle(_ string, _ []string) {}
 
 type List struct {
 	node
@@ -90,10 +62,13 @@ func (i *List) Render(w Writer) {
 
 type Defs struct {
 	List
+
+	Transform
 }
 
 func (d *Defs) Render(w Writer) {
-	writeElement(w, "defs", nil, func() {
+	attrs := d.Transform.Attributes()
+	writeElement(w, "defs", attrs, func() {
 		d.List.Render(w)
 	})
 }
@@ -110,30 +85,36 @@ type Use struct {
 	Dim
 	Stroke
 	Fill
+	Transform
 }
 
 func (u *Use) Render(w Writer) {
 	if u.Ref == "" {
 		return
 	}
-	attrs := u.node.attrs()
-	attrs = append(attrs, u.Pos.List()...)
-	attrs = append(attrs, u.Dim.List()...)
-	attrs = append(attrs, u.Stroke.List()...)
-	attrs = append(attrs, u.Fill.List()...)
-	attrs = append(attrs, appendString("href", u.Ref))
-	writeOpenElement(w, "use", true, attrs)
+	var list List
+	u.render(w, "use", list, u, u.Pos, u.Dim, u.Fill, u.Stroke, u.Transform)
 }
 
 func (u *Use) AsElement() Element {
 	return u
 }
 
+func (u *Use) Attributes() []string {
+	a := appendString("href", u.Ref)
+	return []string{a}
+}
+
 type SVG struct {
 	node
 	List
 
+	PreserveRatio []string
+	Box
+	Pos
 	Dim
+	Fill
+	Stroke
 }
 
 func NewSVG(options ...Option) SVG {
@@ -146,20 +127,20 @@ func NewSVG(options ...Option) SVG {
 }
 
 func (s *SVG) Render(w Writer) {
-	attrs := s.node.attrs()
-	attrs = append(attrs, appendString("xmlns", namespace))
-	attrs = append(attrs, s.Dim.List()...)
-
 	w.WriteString(prolog)
-	writeElement(w, "svg", attrs, func() {
-		writeTitle(w, s.Title)
-		writeDesc(w, s.Desc)
-		s.List.Render(w)
-	})
+	s.render(w, "svg", s.List, s, s.Pos, s.Dim, s.Box)
 }
 
 func (s *SVG) AsElement() Element {
 	return s
+}
+
+func (s *SVG) Attributes() []string {
+	if len(s.PreserveRatio) == 0 {
+		return nil
+	}
+	a := appendStringArray("preserveAspectRatio", s.PreserveRatio, space)
+	return []string{a}
 }
 
 type Group struct {
@@ -180,15 +161,7 @@ func NewGroup(options ...Option) Group {
 }
 
 func (g *Group) Render(w Writer) {
-	attrs := g.node.attrs()
-	attrs = append(attrs, g.Stroke.List()...)
-	attrs = append(attrs, g.Transform.List()...)
-	attrs = append(attrs, g.Fill.List()...)
-	writeElement(w, "g", attrs, func() {
-		writeTitle(w, g.Title)
-		writeDesc(w, g.Desc)
-		g.List.Render(w)
-	})
+	g.render(w, "g", g.List, g.Stroke, g.Fill, g.Transform)
 }
 
 func (g *Group) AsElement() Element {
@@ -218,27 +191,18 @@ func NewRect(options ...Option) Rect {
 }
 
 func (r *Rect) Render(w Writer) {
-	attrs := r.node.attrs()
-	attrs = append(attrs, r.Dim.List()...)
-	attrs = append(attrs, r.Pos.List()...)
-	attrs = append(attrs, r.Stroke.List()...)
-	attrs = append(attrs, r.Transform.List()...)
-	if r.RX > 0 {
-		attrs = append(attrs, appendFloat("rx", r.RX))
-	}
-	if r.RY > 0 {
-		attrs = append(attrs, appendFloat("ry", r.RY))
-	}
-	attrs = append(attrs, r.Fill.List()...)
-	writeElement(w, "rect", attrs, func() {
-		writeTitle(w, r.Title)
-		writeDesc(w, r.Desc)
-		r.List.Render(w)
-	})
+	r.render(w, "rect", r.List, r, r.Dim, r.Pos, r.Stroke, r.Transform, r.Fill)
 }
 
 func (r *Rect) AsElement() Element {
 	return r
+}
+
+func (r *Rect) Attributes() []string {
+	var attrs []string
+	attrs = append(attrs, appendFloat("rx", r.RX))
+	attrs = append(attrs, appendFloat("ry", r.RY))
+	return attrs
 }
 
 type Polygon struct {
@@ -252,23 +216,14 @@ type Polygon struct {
 }
 
 func (p *Polygon) Render(w Writer) {
-	attrs := p.node.attrs()
-	attrs = append(attrs, p.attrs()...)
-	attrs = append(attrs, p.Stroke.List()...)
-	attrs = append(attrs, p.Transform.List()...)
-	attrs = append(attrs, p.Fill.List()...)
-	writeElement(w, "polygon", attrs, func() {
-		writeTitle(w, p.Title)
-		writeDesc(w, p.Desc)
-		p.List.Render(w)
-	})
+	p.render(w, "polygon", p.List, p, p.Fill, p.Stroke, p.Transform)
 }
 
 func (p *Polygon) AsElement() Element {
 	return p
 }
 
-func (p *Polygon) attrs() []string {
+func (p *Polygon) Attributes() []string {
 	var list []float64
 	for i := range p.Points {
 		list = append(list, p.Points[i].array()...)
@@ -290,27 +245,18 @@ type Ellipse struct {
 }
 
 func (e *Ellipse) Render(w Writer) {
-	attrs := e.node.attrs()
-	attrs = append(attrs, e.attrs()...)
-	attrs = append(attrs, e.Pos.Center()...)
-	attrs = append(attrs, e.Stroke.List()...)
-	attrs = append(attrs, e.Transform.List()...)
-	attrs = append(attrs, e.Fill.List()...)
-	writeElement(w, "ellipse", attrs, func() {
-		writeTitle(w, e.Title)
-		writeDesc(w, e.Desc)
-		e.List.Render(w)
-	})
+	e.render(w, "ellipse", e.List, e, e.Stroke, e.Fill, e.Transform)
 }
 
 func (e *Ellipse) AsElement() Element {
 	return e
 }
 
-func (e *Ellipse) attrs() []string {
+func (e *Ellipse) Attributes() []string {
 	var attrs []string
 	attrs = append(attrs, appendFloat("rx", e.RX))
 	attrs = append(attrs, appendFloat("ry", e.RY))
+	attrs = append(attrs, e.Pos.Center()...)
 	return attrs
 }
 
@@ -334,22 +280,17 @@ func NewCircle(options ...Option) Circle {
 }
 
 func (c *Circle) Render(w Writer) {
-	attrs := c.node.attrs()
-	attrs = append(attrs, c.Pos.Center()...)
-	if c.Radius != 0 {
-		attrs = append(attrs, appendFloat("r", c.Radius))
-	}
-	attrs = append(attrs, c.Fill.List()...)
-	attrs = append(attrs, c.Stroke.List()...)
-	writeElement(w, "circle", attrs, func() {
-		writeTitle(w, c.Title)
-		writeDesc(w, c.Desc)
-		c.List.Render(w)
-	})
+	c.render(w, "circle", c.List, c, c.Fill, c.Stroke, c.Transform)
 }
 
 func (c *Circle) AsElement() Element {
 	return c
+}
+
+func (c *Circle) Attributes() []string {
+	a := appendFloat("r", c.Radius)
+	attrs := []string{a}
+	return append(attrs, c.Pos.Center()...)
 }
 
 type Text struct {
@@ -365,7 +306,11 @@ type Text struct {
 }
 
 func NewText(str string, options ...Option) Text {
-	t := Text{Literal: str}
+	t := Text{
+		Literal: str,
+		Font:    DefaultFont,
+		Fill:    DefaultFill,
+	}
 	for _, o := range options {
 		o(&t)
 	}
@@ -373,24 +318,20 @@ func NewText(str string, options ...Option) Text {
 }
 
 func (t *Text) Render(w Writer) {
-	attrs := t.node.attrs()
-	attrs = append(attrs, t.Pos.List()...)
-	attrs = append(attrs, t.Font.List()...)
-	attrs = append(attrs, t.Stroke.List()...)
-	attrs = append(attrs, t.Transform.List()...)
-	attrs = append(attrs, t.Fill.List()...)
-	if t.Anchor != "" {
-		attrs = append(attrs, appendString("text-anchor", t.Anchor))
-	}
-	writeElement(w, "text", attrs, func() {
-		writeTitle(w, t.Title)
-		writeDesc(w, t.Desc)
-		w.WriteString(t.Literal)
-	})
+	list := NewList(literal(t.Literal))
+	t.render(w, "text", list, t, t.Pos, t.Font, t.Fill, t.Stroke, t.Transform)
 }
 
 func (t *Text) AsElement() Element {
 	return t
+}
+
+func (t *Text) Attributes() []string {
+	if t.Anchor == "" {
+		return nil
+	}
+	a := appendString("text-anchor", t.Anchor)
+	return []string{a}
 }
 
 type Line struct {
@@ -416,22 +357,15 @@ func NewLine(starts, ends Pos, options ...Option) Line {
 }
 
 func (i *Line) Render(w Writer) {
-	attrs := i.node.attrs()
-	attrs = append(attrs, i.attrs()...)
-	attrs = append(attrs, i.Stroke.List()...)
-	attrs = append(attrs, i.Fill.List()...)
-	attrs = append(attrs, i.Transform.List()...)
-	writeElement(w, "line", attrs, func() {
-		writeTitle(w, i.Title)
-		writeDesc(w, i.Desc)
-	})
+	var list List
+	i.render(w, "line", list, i, i.Stroke, i.Fill, i.Transform)
 }
 
 func (i *Line) AsElement() Element {
 	return i
 }
 
-func (i *Line) attrs() []string {
+func (i *Line) Attributes() []string {
 	var attrs []string
 	attrs = append(attrs, appendFloat("x1", i.Starts.X))
 	attrs = append(attrs, appendFloat("y1", i.Starts.Y))
@@ -450,81 +384,21 @@ type PolyLine struct {
 }
 
 func (p *PolyLine) Render(w Writer) {
-	attrs := p.node.attrs()
-	attrs = append(attrs, p.attrs()...)
-	attrs = append(attrs, p.Stroke.List()...)
-	attrs = append(attrs, p.Fill.List()...)
-	attrs = append(attrs, p.Transform.List()...)
-	writeElement(w, "polyline", attrs, func() {
-		writeTitle(w, p.Title)
-		writeDesc(w, p.Desc)
-	})
+	var list List
+	p.render(w, "polyline", list, p, p.Fill, p.Stroke, p.Transform)
 }
 
 func (p *PolyLine) AsElement() Element {
 	return p
 }
 
-func (p *PolyLine) attrs() []string {
+func (p *PolyLine) Attributes() []string {
 	var list []float64
 	for i := range p.Points {
 		list = append(list, p.Points[i].array()...)
 	}
 	a := appendFloatPair("points", list)
 	return []string{a}
-}
-
-const (
-	cmdMoveToAbs          = "M"
-	cmdMoveToRel          = "m"
-	cmdLineToAbs          = "L"
-	cmdLineToRel          = "l"
-	cmdHorizontalAbs      = "H"
-	cmdHorizontalRel      = "h"
-	cmdVerticalAbs        = "V"
-	cmdVerticalRel        = "v"
-	cmdArcAbs             = "A"
-	cmdArcRel             = "a"
-	cmdClosePath          = "Z"
-	cmdCubicAbs           = "C"
-	cmdCubicRel           = "c"
-	cmdCubicSimpleAbs     = "S"
-	cmdCubicSimpleRel     = "s"
-	cmdQuadraticAbs       = "Q"
-	cmdQuadraticRel       = "q"
-	cmdQuadraticSimpleAbs = "T"
-	cmdQuadraticSimpleRel = "t"
-)
-
-type command struct {
-	cmd    string
-	values [][]float64
-}
-
-func makeCommand(cmd string, values ...[]float64) command {
-	vs := make([][]float64, 0, len(values))
-	vs = append(vs, values...)
-	return command{
-		cmd:    cmd,
-		values: vs,
-	}
-}
-
-func (c command) String() string {
-	buf := []byte(c.cmd)
-	for i := range c.values {
-		if i > 0 {
-			buf = append(buf, comma)
-		}
-		buf = append(buf, space)
-		for j := range c.values[i] {
-			if j > 0 {
-				buf = append(buf, space)
-			}
-			buf = strconv.AppendFloat(buf, c.values[i][j], 'f', 2, 64)
-		}
-	}
-	return string(buf)
 }
 
 type Path struct {
@@ -546,23 +420,15 @@ func NewPath(options ...Option) Path {
 }
 
 func (p *Path) Render(w Writer) {
-	attrs := p.node.attrs()
-	attrs = append(attrs, p.attrs()...)
-	attrs = append(attrs, p.Stroke.List()...)
-	attrs = append(attrs, p.Fill.List()...)
-	attrs = append(attrs, p.Transform.List()...)
-	attrs = append(attrs, p.Fill.List()...)
-	writeElement(w, "path", attrs, func() {
-		writeTitle(w, p.Title)
-		writeDesc(w, p.Desc)
-	})
+	var list List
+	p.render(w, "path", list, p, p.Fill, p.Stroke, p.Transform)
 }
 
 func (p *Path) AsElement() Element {
 	return p
 }
 
-func (p *Path) attrs() []string {
+func (p *Path) Attributes() []string {
 	var attrs []string
 	for _, c := range p.commands {
 		attrs = append(attrs, c.String())
@@ -657,6 +523,107 @@ func (p *Path) RelQuadraticCurveSimple(pos Pos) {
 }
 
 func (p *Path) Arc(pos Pos, rx, ry float64, large, sweep bool) {
+}
+
+const (
+	cmdMoveToAbs          = "M"
+	cmdMoveToRel          = "m"
+	cmdLineToAbs          = "L"
+	cmdLineToRel          = "l"
+	cmdHorizontalAbs      = "H"
+	cmdHorizontalRel      = "h"
+	cmdVerticalAbs        = "V"
+	cmdVerticalRel        = "v"
+	cmdArcAbs             = "A"
+	cmdArcRel             = "a"
+	cmdClosePath          = "Z"
+	cmdCubicAbs           = "C"
+	cmdCubicRel           = "c"
+	cmdCubicSimpleAbs     = "S"
+	cmdCubicSimpleRel     = "s"
+	cmdQuadraticAbs       = "Q"
+	cmdQuadraticRel       = "q"
+	cmdQuadraticSimpleAbs = "T"
+	cmdQuadraticSimpleRel = "t"
+)
+
+type command struct {
+	cmd    string
+	values [][]float64
+}
+
+func makeCommand(cmd string, values ...[]float64) command {
+	vs := make([][]float64, 0, len(values))
+	vs = append(vs, values...)
+	return command{
+		cmd:    cmd,
+		values: vs,
+	}
+}
+
+func (c command) String() string {
+	buf := []byte(c.cmd)
+	for i := range c.values {
+		if i > 0 {
+			buf = append(buf, comma)
+		}
+		buf = append(buf, space)
+		for j := range c.values[i] {
+			if j > 0 {
+				buf = append(buf, space)
+			}
+			buf = strconv.AppendFloat(buf, c.values[i][j], 'f', 2, 64)
+		}
+	}
+	return string(buf)
+}
+
+type node struct {
+	Title string
+	Desc  string
+
+	Id     string
+	Class  []string
+	Styles map[string][]string
+}
+
+func (n *node) setId(id string) {
+	n.Id = id
+}
+
+func (n *node) setClass(class []string) {
+	n.Class = append(n.Class, class...)
+}
+
+func (n *node) setStyle(prop string, values []string) {
+	if n.Styles == nil {
+		n.Styles = make(map[string][]string)
+	}
+	n.Styles[prop] = append(n.Styles[prop], values...)
+}
+
+func (n *node) Attributes() []string {
+	var attrs []string
+	if n.Id != "" {
+		attrs = append(attrs, appendString("id", n.Id))
+	}
+	if len(n.Class) > 0 {
+		attrs = append(attrs, appendStringArray("class", n.Class, space))
+	}
+	return attrs
+}
+
+func (n *node) render(w Writer, name string, list List, attrs ...Attribute) {
+	var as []string
+	attrs = append(attrs, n)
+	for _, a := range attrs {
+		as = append(as, a.Attributes()...)
+	}
+	writeElement(w, name, as, func() {
+		writeTitle(w, n.Title)
+		writeDesc(w, n.Desc)
+		list.Render(w)
+	})
 }
 
 func writeElement(w Writer, name string, attrs []string, inner func()) {

@@ -24,73 +24,60 @@ func WithStyle(prop string, values ...string) Option {
 }
 
 func WithTranslate(x, y float64) Option {
+	type translater interface {
+		Translate(float64, float64)
+	}
 	return func(e Element) error {
-		switch e := e.(type) {
-		case *Rect:
-			e.Transform.TX, e.Transform.TY = x, y
-		case *Text:
-			e.Transform.TX, e.Transform.TY = x, y
-		case *Group:
-			e.Transform.TX, e.Transform.TY = x, y
+		if e, ok := e.(translater); ok {
+			e.Translate(x, y)
 		}
 		return nil
 	}
 }
 
 func WithRotate(a, x, y float64) Option {
+	type rotater interface {
+		Rotate(float64, float64)
+	}
 	return func(e Element) error {
-		switch e := e.(type) {
-		case *Rect:
-			e.Transform.RA = a
-			e.Transform.RX, e.Transform.RY = x, y
-		case *Text:
-			e.Transform.RA = a
-			e.Transform.RX, e.Transform.RY = x, y
-		case *Group:
-			e.Transform.RA = a
-			e.Transform.RX, e.Transform.RY = x, y
+		if e, ok := e.(rotater); ok {
+			e.Rotate(x, y)
 		}
 		return nil
 	}
 }
 
 func WithScale(x, y float64) Option {
+	type scaler interface {
+		Scale(float64, float64)
+	}
 	return func(e Element) error {
-		switch e := e.(type) {
-		case *Rect:
-			e.Transform.SX, e.Transform.SY = x, y
-		case *Text:
-			e.Transform.SX, e.Transform.SY = x, y
-		case *Group:
-			e.Transform.SX, e.Transform.SY = x, y
+		if e, ok := e.(scaler); ok {
+			e.Scale(x, y)
 		}
 		return nil
 	}
 }
 
 func WithSkewX(x float64) Option {
+	type skewer interface {
+		SkewX(float64)
+	}
 	return func(e Element) error {
-		switch e := e.(type) {
-		case *Rect:
-			e.Transform.KX = x
-		case *Text:
-			e.Transform.KX = x
-		case *Group:
-			e.Transform.KX = x
+		if e, ok := e.(skewer); ok {
+			e.SkewX(x)
 		}
 		return nil
 	}
 }
 
 func WithSkewY(y float64) Option {
+	type skewer interface {
+		SkewY(float64)
+	}
 	return func(e Element) error {
-		switch e := e.(type) {
-		case *Rect:
-			e.Transform.KY = y
-		case *Text:
-			e.Transform.KY = y
-		case *Group:
-			e.Transform.KY = y
+		if e, ok := e.(skewer); ok {
+			e.SkewY(y)
 		}
 		return nil
 	}
@@ -110,6 +97,8 @@ func WithFill(fill Fill) Option {
 		switch e := e.(type) {
 		case *Line:
 			e.Fill = fill
+		case *PolyLine:
+			e.Fill = fill
 		case *Path:
 			e.Fill = fill
 		case *Rect:
@@ -120,7 +109,14 @@ func WithFill(fill Fill) Option {
 			e.Fill = fill
 		case *Group:
 			e.Fill = fill
+		case *Use:
+			e.Fill = fill
 		case *SVG:
+			e.Fill = fill
+		case *Polygon:
+			e.Fill = fill
+		case *Ellipse:
+			e.Fill = fill
 		default:
 		}
 		return nil
@@ -144,6 +140,8 @@ func WithDim(d Dim) Option {
 		case *Rect:
 			e.Dim = d
 		case *SVG:
+			e.Dim = d
+		case *Use:
 			e.Dim = d
 		default:
 		}
@@ -173,6 +171,12 @@ func WithPos(p Pos) Option {
 			e.Pos = p
 		case *Text:
 			e.Pos = p
+		case *Use:
+			e.Pos = p
+		case *SVG:
+			e.Pos = p
+		case *Ellipse:
+			e.Pos = p
 		}
 		return nil
 	}
@@ -190,6 +194,22 @@ func WithStroke(s Stroke) Option {
 		case *Group:
 			e.Stroke = s
 		case *Text:
+			e.Stroke = s
+		case *Use:
+			e.Stroke = s
+		case *SVG:
+			e.Stroke = s
+		case *Polygon:
+			e.Stroke = s
+		case *Ellipse:
+			e.Stroke = s
+		case *Circle:
+			e.Stroke = s
+		case *Line:
+			e.Stroke = s
+		case *PolyLine:
+			e.Stroke = s
+		case *Path:
 			e.Stroke = s
 		default:
 		}

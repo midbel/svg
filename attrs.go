@@ -6,6 +6,14 @@ import (
 	"strings"
 )
 
+const defaultFontSize = 14
+
+var (
+	DefaultStroke = NewStroke("black", 1)
+	DefaultFill   = NewFill("black")
+	DefaultFont   = NewFont(defaultFontSize)
+)
+
 const (
 	UnitEM  = "em"
 	UnitEX  = "ex"
@@ -23,6 +31,10 @@ type Number struct {
 	unit  string
 }
 
+type Attribute interface {
+	Attributes() []string
+}
+
 type Font struct {
 	Family  []string
 	Style   string
@@ -38,10 +50,11 @@ func NewFont(size float64, families ...string) Font {
 	return Font{
 		Size:   size,
 		Family: families,
+		Fill:   "black",
 	}
 }
 
-func (f Font) List() []string {
+func (f Font) Attributes() []string {
 	var attrs []string
 	values := []struct {
 		Attr  string
@@ -80,7 +93,7 @@ func NewPos(x, y float64) Pos {
 	}
 }
 
-func (p Pos) List() []string {
+func (p Pos) Attributes() []string {
 	var attrs []string
 	attrs = append(attrs, appendFloat("x", p.X))
 	attrs = append(attrs, appendFloat("y", p.Y))
@@ -156,7 +169,7 @@ func NewDim(w, h float64) Dim {
 	}
 }
 
-func (d Dim) List() []string {
+func (d Dim) Attributes() []string {
 	var attrs []string
 	attrs = append(attrs, appendFloat("width", d.W))
 	attrs = append(attrs, appendFloat("height", d.H))
@@ -208,6 +221,25 @@ func (d Dim) InIN() Dim {
 	return d
 }
 
+func (d Dim) array() []float64 {
+	return []float64{d.W, d.H}
+}
+
+type Box struct {
+	Pos
+	Dim
+}
+
+func (b Box) Attributes() []string {
+	if b.W <= 0 || b.H <= 0 {
+		return nil
+	}
+	arr := append([]float64{}, b.Pos.array()...)
+	arr = append(arr, b.Dim.array()...)
+	a := appendFloatArray("viewBox", arr, space)
+	return []string{a}
+}
+
 type Stroke struct {
 	Dash struct {
 		Array  []int
@@ -230,7 +262,7 @@ func NewStroke(fill string, width int) Stroke {
 	}
 }
 
-func (s Stroke) List() []string {
+func (s Stroke) Attributes() []string {
 	var attrs []string
 	if len(s.Dash.Array) > 0 {
 		attrs = append(attrs, appendIntArray("stroke-dasharray", s.Dash.Array, space))
@@ -266,10 +298,10 @@ type Fill struct {
 }
 
 func NewFill(color string) Fill {
-	return Fill{Color: color}
+	return Fill{Color: color, Opacity: 100}
 }
 
-func (f Fill) List() []string {
+func (f Fill) Attributes() []string {
 	var attrs []string
 	if f.Color != "" {
 		attrs = append(attrs, appendString("fill", f.Color))
@@ -296,7 +328,31 @@ type Transform struct {
 	KY float64
 }
 
-func (t Transform) List() []string {
+func (t *Transform) SkewX(x float64) {
+	t.KX = x
+}
+
+func (t *Transform) SkewY(y float64) {
+	t.KY = y
+}
+
+func (t *Transform) Rotate(a, x, y float64) {
+	t.RA = a
+	t.RX = x
+	t.RY = y
+}
+
+func (t *Transform) Scale(x, y float64) {
+	t.SX = x
+	t.SY = y
+}
+
+func (t *Transform) Translate(x, y float64) {
+	t.TX = x
+	t.TY = y
+}
+
+func (t Transform) Attributes() []string {
 	var attrs []string
 	if t.TX != 0 || t.TY != 0 {
 		attrs = append(attrs, appendFunc("translate", t.TX, t.TY))
@@ -386,6 +442,19 @@ func appendIntArray(attr string, list []int, sep byte) string {
 			buf = append(buf, sep)
 		}
 		buf = strconv.AppendInt(buf, int64(list[i]), 10)
+	}
+	buf = append(buf, quote)
+	return string(buf)
+}
+
+func appendFloatArray(attr string, list []float64, sep byte) string {
+	buf := []byte(attr)
+	buf = append(buf, equal, quote)
+	for i := range list {
+		if i > 0 {
+			buf = append(buf, sep)
+		}
+		buf = strconv.AppendFloat(buf, list[i], 'f', getPrecision(list[i]), 64)
 	}
 	buf = append(buf, quote)
 	return string(buf)
