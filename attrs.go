@@ -1,9 +1,9 @@
 package svg
 
 import (
-  "math"
-  "strconv"
-  "strings"
+	"math"
+	"strconv"
+	"strings"
 )
 
 type Font struct {
@@ -44,12 +44,15 @@ func NewPos(x, y float64) Pos {
 
 func (p Pos) List() []string {
 	var attrs []string
-	if p.X != 0 {
-		attrs = append(attrs, appendFloat("x", p.X))
-	}
-	if p.Y != 0 {
-		attrs = append(attrs, appendFloat("y", p.Y))
-	}
+	attrs = append(attrs, appendFloat("x", p.X))
+	attrs = append(attrs, appendFloat("y", p.Y))
+	return attrs
+}
+
+func (p Pos) Center() []string {
+	var attrs []string
+	attrs = append(attrs, appendFloat("cx", p.X))
+	attrs = append(attrs, appendFloat("cy", p.Y))
 	return attrs
 }
 
@@ -163,26 +166,16 @@ func appendFunc(name string, list ...float64) string {
 		if i > 0 {
 			buf = append(buf, comma)
 		}
-		p := defaultPrecision
-		if math.Ceil(list[i]) == list[i] {
-			p = 0
-		}
-		buf = strconv.AppendFloat(buf, list[i], 'f', p, 64)
+		buf = strconv.AppendFloat(buf, list[i], 'f', getPrecision(list[i]), 64)
 	}
 	buf = append(buf, rparen)
 	return string(buf)
 }
 
 func appendFloat(attr string, v float64) string {
-	var (
-		buf  = []byte(attr)
-		prec = defaultPrecision
-	)
-	if math.Ceil(v) == v {
-		prec = 0
-	}
+	buf := []byte(attr)
 	buf = append(buf, equal, quote)
-	buf = strconv.AppendFloat(buf, v, 'f', prec, 64)
+	buf = strconv.AppendFloat(buf, v, 'f', getPrecision(v), 64)
 	buf = append(buf, quote)
 	return string(buf)
 }
@@ -221,4 +214,26 @@ func appendIntArray(attr string, list []int, sep byte) string {
 	}
 	buf = append(buf, quote)
 	return string(buf)
+}
+
+func appendFloatPair(attr string, list []float64) string {
+	buf := []byte(attr)
+	buf = append(buf, equal, quote)
+	for i := 0; i < len(list); i += 2 {
+		if i > 0 {
+			buf = append(buf, space)
+		}
+		buf = strconv.AppendFloat(buf, list[i], 'f', getPrecision(list[i]), 64)
+		buf = append(buf, comma)
+		buf = strconv.AppendFloat(buf, list[i+1], 'f', getPrecision(list[i+1]), 64)
+	}
+	buf = append(buf, quote)
+	return string(buf)
+}
+
+func getPrecision(f float64) int {
+	if math.Ceil(f) == f {
+		return 0
+	}
+	return defaultPrecision
 }

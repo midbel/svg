@@ -197,6 +197,79 @@ func (r *Rect) AsElement() Element {
 	return r
 }
 
+type Polygon struct {
+	node
+	List
+
+	Points []Pos
+	Fill   string
+	Stroke
+	Transform
+}
+
+func (p *Polygon) Render(w Writer) {
+	attrs := p.node.attrs()
+	attrs = append(attrs, p.attrs()...)
+	attrs = append(attrs, p.Stroke.List()...)
+	attrs = append(attrs, p.Transform.List()...)
+	if p.Fill != "" {
+		attrs = append(attrs, appendString("fill", p.Fill))
+	}
+	writeElement(w, "polygon", attrs, func() {
+		p.List.Render(w)
+	})
+}
+
+func (p *Polygon) AsElement() Element {
+	return p
+}
+
+func (p *Polygon) attrs() []string {
+	var list []float64
+	for i := range p.Points {
+		list = append(list, p.Points[i].array()...)
+	}
+	a := appendFloatPair("points", list)
+	return []string{a}
+}
+
+type Ellipse struct {
+	node
+	List
+
+	Pos
+	RX   float64
+	RY   float64
+	Fill string
+	Stroke
+	Transform
+}
+
+func (e *Ellipse) Render(w Writer) {
+	attrs := e.node.attrs()
+	attrs = append(attrs, e.attrs()...)
+	attrs = append(attrs, e.Pos.Center()...)
+	attrs = append(attrs, e.Stroke.List()...)
+	attrs = append(attrs, e.Transform.List()...)
+	if e.Fill != "" {
+		attrs = append(attrs, appendString("fill", e.Fill))
+	}
+	writeElement(w, "ellipse", attrs, func() {
+		e.List.Render(w)
+	})
+}
+
+func (e *Ellipse) AsElement() Element {
+	return e
+}
+
+func (e *Ellipse) attrs() []string {
+	var attrs []string
+	attrs = append(attrs, appendFloat("rx", e.RX))
+	attrs = append(attrs, appendFloat("ry", e.RY))
+	return attrs
+}
+
 type Circle struct {
 	node
 	List
@@ -217,7 +290,7 @@ func NewCircle(options ...Option) Circle {
 
 func (c *Circle) Render(w Writer) {
 	attrs := c.node.attrs()
-	attrs = append(attrs, c.attrs()...)
+	attrs = append(attrs, c.Pos.Center()...)
 	if c.Radius != 0 {
 		attrs = append(attrs, appendFloat("r", c.Radius))
 	}
@@ -231,13 +304,6 @@ func (c *Circle) Render(w Writer) {
 
 func (c *Circle) AsElement() Element {
 	return c
-}
-
-func (c *Circle) attrs() []string {
-	var attrs []string
-	attrs = append(attrs, appendFloat("cx", c.Pos.X))
-	attrs = append(attrs, appendFloat("cy", c.Pos.Y))
-	return attrs
 }
 
 type Text struct {
@@ -325,7 +391,34 @@ func (i *Line) attrs() []string {
 	return attrs
 }
 
-type PolyLine struct{}
+type PolyLine struct {
+	node
+
+	Points []Pos
+	Stroke
+	Transform
+}
+
+func (p *PolyLine) Render(w Writer) {
+	attrs := p.node.attrs()
+	attrs = append(attrs, p.attrs()...)
+	attrs = append(attrs, p.Stroke.List()...)
+	attrs = append(attrs, p.Transform.List()...)
+	writeOpenElement(w, "polyline", true, attrs)
+}
+
+func (p *PolyLine) AsElement() Element {
+	return p
+}
+
+func (p *PolyLine) attrs() []string {
+	var list []float64
+	for i := range p.Points {
+		list = append(list, p.Points[i].array()...)
+	}
+	a := appendFloatPair("points", list)
+	return []string{a}
+}
 
 const (
 	cmdMoveToAbs          = "M"
