@@ -36,17 +36,38 @@ type Attribute interface {
 }
 
 type Clipping struct {
-	Path string
-	Rule string
+	Path  string
+	Box   string
+	Rule  string
+	Units string
+}
+
+func ClipURL(url string) Clipping {
+	return Clipping{Path: url}
+}
+
+func ClipShape(shape, box string) Clipping {
+	return Clipping{
+		Path: shape,
+		Box: box,
+	}
 }
 
 func (c Clipping) Attributes() []string {
+	if c.Path == "" {
+		return nil
+	}
 	var attrs []string
-	if c.Path != "" {
+	if c.Box != "" {
+		attrs = append(attrs, appendString("clip-path", "")) // TBD
+	} else {
 		attrs = append(attrs, appendString("clip-path", "")) // TBD
 	}
 	if c.Rule != "" {
 		attrs = append(attrs, appendString("clip-rule", c.Rule))
+	}
+	if c.Units != "" {
+		attrs = append(attrs, appendString("clipPathUnits", c.Units))
 	}
 	return attrs
 }
