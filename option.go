@@ -23,6 +23,36 @@ func WithStyle(prop string, values ...string) Option {
 	}
 }
 
+func WithList(es ...Element) Option {
+	return func(e Element) error {
+		list := NewList(es...)
+		switch e := e.(type) {
+		case *SVG:
+			e.List = list
+		case *Defs:
+			e.List = list
+		case *Group:
+			e.List = list
+		case *Rect:
+			e.List = list
+		case *Ellipse:
+			e.List = list
+		case *Circle:
+			e.List = list
+		case *Polygon:
+			e.List = list
+		case *ClipPath:
+			e.List = list
+		case *Mask:
+			e.List = list
+		case *Text:
+			e.List = list
+		default:
+		}
+		return nil
+	}
+}
+
 func WithTranslate(x, y float64) Option {
 	type translater interface {
 		Translate(float64, float64)
