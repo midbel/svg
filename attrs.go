@@ -49,7 +49,7 @@ func ClipURL(url string) Clipping {
 func ClipShape(shape, box string) Clipping {
 	return Clipping{
 		Path: shape,
-		Box: box,
+		Box:  box,
 	}
 }
 

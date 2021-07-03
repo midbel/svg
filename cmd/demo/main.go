@@ -9,6 +9,11 @@ import (
 	"github.com/midbel/svg"
 )
 
+const (
+	rectWidth  = 120.0
+	rectHeight = 90.0
+)
+
 func main() {
 	draw := svg.NewSVG(svg.WithDimension(620, 340))
 
@@ -28,6 +33,53 @@ func main() {
 	grp4 := svg.NewGroup(svg.WithTranslate(490, 0), svg.WithID("level-3"))
 	grp4.Append(makeRectangle("H", "192.168.127.1", 0, 10, true))
 
+	line1 := svg.NewLine(svg.NewPos(130, 55), svg.NewPos(170, 55))
+	draw.Append(line1.AsElement())
+	line2 := svg.NewLine(svg.NewPos(130, 175), svg.NewPos(170, 175))
+	draw.Append(line2.AsElement())
+	line3 := svg.NewLine(svg.NewPos(230, 220), svg.NewPos(230, 240))
+	draw.Append(line3.AsElement())
+	line4 := svg.NewLine(svg.NewPos(390, 220), svg.NewPos(390, 240))
+	draw.Append(line4.AsElement())
+	line5 := svg.NewLine(svg.NewPos(290, 175), svg.NewPos(330, 175))
+	draw.Append(line5.AsElement())
+	line6 := svg.NewLine(svg.NewPos(290, 290), svg.NewPos(330, 290))
+	draw.Append(line6.AsElement())
+	line7 := svg.NewLine(svg.NewPos(290, 50), svg.NewPos(490, 50), svg.WithID("CH"))
+	draw.Append(line7.AsElement())
+
+	tp1 := svg.NewTextPath("F -> H", "FH")
+	tp1.Offset = 40
+	draw.Append(tp1.AsElement())
+
+	tp2 := svg.NewTextPath("G -> H", "GH")
+	tp2.Offset = 40
+	draw.Append(tp2.AsElement())
+
+	var path1 svg.Path
+	path1.Id = "FH"
+	path1.Stroke = svg.DefaultStroke
+	path1.AbsMoveTo(svg.NewPos(450, 180))
+	path1.RelHorizontalLine(100)
+	path1.RelVerticalLine(-80)
+	draw.Append(path1.AsElement())
+
+	var path2 svg.Path
+	path2.Id = "GH"
+	path2.Stroke = svg.DefaultStroke
+	path2.AbsMoveTo(svg.NewPos(450, 290))
+	path2.RelHorizontalLine(110)
+	path2.RelVerticalLine(-190)
+	draw.Append(path2.AsElement())
+
+	var path3 svg.Path
+	path3.Stroke = svg.DefaultStroke
+	path3.AbsMoveTo(svg.NewPos(290, 160))
+	path3.RelHorizontalLine(20)
+	path3.RelVerticalLine(-100)
+	path3.RelHorizontalLine(180)
+	draw.Append(path3.AsElement())
+
 	draw.Append(grp1.AsElement())
 	draw.Append(grp2.AsElement())
 	draw.Append(grp3.AsElement())
@@ -37,11 +89,6 @@ func main() {
 	defer w.Flush()
 	draw.Render(w)
 }
-
-const (
-	rectWidth  = 120.0
-	rectHeight = 90.0
-)
 
 func makeRectangle(label, ip string, x, y float64, up bool) svg.Element {
 	var (

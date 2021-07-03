@@ -184,6 +184,7 @@ func NewTextPath(literal, path string, options ...Option) TextPath {
 	t := TextPath{
 		Literal: literal,
 		Path:    path,
+		Fill:    DefaultFill,
 	}
 	for _, o := range options {
 		o(&t)
@@ -195,8 +196,10 @@ func (t *TextPath) Render(w Writer) {
 	if t.Path == "" {
 		return
 	}
-	list := NewList(Literal(t.Literal))
-	t.render(w, "textPath", list, t, t.Fill, t.Stroke, t.Transform)
+	writeElement(w, "text", nil, func() {
+		list := NewList(Literal(t.Literal))
+		t.render(w, "textPath", list, t, t.Fill, t.Stroke, t.Transform)
+	})
 }
 
 func (t *TextPath) AsElement() Element {
@@ -205,7 +208,7 @@ func (t *TextPath) AsElement() Element {
 
 func (t *TextPath) Attributes() []string {
 	var attrs []string
-	attrs = append(attrs, appendString("path", t.Path))
+	attrs = append(attrs, appendString("href", "#"+t.Path))
 	if t.Method != "" {
 		attrs = append(attrs, appendString("method", t.Method))
 	}
@@ -224,7 +227,7 @@ func (t *TextPath) Attributes() []string {
 	if t.Offset != 0 {
 		attrs = append(attrs, appendFloat("startOffset", t.Offset))
 	}
-	return nil
+	return attrs
 }
 
 type Group struct {
@@ -758,7 +761,8 @@ func (c command) String() string {
 			if j > 0 {
 				buf = append(buf, space)
 			}
-			buf = strconv.AppendFloat(buf, c.values[i][j], 'f', 2, 64)
+			v := c.values[i][j]
+			buf = strconv.AppendFloat(buf, v, 'f', getPrecision(v), 64)
 		}
 	}
 	return string(buf)
