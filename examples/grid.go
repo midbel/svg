@@ -62,11 +62,9 @@ func main() {
 	d := svg.NewDim(defaultWidth, defaultHeight)
 	canvas := svg.NewSVG(svg.WithDim(d))
 
-	var offset int
 	for i, n := range root.Nodes {
 		width := defaultWidth / n.Depth()
-		draw(&canvas, n, width, height, 0, i, offset, defaultWidth)
-		offset += height * n.Leaf()
+		draw(&canvas, n, width, height)
 	}
 
 	w := bufio.NewWriter(os.Stdout)
@@ -74,39 +72,8 @@ func main() {
 	canvas.Render(w)
 }
 
-func draw(canvas Appender, root Node, width, height, levelx, levely, offsetY, available int) {
-	offsetX := width * levelx
+func draw(canvas Appender, root Node, width, height int) {
 
-	nheight := height
-	if !root.IsLeaf() {
-		nheight *= root.Leaf()
-	}
-
-	nwidth := width
-	if available > 0 && root.IsLeaf() {
-		nwidth = available
-	}
-
-	g := svg.NewGroup(svg.WithTranslate(float64(offsetX), float64(offsetY)), svg.WithID(root.Label))
-	d := svg.NewDim(float64(nwidth), float64(nheight))
-	f := svg.NewFill(svg.Colors[rand.Intn(len(svg.Colors))])
-	r := svg.NewRect(svg.WithDim(d), svg.WithFill(f))
-	t := svg.NewText(root.Label, svg.WithPosition(10, 15))
-	r.Title = fmt.Sprintf("offsetX: %d, offsetY: %d, width: %d, height: %d", offsetX, offsetY, width, nheight)
-	c := svg.NewGroup(svg.WithClass("shape"))
-	c.Append(r.AsElement())
-	c.Append(t.AsElement())
-	g.Append(c.AsElement())
-	canvas.Append(g.AsElement())
-
-	if root.Depth() >= 1 {
-		levelx = 0
-	}
-	offsetY = 0
-	for i, n := range root.Nodes {
-		draw(&g, n, width, height, levelx+1, i, offsetY, available-nwidth)
-		offsetY += height * n.Leaf()
-	}
 }
 
 func getRoot() Node {
