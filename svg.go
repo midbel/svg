@@ -140,11 +140,13 @@ func (s *SVG) AsElement() Element {
 }
 
 func (s *SVG) Attributes() []string {
+	var attrs []string
+	attrs = append(attrs, appendString("xmlns", namespace))
 	if len(s.PreserveRatio) == 0 {
-		return nil
+		return attrs
 	}
-	a := appendStringArray("preserveAspectRatio", s.PreserveRatio, space)
-	return []string{a}
+	attrs = append(attrs, appendStringArray("preserveAspectRatio", s.PreserveRatio, space))
+	return attrs
 }
 
 type ClipPath struct {

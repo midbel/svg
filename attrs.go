@@ -97,7 +97,6 @@ func (f Font) Attributes() []string {
 		Attr  string
 		Value string
 	}{
-		{Attr: "fill", Value: f.Fill},
 		{Attr: "font-style", Value: f.Style},
 		{Attr: "font-weight", Value: f.Weight},
 		{Attr: "font-variant", Value: f.Variant},
