@@ -15,7 +15,6 @@ type Appender interface {
 
 type Node struct {
 	Label string
-	Root  bool
 	Nodes []Node
 }
 
@@ -170,5 +169,5 @@ func getRoot() Node {
 			},
 		},
 	}
-	return Node{Label: "root", Root: true, Nodes: nodes}
+	return Node{Label: "root", Nodes: nodes}
 }

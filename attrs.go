@@ -338,6 +338,9 @@ func NewFill(color string) Fill {
 }
 
 func (f Fill) Attributes() []string {
+	if f.Color == "" {
+		return nil
+	}
 	var attrs []string
 	if f.Color != "" {
 		attrs = append(attrs, appendString("fill", f.Color))
