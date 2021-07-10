@@ -20,10 +20,15 @@ func Basic(nodes []Node, dim, siz svg.Dim, options ...svg.Option) svg.Element {
 	return nil
 }
 
-const gridSplit = 2
-
-func Grid(root Node, split int, dim svg.Dim, options ...svg.Option) svg.Element {
-	canvas := svg.NewSVG(append(options, dim.Option())...)
+func Grid(root Node, dim svg.Dim, options ...svg.Option) svg.Element {
+	var (
+		canvas = svg.NewSVG(append(options, dim.Option())...)
+		group  svg.Group
+		state  gridstate
+	)
+	state.Dim = dim
+	state.Draw(&group, root.Nodes)
+	canvas.Append(group.AsElement())
 	return canvas.AsElement()
 }
 
@@ -49,6 +54,95 @@ func Tree(root Node, dim svg.Dim, options ...svg.Option) svg.Element {
 
 type appender interface {
 	Append(svg.Element)
+}
+
+type gridstate struct {
+	svg.Dim
+	svg.Pos
+	Level int
+}
+
+func (g gridstate) Draw(app appender, nodes []Node) {
+	var (
+		size  = len(nodes)
+		step  = size / 2
+		horiz = g.Level%2 == 0
+	)
+	if size <= 4 {
+		g.draw(app, nodes)
+		return
+	}
+	if step%2 != 0 {
+		step++
+	}
+	if horiz {
+		g.W /= 2
+	} else {
+		g.H /= 2
+	}
+	g.Level++
+	for i := 0; i < size; i += step {
+		j := i + step
+		if j > size {
+			j = size
+		}
+		if i > 0 {
+			if horiz {
+				g.X += g.W
+			} else {
+				g.X = g.W
+				g.Y += g.H
+			}
+		}
+		g.Draw(app, nodes[i:j])
+	}
+}
+
+func (g gridstate) draw(app appender, nodes []Node) {
+	draw := func(n Node, c Context) {
+		app.Append(n.Draw(c))
+		g := gridstate{
+			Dim: c.Dim,
+			Pos: c.Pos,
+		}
+		g.Draw(app, n.Nodes)
+	}
+	ctx := Context{
+		Dim: g.Dim,
+		Pos: g.Pos,
+	}
+	switch len(nodes) {
+	case 0:
+	case 1:
+		draw(nodes[0], ctx)
+		app.Append(nodes[0].Draw(ctx))
+	case 2:
+		ctx.W /= 2
+		draw(nodes[0], ctx)
+		ctx.X += ctx.W
+		draw(nodes[1], ctx)
+	case 3:
+		ctx.W /= 2
+		ctx.H /= 2
+		draw(nodes[0], ctx)
+		ctx.X += ctx.W
+		draw(nodes[1], ctx)
+		ctx.Y += ctx.H
+		ctx.X -= ctx.W
+		ctx.W += ctx.W
+		draw(nodes[2], ctx)
+	case 4:
+		ctx.W /= 2
+		ctx.H /= 2
+		draw(nodes[0], ctx)
+		ctx.X += ctx.W
+		draw(nodes[1], ctx)
+		ctx.X -= ctx.W
+		ctx.Y += ctx.H
+		draw(nodes[2], ctx)
+		ctx.X += ctx.W
+		draw(nodes[3], ctx)
+	}
 }
 
 type treestate struct {
