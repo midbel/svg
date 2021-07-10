@@ -2,172 +2,127 @@ package main
 
 import (
 	"bufio"
-	"fmt"
 	"math/rand"
 	"os"
 
 	"github.com/midbel/svg"
+	"github.com/midbel/svg/draw"
 )
 
-type Appender interface {
-	Append(svg.Element)
-}
+const delta = 3
 
-type Node struct {
+type Shape struct {
 	Label string
-	Nodes []Node
 }
 
-func (n Node) IsLeaf() bool {
-	return n.Count() == 0
-}
-
-func (n Node) Count() int {
-	return len(n.Nodes)
-}
-
-func (n Node) Depth() int {
-	if len(n.Nodes) == 0 {
-		return 1
+func (s Shape) Draw(ctx draw.Context) svg.Element {
+	options := []svg.Option{
+		ctx.Pos.Option(),
+		ctx.Dim.Option(),
 	}
-	var d int
-	for _, n := range n.Nodes {
-		t := n.Depth()
-		if d == 0 || t > d {
-			d = t
+	r := svg.NewRect(options...)
+
+	ctx.X += ctx.W / 2
+	ctx.Y += ctx.H / 2
+	if ctx.Leaf {
+		var offset float64
+		switch mod := (ctx.Nth) % 3; mod {
+		case 0:
+		case 1:
+			offset += ctx.W
+		case 2:
+			offset -= ctx.W
 		}
+		ctx.X += offset / delta
 	}
-	return d + 1
+	options = []svg.Option{
+		svg.WithRadius(12),
+		ctx.Pos.Option(),
+		svg.DefaultStroke.Option(),
+		svg.NewFill(randomColor()).Option(),
+	}
+	c := svg.NewCircle(options...)
+	c.Title = s.Label
+
+	g := svg.NewGroup(svg.WithID("grp-" + s.Label))
+	g.Append(r.AsElement())
+	g.Append(c.AsElement())
+	return g.AsElement()
 }
 
-func (n Node) Leaf() int {
-	if n.IsLeaf() {
-		return 1
-	}
-	var c int
-	for _, n := range n.Nodes {
-		c += n.Leaf()
-	}
-	return c
+func randomColor() string {
+	return svg.Colors[rand.Intn(len(svg.Colors))]
 }
-
-const defaultWidth = 900
-const defaultHeight = 600
 
 func main() {
 	root := getRoot()
-	height := defaultHeight / root.Leaf()
-
-	d := svg.NewDim(defaultWidth, defaultHeight)
-	canvas := svg.NewSVG(svg.WithDim(d))
-
-	var offset int
-	for i, n := range root.Nodes {
-		width := defaultWidth / n.Depth()
-		draw(&canvas, n, width, height, 0, i, offset, defaultWidth)
-		offset += height * n.Leaf()
-	}
+	canvas := draw.Tree(root, svg.NewDim(900, 600))
 
 	w := bufio.NewWriter(os.Stdout)
 	defer w.Flush()
 	canvas.Render(w)
 }
 
-func draw(canvas Appender, root Node, width, height, levelx, levely, offsetY, available int) {
-	offsetX := width * levelx
-
-	nheight := height
-	if !root.IsLeaf() {
-		nheight *= root.Leaf()
-	}
-
-	nwidth := width
-	if available > 0 && root.IsLeaf() {
-		nwidth = available
-	}
-
-	g := svg.NewGroup(svg.WithTranslate(float64(offsetX), float64(offsetY)), svg.WithID(root.Label))
-	d := svg.NewDim(float64(nwidth), float64(nheight))
-	f := svg.NewFill(svg.Colors[rand.Intn(len(svg.Colors))])
-	r := svg.NewRect(svg.WithDim(d), svg.WithFill(f))
-	t := svg.NewText(root.Label, svg.WithPosition(10, 15))
-	r.Title = fmt.Sprintf("offsetX: %d, offsetY: %d, width: %d, height: %d", offsetX, offsetY, width, nheight)
-	c := svg.NewGroup(svg.WithClass("shape"))
-	c.Append(r.AsElement())
-	c.Append(t.AsElement())
-	g.Append(c.AsElement())
-	canvas.Append(g.AsElement())
-
-	if root.Depth() >= 1 {
-		levelx = 0
-	}
-	offsetY = 0
-	for i, n := range root.Nodes {
-		draw(&g, n, width, height, levelx+1, i, offsetY, available-nwidth)
-		offsetY += height * n.Leaf()
-	}
-}
-
-func getRoot() Node {
-	nodes := []Node{
+func getRoot() draw.Node {
+	nodes := []draw.Node{
 		{
-			Label: "A",
-			Nodes: []Node{
+			Drawer: Shape{Label: "A-1-1"},
+			Nodes: []draw.Node{
 				{
-					Label: "B",
-					Nodes: []Node{
-						{Label: "X"},
-						{Label: "Y"},
-						{Label: "Z"},
+					Drawer: Shape{Label: "B-1-2"},
+					Nodes: []draw.Node{
+						{Drawer: Shape{Label: "X-1-3"}},
+						{Drawer: Shape{Label: "Y-1-3"}},
+						{Drawer: Shape{Label: "Z-1-3"}},
 					},
 				},
-				{Label: "C"},
+				{Drawer: Shape{Label: "C-1-2"}},
 			},
 		},
 		{
-			Label: "D",
-			Nodes: []Node{
-				{Label: "E"},
+			Drawer: Shape{Label: "D-2-1"},
+			Nodes: []draw.Node{
+				{Drawer: Shape{Label: "E-2-1"}},
 				{
-					Label: "F",
-					Nodes: []Node{
+					Drawer: Shape{Label: "F-2-2"},
+					Nodes: []draw.Node{
 						{
-							Label: "X",
+							Drawer: Shape{Label: "X-2-3"},
 						},
 						{
-							Label: "Y",
-							Nodes: []Node{
-								{Label: "M"},
-								{Label: "N"},
-								{Label: "O"},
-								{Label: "P"},
+							Drawer: Shape{Label: "Y-2-4"},
+							Nodes: []draw.Node{
+								{Drawer: Shape{Label: "M-2-5"}},
+								{Drawer: Shape{Label: "N-2-5"}},
+								{Drawer: Shape{Label: "O-2-5"}},
+								{Drawer: Shape{Label: "P-2-5"}},
 							},
 						},
 						{
-							Label: "Z",
-							Nodes: []Node{
-								{Label: "U"},
-								{Label: "V"},
+							Drawer: Shape{Label: "Z-2-3"},
+							Nodes: []draw.Node{
+								{Drawer: Shape{Label: "U-2-4"}},
+								{Drawer: Shape{Label: "V-2-4"}},
 							},
 						},
 					},
 				},
-				{Label: "G"},
+				{Drawer: Shape{Label: "G-2-2"}},
 			},
 		},
 		{
-			Label: "H",
-			Nodes: []Node{
-				{Label: "A"},
+			Drawer: Shape{Label: "H-3-1"},
+			Nodes: []draw.Node{
+				{Drawer: Shape{Label: "A-3-2"}},
 				{
-					Label: "B",
-					Nodes: []Node{
-						{Label: "C"},
-						{Label: "D"},
+					Drawer: Shape{Label: "B-3-3"},
+					Nodes: []draw.Node{
+						{Drawer: Shape{Label: "C-3-4"}},
+						{Drawer: Shape{Label: "D-3-4"}},
 					},
 				},
 			},
 		},
 	}
-	return Node{Label: "root", Nodes: nodes}
+	return draw.Node{Nodes: nodes}
 }

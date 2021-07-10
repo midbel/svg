@@ -9,9 +9,10 @@ import (
 const defaultFontSize = 14
 
 var (
-	DefaultStroke = NewStroke("black", 1)
-	DefaultFill   = NewFill("black")
-	DefaultFont   = NewFont(defaultFontSize)
+	DefaultStroke   = NewStroke("black", 1)
+	DefaultFill     = NewFill("black")
+	TransparentFill = NewFill("transparent")
+	DefaultFont     = NewFont(defaultFontSize)
 )
 
 const (
@@ -91,6 +92,10 @@ func NewFont(size float64, families ...string) Font {
 	}
 }
 
+func (f Font) Option() Option {
+	return WithFont(f)
+}
+
 func (f Font) Attributes() []string {
 	var attrs []string
 	values := []struct {
@@ -117,8 +122,8 @@ func (f Font) Attributes() []string {
 }
 
 type Pos struct {
-	X    float64
-	Y    float64
+	X float64
+	Y float64
 }
 
 func NewPos(x, y float64) Pos {
@@ -126,6 +131,10 @@ func NewPos(x, y float64) Pos {
 		X: x,
 		Y: y,
 	}
+}
+
+func (p Pos) Option() Option {
+	return WithPos(p)
 }
 
 func (p Pos) Attributes() []string {
@@ -147,8 +156,8 @@ func (p Pos) array() []float64 {
 }
 
 type Dim struct {
-	W    float64
-	H    float64
+	W float64
+	H float64
 }
 
 func NewDim(w, h float64) Dim {
@@ -156,6 +165,10 @@ func NewDim(w, h float64) Dim {
 		W: w,
 		H: h,
 	}
+}
+
+func (d Dim) Option() Option {
+	return WithDim(d)
 }
 
 func (d Dim) Attributes() []string {
@@ -206,6 +219,10 @@ func NewStroke(fill string, width int) Stroke {
 	}
 }
 
+func (s Stroke) Option() Option {
+	return WithStroke(s)
+}
+
 func (s Stroke) Attributes() []string {
 	var attrs []string
 	if len(s.Dash.Array) > 0 {
@@ -243,6 +260,10 @@ type Fill struct {
 
 func NewFill(color string) Fill {
 	return Fill{Color: color, Opacity: 100}
+}
+
+func (f Fill) Option() Option {
+	return WithFill(f)
 }
 
 func (f Fill) Attributes() []string {

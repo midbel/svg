@@ -331,6 +331,7 @@ type Rect struct {
 func NewRect(options ...Option) Rect {
 	var r Rect
 	r.Stroke = DefaultStroke
+	r.Fill = TransparentFill
 	for _, o := range options {
 		o(&r)
 	}

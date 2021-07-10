@@ -1,0 +1,31 @@
+width  = 800
+height = 600
+
+[[shape]]
+id    = "shape#1"
+label = "circle-1"
+shape = "rect(10, 20)"
+data  = [
+	{key = "", value = ""},
+	{key = "priority", value = 100},
+]
+
+[[path]]
+src   = "shape#1"
+dst   = "shape#2"
+text  = "" # text to write next to the path
+count = 4  # number of path to draw from "src" to "dst"
+
+[[group]]
+id        = "group#1"
+translate = {x = 0, y = 10}
+rotate    = {a = 0, x = 0, y = 0}
+scale     = {x = 1, y = 1}
+
+  [[group.shape]]
+  id    = "edge#3"
+  shape = "image(file1.png, 100, 20)"
+
+  [[group.shape]]
+  id    = "edge#4"
+  shape = "image(file2.png, 100, 20)"
