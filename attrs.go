@@ -119,7 +119,6 @@ func (f Font) Attributes() []string {
 type Pos struct {
 	X    float64
 	Y    float64
-	unit string
 }
 
 func NewPos(x, y float64) Pos {
@@ -143,51 +142,6 @@ func (p Pos) Center() []string {
 	return attrs
 }
 
-func (p Pos) InPercent() Pos {
-	p.unit = UnitPer
-	return p
-}
-
-func (p Pos) InPX() Pos {
-	p.unit = UnitPX
-	return p
-}
-
-func (p Pos) InEM() Pos {
-	p.unit = UnitEM
-	return p
-}
-
-func (p Pos) InEX() Pos {
-	p.unit = UnitEX
-	return p
-}
-
-func (p Pos) InPT() Pos {
-	p.unit = UnitPT
-	return p
-}
-
-func (p Pos) InPC() Pos {
-	p.unit = UnitPC
-	return p
-}
-
-func (p Pos) InCM() Pos {
-	p.unit = UnitCM
-	return p
-}
-
-func (p Pos) InMM() Pos {
-	p.unit = UnitMM
-	return p
-}
-
-func (p Pos) InIN() Pos {
-	p.unit = UnitIN
-	return p
-}
-
 func (p Pos) array() []float64 {
 	return []float64{p.X, p.Y}
 }
@@ -195,7 +149,6 @@ func (p Pos) array() []float64 {
 type Dim struct {
 	W    float64
 	H    float64
-	unit string
 }
 
 func NewDim(w, h float64) Dim {
@@ -210,51 +163,6 @@ func (d Dim) Attributes() []string {
 	attrs = append(attrs, appendFloat("width", d.W))
 	attrs = append(attrs, appendFloat("height", d.H))
 	return attrs
-}
-
-func (d Dim) InPercent() Dim {
-	d.unit = UnitPer
-	return d
-}
-
-func (d Dim) InPX() Dim {
-	d.unit = UnitPX
-	return d
-}
-
-func (d Dim) InEM() Dim {
-	d.unit = UnitEM
-	return d
-}
-
-func (d Dim) InEX() Dim {
-	d.unit = UnitEX
-	return d
-}
-
-func (d Dim) InPT() Dim {
-	d.unit = UnitPT
-	return d
-}
-
-func (d Dim) InPC() Dim {
-	d.unit = UnitPC
-	return d
-}
-
-func (d Dim) InCM() Dim {
-	d.unit = UnitCM
-	return d
-}
-
-func (d Dim) InMM() Dim {
-	d.unit = UnitMM
-	return d
-}
-
-func (d Dim) InIN() Dim {
-	d.unit = UnitIN
-	return d
 }
 
 func (d Dim) array() []float64 {
