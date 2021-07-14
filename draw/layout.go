@@ -1,7 +1,7 @@
 package draw
 
 import (
-  "sort"
+	"sort"
 
 	"github.com/midbel/svg"
 )
@@ -62,7 +62,7 @@ type gridstate struct {
 	svg.Dim
 	svg.Pos
 	Level int
-  Copy bool
+	Copy  bool
 }
 
 func (g gridstate) Draw(app appender, nodes []Node) {
@@ -105,9 +105,9 @@ func (g gridstate) draw(app appender, nodes []Node) {
 	draw := func(n Node, c Context) {
 		app.Append(n.Draw(c))
 		g := gridstate{
-			Dim: c.Dim,
-			Pos: c.Pos,
-      Copy: !g.Copy,
+			Dim:  c.Dim,
+			Pos:  c.Pos,
+			Copy: !g.Copy,
 		}
 		g.Draw(app, n.Nodes)
 	}
@@ -115,26 +115,26 @@ func (g gridstate) draw(app appender, nodes []Node) {
 		Dim: g.Dim,
 		Pos: g.Pos,
 	}
-  sort.Slice(nodes, func(i, j int) bool {
-    return nodes[i].Depth() < nodes[j].Depth()
-  })
+	sort.Slice(nodes, func(i, j int) bool {
+		return nodes[i].Depth() < nodes[j].Depth()
+	})
 	switch len(nodes) {
 	case 0:
 	case 1:
 		draw(nodes[0], ctx)
 		app.Append(nodes[0].Draw(ctx))
 	case 2:
-    if g.Copy {
-      ctx.W /= 2
-    } else {
-      ctx.H /= 2
-    }
+		if g.Copy {
+			ctx.W /= 2
+		} else {
+			ctx.H /= 2
+		}
 		draw(nodes[0], ctx)
-    if g.Copy {
-      ctx.X += ctx.W
-    } else {
-      ctx.Y += ctx.H
-    }
+		if g.Copy {
+			ctx.X += ctx.W
+		} else {
+			ctx.Y += ctx.H
+		}
 		draw(nodes[1], ctx)
 	case 3:
 		ctx.W /= 2
