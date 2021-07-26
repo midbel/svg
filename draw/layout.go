@@ -54,6 +54,15 @@ func Tree(root Node, dim svg.Dim, options ...svg.Option) svg.Element {
 	return canvas.AsElement()
 }
 
+func Graph(list *List, dim svg.Option, options ...svg.Option) svg.Element {
+	var (
+		canvas = svg.NewSVG(append(options, dim.Option())...)
+		group  svg.Group
+	)
+	canvas.Append(group.AsElement())
+	return canvas.AsElement()
+}
+
 type appender interface {
 	Append(svg.Element)
 }
