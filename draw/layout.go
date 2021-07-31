@@ -54,16 +54,7 @@ func Tree(root Node, dim svg.Dim, options ...svg.Option) svg.Element {
 	return canvas.AsElement()
 }
 
-func Graph(list *List, dim svg.Option, options ...svg.Option) svg.Element {
-	var (
-		canvas = svg.NewSVG(append(options, dim.Option())...)
-		group  svg.Group
-	)
-	canvas.Append(group.AsElement())
-	return canvas.AsElement()
-}
-
-type appender interface {
+type Appender interface {
 	Append(svg.Element)
 }
 
@@ -74,7 +65,7 @@ type gridstate struct {
 	Copy  bool
 }
 
-func (g gridstate) Draw(app appender, nodes []Node) {
+func (g gridstate) Draw(app Appender, nodes []Node) {
 	var (
 		size  = len(nodes)
 		step  = size / 2
@@ -110,7 +101,7 @@ func (g gridstate) Draw(app appender, nodes []Node) {
 	}
 }
 
-func (g gridstate) draw(app appender, nodes []Node) {
+func (g gridstate) draw(app Appender, nodes []Node) {
 	draw := func(n Node, c Context) {
 		app.Append(n.Draw(c))
 		g := gridstate{
@@ -176,7 +167,7 @@ type treestate struct {
 	Width float64
 }
 
-func (s treestate) Draw(app appender, root Node) {
+func (s treestate) Draw(app Appender, root Node) {
 	if !root.IsLeaf() {
 		s.H *= float64(root.Leaf())
 	}

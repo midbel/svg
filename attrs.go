@@ -133,6 +133,12 @@ func NewPos(x, y float64) Pos {
 	}
 }
 
+func (p Pos) Adjust(x, y float64) Pos {
+	p.X += x
+	p.Y += y
+	return p
+}
+
 func (p Pos) Option() Option {
 	return WithPos(p)
 }
