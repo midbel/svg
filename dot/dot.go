@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"unicode/utf8"
 )
 
@@ -14,50 +15,50 @@ const (
 )
 
 type Graph struct {
+	Id    string
+	Attrs map[string][]string
+	Nodes []Node
+}
+
+type Node struct {
+	Id    string
+	Attrs map[string][]string
 }
 
 type parser struct {
-	scan *Scanner
-	curr Token
-	peek Token
-
+	frames []*frame
 	env map[string][]string
 }
 
 func Parse(r io.Reader) error {
-	s, err := Scan(r)
-	if err != nil {
+	var p parser
+	p.env = make(map[string][]string)
+	if err := p.push(r); err != nil {
 		return err
 	}
-	p := parser{
-		scan: s,
-		env:  make(map[string][]string),
-	}
-	p.next()
-	p.next()
 	return p.parse()
 }
 
 func (p *parser) parse() error {
 	var err error
 	for err == nil && !p.done() {
-		if p.curr.Type == comment {
+		if p.currIs(comment) {
 			p.next()
 			continue
 		}
-		if p.curr.Type != ident && p.curr.Type != lcurly {
-			err = unexpectedToken(p.curr)
+		if p.currIs(ident) && p.currIs(lcurly) {
+			err = p.unexpectedToken()
 			break
 		}
 		switch {
-		case p.peek.Type == assign:
+		case p.peekIs(assign):
 			err = p.parseAssignment()
-		case p.curr.Literal == kwInclude:
+		case p.currLit(kwInclude):
 			err = p.parseInclude()
-		case p.curr.Literal == kwGraph || p.curr.Type == lcurly:
+		case p.currLit(kwGraph) || p.currIs(lcurly):
 			err = p.parseGraph()
 		default:
-			err = unexpectedToken(p.curr)
+			err = p.unexpectedToken()
 		}
 		if err != nil {
 			break
@@ -70,24 +71,17 @@ func (p *parser) parseAssignment() error {
 	fmt.Println("enter parseAssignment")
 	defer fmt.Println("leave parseAssignment")
 
-	name := p.curr.Literal
+	name := p.curr().Literal
 	if _, ok := p.env[name]; ok {
 		return fmt.Errorf("%s: already defined", name)
 	}
 	p.next()
 	p.next()
-	for p.curr.IsValue() {
-		if p.curr.Type == variable {
-			vs, ok := p.env[p.curr.Literal]
-			if !ok {
-				return fmt.Errorf("%s: undefined", p.curr.Literal)
-			}
-			p.env[name] = append(p.env[name], vs...)
-		} else {
-			p.env[name] = append(p.env[name], p.curr.Literal)
-		}
-		p.next()
+	vs, err := p.parseValues()
+	if err != nil {
+		return err
 	}
+	p.env[name] = append(p.env[name], vs...)
 	fmt.Printf(">> assignment: %s = %s\n", name, p.env[name])
 	return p.parseEOL()
 }
@@ -96,38 +90,48 @@ func (p *parser) parseInclude() error {
 	fmt.Println("enter parseInclude")
 	defer fmt.Println("leave parseInclude")
 	p.next()
-	if p.curr.Type != text && p.curr.Type != ident {
-		return unexpectedToken(p.curr)
+	if !p.currIs(text) && !p.currIs(ident) {
+		return p.unexpectedToken()
 	}
-	fmt.Printf(">> include: %s\n", p.curr.Literal)
+	file := p.curr().Literal
+	fmt.Printf(">> include: %s\n", p.curr().Literal)
 	p.next()
-	return p.parseEOL()
+	if err := p.parseEOL(); err != nil {
+		return err
+	}
+	r, err := os.Open(file)
+	if err != nil {
+		return err
+	}
+	defer r.Close()
+	return p.push(r)
 }
 
 func (p *parser) parseGraph() error {
 	fmt.Println("enter parseGraph")
 	defer fmt.Println("leave parseGraph")
-	if p.curr.Type == ident {
+	if p.currIs(ident) {
 		p.next()
-		if p.curr.IsValue() {
-			fmt.Printf(">> name: %s\n", p.curr.Literal)
+		if p.curr().IsValue() {
+			fmt.Printf(">> name: %s\n", p.curr().Literal)
 			p.next()
 		}
 	}
-	if p.curr.Type != lcurly {
-		return unexpectedToken(p.curr)
+	if !p.currIs(lcurly) {
+		return p.unexpectedToken()
 	}
 	p.next()
-	for !p.done() && p.curr.Type != rcurly {
-		if p.curr.Type == comment {
+	for !p.done() && !p.currIs(rcurly) {
+		fmt.Println("graph:", p.curr(), p.peek())
+		if p.currIs(comment) {
 			p.next()
 			continue
 		}
-		if p.curr.Type != ident {
-			return unexpectedToken(p.curr)
+		if !p.currIs(ident) {
+			return p.unexpectedToken()
 		}
 		var err error
-		if p.peek.Type == equal {
+		if p.peekIs(equal) {
 			err = p.parseAttributes()
 		} else {
 			err = p.parseEdge()
@@ -136,8 +140,8 @@ func (p *parser) parseGraph() error {
 			return err
 		}
 	}
-	if p.curr.Type != rcurly {
-		return unexpectedToken(p.curr)
+	if !p.currIs(rcurly) {
+		return p.unexpectedToken()
 	}
 	p.next()
 	return p.parseEOL()
@@ -146,26 +150,26 @@ func (p *parser) parseGraph() error {
 func (p *parser) parseEdge() error {
 	fmt.Println("enter parseEdge")
 	defer fmt.Println("leave parseEdge")
-	for !p.curr.IsEOL() && p.curr.Type != comment && !p.done() {
+	for !p.curr().IsEOL() && !p.currIs(comment) && !p.done() {
 		var nodes []string
-		switch p.curr.Type {
+		switch p.curr().Type {
 		case lcurly:
 			p.next()
-			for p.curr.Type != rcurly {
-				nodes = append(nodes, p.curr.Literal)
+			for !p.currIs(rcurly) {
+				nodes = append(nodes, p.curr().Literal)
 				p.next()
-				if p.curr.Type == lsquare {
+				if p.currIs(lsquare) {
 					p.next()
 					if err := p.parseProperties(); err != nil {
 						return err
 					}
 				}
 			}
-			if p.curr.Type != rcurly {
-				return unexpectedToken(p.curr)
+			if !p.currIs(rcurly) {
+				return p.unexpectedToken()
 			}
 			p.next()
-			if p.curr.Type == lsquare {
+			if p.currIs(lsquare) {
 				p.next()
 				err := p.parseProperties()
 				if err != nil {
@@ -173,26 +177,26 @@ func (p *parser) parseEdge() error {
 				}
 			}
 		case ident:
-			nodes = append(nodes, p.curr.Literal)
+			nodes = append(nodes, p.curr().Literal)
 			p.next()
-			if p.curr.Type == lsquare {
+			if p.currIs(lsquare) {
 				p.next()
 				err := p.parseProperties()
 				if err != nil {
 					return err
 				}
-				if p.curr.Type == comment || p.curr.IsEOL() {
+				if p.currIs(comment) || p.curr().IsEOL() {
 					p.next()
 					return nil
 				}
 			}
 		default:
-			return unexpectedToken(p.curr)
+			return p.unexpectedToken()
 		}
 		fmt.Printf(">> nodes: %s\n", nodes)
-		if p.curr.Type == edge {
-			if p.peek.Type != ident && p.peek.Type != lcurly {
-				return unexpectedToken(p.peek)
+		if p.currIs(edge) {
+			if !p.peekIs(ident) && !p.peekIs(lcurly) {
+				return p.unexpectedToken()
 			}
 			p.next()
 		}
@@ -202,22 +206,20 @@ func (p *parser) parseEdge() error {
 
 func (p *parser) parseAttributes() error {
 	fmt.Println("enter parseAttributes")
-	defer fmt.Println("leave enter parseAttributes")
-	var (
-		name   = p.curr.Literal
-		values []string
-	)
-	if p.peek.Type != equal {
-		return unexpectedToken(p.curr)
+	defer fmt.Println("leave parseAttributes")
+
+	name := p.curr().Literal
+	if !p.peekIs(equal) {
+		return p.unexpectedToken()
 	}
 	p.next()
 	p.next()
-	for p.curr.IsValue() {
-		values = append(values, p.curr.Literal)
-		p.next()
+	values, err := p.parseValues()
+	if err != nil {
+		return err
 	}
-	if !p.curr.IsEOL() && p.curr.Type != comment {
-		return unexpectedToken(p.curr)
+	if !p.curr().IsEOL() && !p.currIs(comment) {
+		return p.unexpectedToken()
 	}
 	fmt.Printf(">> attributes: %s = %s\n", name, values)
 	return p.parseEOL()
@@ -226,63 +228,165 @@ func (p *parser) parseAttributes() error {
 func (p *parser) parseProperties() error {
 	fmt.Println("enter parseProperties")
 	defer fmt.Println("leave parseProperties")
-	for !p.done() && p.curr.Type != rsquare {
-		if p.curr.Type != ident && p.peek.Type != equal {
-			return unexpectedToken(p.curr)
+	for !p.done() && !p.currIs(rsquare) {
+		if !p.currIs(ident) && !p.peekIs(equal) {
+			return p.unexpectedToken()
 		}
-		var (
-			name   = p.curr.Literal
-			values []string
-		)
+		name := p.curr().Literal
 		p.next()
 		p.next()
-		for p.curr.IsValue() {
-			values = append(values, p.curr.Literal)
+		values, err := p.parseValues()
+		if err != nil {
+			return err
+		}
+		if !p.currIs(comma) && !p.currIs(rsquare) {
+			return p.unexpectedToken()
+		}
+		if p.currIs(comma) {
 			p.next()
 		}
-		if p.curr.Type != comma && p.curr.Type != rsquare {
-			return unexpectedToken(p.curr)
-		}
-		if p.curr.Type == comma {
-			p.next()
-		}
-		if p.curr.Type == comment {
+		if p.currIs(comment) {
 			p.next()
 		}
 		fmt.Printf(">> properties: %s = %s\n", name, values)
 	}
-	if p.curr.Type != rsquare {
-		return unexpectedToken(p.curr)
+	if !p.currIs(rsquare) {
+		return p.unexpectedToken()
 	}
 	p.next()
 	return nil
+}
+
+func (p *parser) parseValues() ([]string, error) {
+	var vs []string
+	for p.curr().IsValue() {
+		if p.currIs(variable) {
+			xs, ok := p.env[p.curr().Literal]
+			if !ok {
+				return nil, fmt.Errorf("%s: undefined variable", p.curr().Literal)
+			}
+			vs = append(vs, xs...)
+		} else {
+			vs = append(vs, p.curr().Literal)
+		}
+		p.next()
+	}
+	return vs, nil
 }
 
 func (p *parser) parseEOL() error {
-	if p.curr.Type == comment {
+	if p.currIs(comment) {
 		p.next()
 		return nil
 	}
-	if !p.curr.IsEOL() {
-		return unexpectedToken(p.curr)
+	if !p.curr().IsEOL() {
+		return p.unexpectedToken()
 	}
 	p.next()
 	return nil
 }
 
+func (p *parser) unexpectedToken() error {
+	return unexpectedToken(p.curr())
+}
+
 func (p *parser) next() {
-	p.curr = p.peek
-	p.peek = p.scan.Scan()
+	z := len(p.frames)
+	if z == 0 {
+		return
+	}
+	z--
+	p.frames[z].next()
+	if p.frames[z].done() {
+		p.pop()
+	}
 }
 
 func (p *parser) done() bool {
-	return p.curr.Type == eof
+	return len(p.frames) == 0
+}
+
+func (p *parser) curr() Token {
+	z := len(p.frames)
+	if z == 0 {
+		return Token{}
+	}
+	return p.frames[z-1].curr
+}
+
+func (p *parser) currIs(k rune) bool {
+	return p.curr().Type == k
+}
+
+func (p *parser) currLit(str string) bool {
+	return p.curr().Literal == str
+}
+
+func (p *parser) peek() Token {
+	z := len(p.frames)
+	if z == 0 {
+		return Token{}
+	}
+	return p.frames[z-1].peek
+}
+
+func (p *parser) peekIs(k rune) bool {
+	return p.peek().Type == k
+}
+
+func (p *parser) peekLit(str string) bool {
+	return p.peek().Literal == str
+}
+
+func (p *parser) push(r io.Reader) error {
+	f, err := createFrame(r)
+	if err == nil {
+		p.frames = append(p.frames, f)
+	}
+	return err
+}
+
+func (p *parser) pop() {
+	z := len(p.frames)
+	if z == 0 {
+		return
+	}
+	p.frames = p.frames[:z-1]
+}
+
+type frame struct {
+	scan *Scanner
+	curr Token
+	peek Token
+}
+
+func createFrame(r io.Reader) (*frame, error) {
+	s, err := Scan(r)
+	if err != nil {
+		return nil, err
+	}
+	f := frame{
+		scan: s,
+	}
+	f.next()
+	f.next()
+	return &f, nil
+}
+
+func (f *frame) next() {
+	f.curr = f.peek
+	f.peek = f.scan.Scan()
+}
+
+func (f *frame) done() bool {
+	return f.curr.Type == eof
 }
 
 const (
 	ident rune = -(iota + 1)
 	text
 	number
+	boolean
 	variable
 	assign
 	edge
@@ -308,7 +412,12 @@ func (t Token) IsInvalid() bool {
 }
 
 func (t Token) IsValue() bool {
-	return t.Type == number || t.Type == text || t.Type == ident || t.Type == variable
+	switch t.Type {
+	case number, text, ident, variable, boolean:
+		return true
+	default:
+		return false
+	}
 }
 
 func (t Token) String() string {
@@ -320,6 +429,8 @@ func (t Token) String() string {
 		prefix = "text"
 	case number:
 		prefix = "number"
+	case boolean:
+		prefix = "boolean"
 	case variable:
 		prefix = "variable"
 	case comment:
@@ -355,6 +466,11 @@ var ErrSyntax = errors.New("syntax error")
 func unexpectedToken(tok Token) error {
 	return fmt.Errorf("%w: unexpected token %s", ErrSyntax, tok)
 }
+
+const (
+	kwTrue  = "true"
+	kwFalse = "false"
+)
 
 type Scanner struct {
 	buffer []byte
@@ -420,6 +536,9 @@ func (s *Scanner) scanIdent(tok *Token) {
 	}
 	tok.Literal = string(s.buffer[pos:s.curr])
 	tok.Type = ident
+	if tok.Literal == kwTrue || tok.Literal == kwFalse {
+		tok.Type = boolean
+	}
 }
 
 func (s *Scanner) scanVariable(tok *Token) {

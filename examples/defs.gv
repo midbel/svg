@@ -1,0 +1,9 @@
+defaultWidth  := 800
+defaultHeight := 600
+
+background := black
+foreground := white
+
+defaultShape := square
+squareWidth  := 50
+squareHeight := 40

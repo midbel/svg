@@ -3,11 +3,11 @@
 red  := blood
 blue := marine // marineblue for blue network
 
-include "defs.gv"
+include "examples/defs.gv"
 
 {
   // attributes
-  size  = 600 800 // canvas size
+  size  = $defaultWidth $defaultHeight // canvas size
   class = warning center disable
 
   rank = same; x; y; z;
@@ -21,7 +21,10 @@ include "defs.gv"
   ]
 
   a -- {b c[shape = circle, size = 50 40, id = "a_random_id"] u};
-  b -- {c d};
+  b -- {
+    c;
+    d;
+  };
   c -- {d e f};
   d -- i[shape = diamond] -- j;
   e -- g[shape = diamond] -- {i j k};
