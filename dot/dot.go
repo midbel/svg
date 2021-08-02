@@ -16,8 +16,20 @@ const (
 
 type Graph struct {
 	Id    string
+	Nodes []*Node
 	Attrs map[string][]string
-	Nodes []Node
+	Edges map[string][]string
+}
+
+func createGraph() *Graph {
+	return &Graph{
+		Attrs: make(map[string][]string),
+		Edges: make(map[string][]string),
+	}
+}
+
+func (g *Graph) insert(n *Node) {
+
 }
 
 type Node struct {
@@ -25,9 +37,20 @@ type Node struct {
 	Attrs map[string][]string
 }
 
+func createNode(id string) *Node {
+	return &Node{
+		Id:    id,
+		Attrs: make(map[string][]string),
+	}
+}
+
+func (n *Node) set(name string, values []string) {
+	n.Attrs[name] = values
+}
+
 type parser struct {
 	frames []*frame
-	env map[string][]string
+	env    map[string][]string
 }
 
 func Parse(r io.Reader) error {
@@ -40,7 +63,10 @@ func Parse(r io.Reader) error {
 }
 
 func (p *parser) parse() error {
-	var err error
+	var (
+		err error
+		gph = createGraph()
+	)
 	for err == nil && !p.done() {
 		if p.currIs(comment) {
 			p.next()
@@ -56,7 +82,7 @@ func (p *parser) parse() error {
 		case p.currLit(kwInclude):
 			err = p.parseInclude()
 		case p.currLit(kwGraph) || p.currIs(lcurly):
-			err = p.parseGraph()
+			err = p.parseGraph(gph)
 		default:
 			err = p.unexpectedToken()
 		}
@@ -86,28 +112,7 @@ func (p *parser) parseAssignment() error {
 	return p.parseEOL()
 }
 
-func (p *parser) parseInclude() error {
-	fmt.Println("enter parseInclude")
-	defer fmt.Println("leave parseInclude")
-	p.next()
-	if !p.currIs(text) && !p.currIs(ident) {
-		return p.unexpectedToken()
-	}
-	file := p.curr().Literal
-	fmt.Printf(">> include: %s\n", p.curr().Literal)
-	p.next()
-	if err := p.parseEOL(); err != nil {
-		return err
-	}
-	r, err := os.Open(file)
-	if err != nil {
-		return err
-	}
-	defer r.Close()
-	return p.push(r)
-}
-
-func (p *parser) parseGraph() error {
+func (p *parser) parseGraph(g *Graph) error {
 	fmt.Println("enter parseGraph")
 	defer fmt.Println("leave parseGraph")
 	if p.currIs(ident) {
@@ -122,7 +127,6 @@ func (p *parser) parseGraph() error {
 	}
 	p.next()
 	for !p.done() && !p.currIs(rcurly) {
-		fmt.Println("graph:", p.curr(), p.peek())
 		if p.currIs(comment) {
 			p.next()
 			continue
@@ -132,9 +136,9 @@ func (p *parser) parseGraph() error {
 		}
 		var err error
 		if p.peekIs(equal) {
-			err = p.parseAttributes()
+			err = p.parseAttributes(g)
 		} else {
-			err = p.parseEdge()
+			err = p.parseEdge(g)
 		}
 		if err != nil {
 			return err
@@ -147,53 +151,29 @@ func (p *parser) parseGraph() error {
 	return p.parseEOL()
 }
 
-func (p *parser) parseEdge() error {
+func (p *parser) parseEdge(g *Graph) error {
 	fmt.Println("enter parseEdge")
 	defer fmt.Println("leave parseEdge")
 	for !p.curr().IsEOL() && !p.currIs(comment) && !p.done() {
-		var nodes []string
 		switch p.curr().Type {
 		case lcurly:
 			p.next()
 			for !p.currIs(rcurly) {
-				nodes = append(nodes, p.curr().Literal)
-				p.next()
-				if p.currIs(lsquare) {
-					p.next()
-					if err := p.parseProperties(); err != nil {
-						return err
-					}
+				if err := p.parseNode(g); err != nil {
+					return err
 				}
 			}
 			if !p.currIs(rcurly) {
 				return p.unexpectedToken()
 			}
 			p.next()
-			if p.currIs(lsquare) {
-				p.next()
-				err := p.parseProperties()
-				if err != nil {
-					return err
-				}
-			}
-		case ident:
-			nodes = append(nodes, p.curr().Literal)
-			p.next()
-			if p.currIs(lsquare) {
-				p.next()
-				err := p.parseProperties()
-				if err != nil {
-					return err
-				}
-				if p.currIs(comment) || p.curr().IsEOL() {
-					p.next()
-					return nil
-				}
+		case ident, text:
+			if err := p.parseNode(g); err != nil {
+				return err
 			}
 		default:
 			return p.unexpectedToken()
 		}
-		fmt.Printf(">> nodes: %s\n", nodes)
 		if p.currIs(edge) {
 			if !p.peekIs(ident) && !p.peekIs(lcurly) {
 				return p.unexpectedToken()
@@ -204,7 +184,29 @@ func (p *parser) parseEdge() error {
 	return p.parseEOL()
 }
 
-func (p *parser) parseAttributes() error {
+func (p *parser) parseNode(g *Graph) error {
+	fmt.Println("enter parseNode")
+	defer fmt.Println("leave parseNode")
+
+	n := createNode(p.curr().Literal)
+	p.next()
+	if p.currIs(lsquare) {
+		p.next()
+		err := p.parseProperties(n)
+		if err != nil {
+			return err
+		}
+		if p.currIs(comment) || p.curr().IsEOL() {
+			p.next()
+			return nil
+		}
+	}
+	fmt.Printf("node: %+v\n", n)
+	g.insert(n)
+	return nil
+}
+
+func (p *parser) parseAttributes(g *Graph) error {
 	fmt.Println("enter parseAttributes")
 	defer fmt.Println("leave parseAttributes")
 
@@ -225,7 +227,7 @@ func (p *parser) parseAttributes() error {
 	return p.parseEOL()
 }
 
-func (p *parser) parseProperties() error {
+func (p *parser) parseProperties(n *Node) error {
 	fmt.Println("enter parseProperties")
 	defer fmt.Println("leave parseProperties")
 	for !p.done() && !p.currIs(rsquare) {
@@ -248,6 +250,7 @@ func (p *parser) parseProperties() error {
 		if p.currIs(comment) {
 			p.next()
 		}
+		n.set(name, values)
 		fmt.Printf(">> properties: %s = %s\n", name, values)
 	}
 	if !p.currIs(rsquare) {
@@ -284,6 +287,27 @@ func (p *parser) parseEOL() error {
 	}
 	p.next()
 	return nil
+}
+
+func (p *parser) parseInclude() error {
+	fmt.Println("enter parseInclude")
+	defer fmt.Println("leave parseInclude")
+	p.next()
+	if !p.currIs(text) && !p.currIs(ident) {
+		return p.unexpectedToken()
+	}
+	file := p.curr().Literal
+	fmt.Printf(">> include: %s\n", p.curr().Literal)
+	p.next()
+	if err := p.parseEOL(); err != nil {
+		return err
+	}
+	r, err := os.Open(file)
+	if err != nil {
+		return err
+	}
+	defer r.Close()
+	return p.push(r)
 }
 
 func (p *parser) unexpectedToken() error {

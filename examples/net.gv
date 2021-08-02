@@ -5,7 +5,7 @@ blue := marine // marineblue for blue network
 
 include "examples/defs.gv"
 
-{
+graph network {
   // attributes
   size  = $defaultWidth $defaultHeight // canvas size
   class = warning center disable
