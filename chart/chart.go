@@ -90,3 +90,25 @@ func (p Padding) Vertical() float64 {
 func (p Padding) translate() svg.Option {
 	return svg.WithTranslate(p.Left, p.Top)
 }
+
+var (
+	tickstrok = svg.NewStroke("lightgrey", 1)
+	axisstrok = svg.NewStroke("black", 1)
+	whitstrok = svg.NewStroke("white", 1)
+)
+
+const (
+	ticklen = 7
+	textick = 18
+)
+
+func getRect(options ...svg.Option) svg.Rect {
+	options = append(options, whitstrok.Option())
+	return svg.NewRect(options...)
+}
+
+func getTick(pos1, pos2 svg.Pos) svg.Element {
+	tickstrok.Dash.Array = []int{5}
+	line := svg.NewLine(pos1, pos2, tickstrok.Option())
+	return line.AsElement()
+}
