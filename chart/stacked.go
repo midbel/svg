@@ -1,12 +1,13 @@
 package chart
 
 import (
-  "bufio"
-  "io"
-  "math"
-  "math/rand"
+	"bufio"
+	"fmt"
+	"io"
+	"math"
+	"math/rand"
 
-  "github.com/midbel/svg"
+	"github.com/midbel/svg"
 )
 
 type Serie struct {
@@ -63,26 +64,31 @@ func (sr *StackedSerie) Len() int {
 }
 
 type StackedChart struct {
-  Chart
+	Chart
 
-  BarWidth float64
+	BarWidth float64
+	Ticks    int
 }
 
 func (c StackedChart) Render(w io.Writer, series []StackedSerie) {
-  ws := bufio.NewWriter(w)
-  defer ws.Flush()
-  c.render(ws, series)
+	ws := bufio.NewWriter(w)
+	defer ws.Flush()
+	c.render(ws, series)
 }
 
 func (c StackedChart) render(w svg.Writer, series []StackedSerie) {
-  c.checkDefault()
+	c.checkDefault()
 
-  var (
+	var (
 		dim    = svg.NewDim(c.Width, c.Height)
 		cs     = svg.NewSVG(dim.Option())
 		area   = svg.NewGroup(svg.WithID("area"), c.translate())
 		max, _ = getStackedDomains(series)
 	)
+
+	if elem := c.drawTicks(max); elem != nil {
+		area.Append(elem)
+	}
 
 	offset := c.GetAreaWidth() / float64(len(series))
 	for i := range series {
@@ -98,6 +104,26 @@ func (c StackedChart) render(w svg.Writer, series []StackedSerie) {
 	cs.Render(w)
 }
 
+func (c StackedChart) drawTicks(max float64) svg.Element {
+	if c.Ticks <= 0 {
+		return nil
+	}
+	var (
+		grp   = svg.NewGroup()
+		step  = c.GetAreaHeight() / max
+		coeff = max / float64(c.Ticks)
+	)
+	for i := c.Ticks; i >= 0; i-- {
+		var (
+			ypos = c.GetAreaHeight() - (float64(i) * coeff * step)
+			pos1 = svg.NewPos(0, ypos)
+			pos2 = svg.NewPos(c.GetAreaWidth(), ypos)
+		)
+    grp.Append(makeTickLine(pos1, pos2))
+	}
+	return grp.AsElement()
+}
+
 func (c StackedChart) drawSerie(s StackedSerie, band, max float64) svg.Element {
 	var (
 		size   = band / float64(s.Len())
@@ -108,22 +134,22 @@ func (c StackedChart) drawSerie(s StackedSerie, band, max float64) svg.Element {
 	if c.BarWidth > 0 {
 		width = c.BarWidth
 	}
-	for j, s := range s.Series {
+	for j := range s.Series {
 		var (
 			g  = svg.NewGroup()
 			rw = width
 			ro = c.Height - c.Top
 		)
-		for i := range s.Labels {
+		for i := range s.Series[j].Labels {
 			var (
-				rh = s.Values[i] * height
+				rh = s.Series[j].Values[i] * height
 				rx = (float64(j) * width) + ((width / 2) - (rw / 2))
 				ry float64
 			)
 			ro -= rh
 			ry = ro
 			r := makeRect(svg.WithPosition(rx, ry), svg.WithDimension(rw, rh))
-			r.Title = s.Labels[i]
+			r.Title = fmt.Sprintf("%s/%s = %.2f", s.Title, s.Series[j].Labels[i], s.Series[j].Values[i])
 			g.Append(r.AsElement())
 		}
 		grp.Append(g.AsElement())
@@ -149,6 +175,14 @@ func makeRect(options ...svg.Option) svg.Rect {
 	fill := svg.NewFill(randomColor())
 	options = append(options, fill.Option())
 	return svg.NewRect(options...)
+}
+
+var tickstrok = svg.NewStroke("lightgrey", 1)
+
+func makeTickLine(pos1, pos2 svg.Pos) svg.Element {
+  tickstrok.Dash.Array = []int{5}
+  line := svg.NewLine(pos1, pos2, tickstrok.Option())
+  return line.AsElement()
 }
 
 func randomColor() string {
