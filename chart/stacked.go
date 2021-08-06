@@ -8,17 +8,24 @@ import (
 	"strconv"
 
 	"github.com/midbel/svg"
+	"github.com/midbel/svg/colors"
 )
 
 type Serie struct {
 	Title  string
 	Labels []string
 	Values []float64
+	Colors []string
 }
 
 func NewSerie(title string) Serie {
+	return NewSerieWithColors(title, colors.Reverse(colors.RdYlBu6))
+}
+
+func NewSerieWithColors(title string, colors []string) Serie {
 	return Serie{
-		Title: title,
+		Title:  title,
+		Colors: colors,
 	}
 }
 
@@ -37,6 +44,11 @@ func (s Serie) Sum() float64 {
 
 func (s Serie) Len() int {
 	return len(s.Values)
+}
+
+func (s Serie) peekFill(i int) svg.Option {
+	color := s.Colors[i%len(s.Colors)]
+	return svg.NewFill(color).Option()
 }
 
 type StackedSerie struct {
@@ -137,7 +149,7 @@ func (c StackedChart) drawSerie(s StackedSerie, band, max float64) svg.Element {
 				rh   = s.Series[j].Values[i] * height
 				rx   = (float64(j) * width) + ((width / 2) - (rw / 2))
 				ry   float64
-				fill = c.peekFillFromString(s.Series[j].Labels[i])
+				fill = s.Series[j].peekFill(i)
 			)
 			ro -= rh
 			ry = ro
