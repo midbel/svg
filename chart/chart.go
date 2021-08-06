@@ -1,6 +1,8 @@
 package chart
 
 import (
+	"hash/adler32"
+
 	"github.com/midbel/svg"
 )
 
@@ -9,10 +11,13 @@ const (
 	DefaultHeight = 600
 )
 
+var DefaultColours = []string{"yellow", "orange", "red", "purple", "blue", "green"}
+
 type Chart struct {
 	Width  float64
 	Height float64
 	Padding
+	Colours []string
 }
 
 func (c *Chart) GetAreaWidth() float64 {
@@ -32,6 +37,30 @@ func (c *Chart) checkDefault() {
 	if c.Height == 0 {
 		c.Height = DefaultHeight
 	}
+	if len(c.Colours) == 0 {
+		c.Colours = DefaultColours
+	}
+}
+
+func (c *Chart) peekFillFromNumber(str int64) svg.Option {
+	set := c.Colours
+	if len(set) == 0 {
+		set = svg.Colours
+	}
+	col := set[int(str)%len(set)]
+	return svg.NewFill(col).Option()
+}
+
+func (c *Chart) peekFillFromString(str string) svg.Option {
+	set := c.Colours
+	if len(set) == 0 {
+		set = svg.Colours
+	}
+	var (
+		sum = adler32.Checksum([]byte(str))
+		col = set[int(sum)%len(set)]
+	)
+	return svg.NewFill(col).Option()
 }
 
 type Padding struct {

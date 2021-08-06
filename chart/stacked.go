@@ -109,7 +109,7 @@ func (c StackedChart) drawTicks(max float64) svg.Element {
 		return nil
 	}
 	var (
-		grp   = svg.NewGroup()
+		grp   = svg.NewGroup(svg.WithID("ticks"))
 		step  = c.GetAreaHeight() / max
 		coeff = max / float64(c.Ticks)
 	)
@@ -145,10 +145,12 @@ func (c StackedChart) drawSerie(s StackedSerie, band, max float64) svg.Element {
 				rh = s.Series[j].Values[i] * height
 				rx = (float64(j) * width) + ((width / 2) - (rw / 2))
 				ry float64
+        fill = c.peekFillFromString(s.Series[j].Labels[i])
 			)
 			ro -= rh
 			ry = ro
-			r := makeRect(svg.WithPosition(rx, ry), svg.WithDimension(rw, rh))
+
+			r := makeRect(svg.WithPosition(rx, ry), svg.WithDimension(rw, rh), fill)
 			r.Title = fmt.Sprintf("%s/%s = %.2f", s.Title, s.Series[j].Labels[i], s.Series[j].Values[i])
 			g.Append(r.AsElement())
 		}
@@ -172,8 +174,7 @@ func getStackedDomains(cs []StackedSerie) (float64, []string) {
 }
 
 func makeRect(options ...svg.Option) svg.Rect {
-	fill := svg.NewFill(randomColor())
-	options = append(options, fill.Option())
+	options = append(options)
 	return svg.NewRect(options...)
 }
 
@@ -186,5 +187,5 @@ func makeTickLine(pos1, pos2 svg.Pos) svg.Element {
 }
 
 func randomColor() string {
-	return svg.Colors[rand.Intn(len(svg.Colors))]
+	return svg.Colours[rand.Intn(len(svg.Colours))]
 }

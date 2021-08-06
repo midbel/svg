@@ -150,7 +150,7 @@ const (
 	YellowGreen          = 0x9ACD32
 )
 
-var Colors = []string{
+var Colours = []string{
 	"black",
 	"silver",
 	"gray",
