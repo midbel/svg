@@ -335,7 +335,12 @@ func (t Transform) Attributes() []string {
 		attrs = append(attrs, appendFunc("scale", t.SX, t.SY))
 	}
 	if t.RA != 0 {
-		attrs = append(attrs, appendFunc("rotate", t.RA, t.RX, t.RY))
+		var args []float64
+		args = append(args, t.RA)
+		if t.RX != 0 && t.RY != 0 {
+			args = append(args, t.RX, t.RY)
+		}
+		attrs = append(attrs, appendFunc("rotate", args...))
 	}
 	if t.KX != 0 {
 		attrs = append(attrs, appendFunc("skewX", t.KX))

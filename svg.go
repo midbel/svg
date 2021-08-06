@@ -449,7 +449,6 @@ type Text struct {
 	Anchor string
 	Adjust string
 	Length float64
-	Rotate []float64
 	Fill
 	Pos
 	Font

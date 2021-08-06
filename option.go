@@ -67,11 +67,11 @@ func WithTranslate(x, y float64) Option {
 
 func WithRotate(a, x, y float64) Option {
 	type rotater interface {
-		Rotate(float64, float64)
+		Rotate(float64, float64, float64)
 	}
 	return func(e Element) error {
 		if e, ok := e.(rotater); ok {
-			e.Rotate(x, y)
+			e.Rotate(a, x, y)
 		}
 		return nil
 	}
