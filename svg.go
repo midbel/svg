@@ -55,11 +55,17 @@ func NewList(es ...Element) List {
 }
 
 func (i *List) Append(e Element) {
+	if e == nil {
+		return
+	}
 	i.List = append(i.List, e)
 }
 
 func (i *List) Render(w Writer) {
 	for _, e := range i.List {
+		if e == nil {
+			continue
+		}
 		e.Render(w)
 	}
 }

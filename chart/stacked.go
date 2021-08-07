@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"math"
-	"strconv"
 
 	"github.com/midbel/svg"
 	"github.com/midbel/svg/colors"
@@ -120,7 +119,6 @@ func (c StackedChart) render(w svg.Writer, series []StackedSerie) {
 		area    = svg.NewGroup(svg.WithID("area"), c.translate())
 		max, ds = getStackedDomains(series)
 	)
-	max *= 1.01
 	if c.Ticks > 0 {
 		area.Append(c.drawTicks(max))
 	}
@@ -157,7 +155,7 @@ func (c StackedChart) drawSerie(s StackedSerie, band, max float64) svg.Element {
 	} else {
 		trst = svg.WithTranslate((size*0.2)*2, 0)
 	}
-	grp := svg.NewGroup(trst)
+	grp := svg.NewGroup(trst, svg.WithClass("bar"))
 	for j := range s.Series {
 		var (
 			g  = svg.NewGroup()
@@ -187,13 +185,8 @@ func (c StackedChart) drawSerie(s StackedSerie, band, max float64) svg.Element {
 }
 
 func (c StackedChart) drawAxisX(domains []string) svg.Element {
-	options := []svg.Option{
-		svg.WithID("x-axis"),
-		svg.WithClass("axis"),
-		svg.WithTranslate(c.Padding.Left, c.Height-c.Padding.Bottom),
-	}
 	var (
-		axis = svg.NewGroup(options...)
+		axis = svg.NewGroup(c.getOptionsAxisX()...)
 		pos1 = svg.NewPos(0, 0)
 		pos2 = svg.NewPos(c.GetAreaWidth(), 0)
 		line = svg.NewLine(pos1, pos2, axisstrok.Option(), svg.WithClass("domain"))
@@ -218,13 +211,8 @@ func (c StackedChart) drawAxisX(domains []string) svg.Element {
 }
 
 func (c StackedChart) drawAxisY(max float64) svg.Element {
-	options := []svg.Option{
-		svg.WithID("y-axis"),
-		svg.WithClass("axis"),
-		c.translate(),
-	}
 	var (
-		axis  = svg.NewGroup(options...)
+		axis  = svg.NewGroup(c.getOptionsAxisY()...)
 		pos1  = svg.NewPos(0, 0)
 		pos2  = svg.NewPos(0, c.GetAreaHeight()+1)
 		line  = svg.NewLine(pos1, pos2, axisstrok.Option(), svg.WithClass("domain"))
@@ -234,15 +222,14 @@ func (c StackedChart) drawAxisY(max float64) svg.Element {
 	axis.Append(line.AsElement())
 	for i := c.Ticks; i >= 0; i-- {
 		var (
-			grp   = svg.NewGroup(svg.WithClass("tick"))
-			val   = coeff * float64(i)
-			pos   = svg.NewPos(0, c.GetAreaHeight()-(step*val)+(ticklen/2))
-			anc   = svg.WithAnchor("end")
-			label = strconv.FormatFloat(val, 'f', 2, 64)
-			text  = svg.NewText(label, anc, pos.Option())
-			pos1  = svg.NewPos(-ticklen, c.GetAreaHeight()-(step*val))
-			pos2  = svg.NewPos(0, c.GetAreaHeight()-(step*val))
-			line  = svg.NewLine(pos1, pos2, axisstrok.Option())
+			grp  = svg.NewGroup(svg.WithClass("tick"))
+			val  = coeff * float64(i)
+			pos  = svg.NewPos(0, c.GetAreaHeight()-(step*val)+(ticklen/2))
+			anc  = svg.WithAnchor("end")
+			text = svg.NewText(formatFloat(val), anc, pos.Option())
+			pos1 = svg.NewPos(-ticklen, c.GetAreaHeight()-(step*val))
+			pos2 = svg.NewPos(0, c.GetAreaHeight()-(step*val))
+			line = svg.NewLine(pos1, pos2, axisstrok.Option())
 		)
 		text.Shift = svg.NewPos(-ticklen*2, 0)
 		grp.Append(text.AsElement())
