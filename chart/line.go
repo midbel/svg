@@ -6,7 +6,6 @@ import (
 	"math"
 
 	"github.com/midbel/svg"
-	"github.com/midbel/svg/colors"
 )
 
 type valuepoint struct {
@@ -28,14 +27,9 @@ type LineSerie struct {
 	values []valuepoint
 	min    valuepoint
 	max    valuepoint
-	colors []string
 }
 
 func NewLineSerie(title string) LineSerie {
-	return NewLineSerieWithColors(title, colors.Set26)
-}
-
-func NewLineSerieWithColors(title string, colors []string) LineSerie {
 	return LineSerie{
 		Title: title,
 		min: valuepoint{
@@ -46,7 +40,6 @@ func NewLineSerieWithColors(title string, colors []string) LineSerie {
 			X: math.NaN(),
 			Y: math.NaN(),
 		},
-		colors: colors,
 	}
 }
 
@@ -107,12 +100,22 @@ func (c LineChart) drawSerie(s LineSerie, px, py pair) svg.Element {
 		dx  = px.Diff()
 		dy  = py.Diff()
 		pat = getPathLine("steelblue")
+		tx  float64
+		ty  float64
 	)
+	if x := s.values[0].X; x < 0 {
+		tx = dx + (x/dx)*c.GetAreaWidth()
+		tx = -tx
+	}
+	if y := s.values[0].Y; y < 0 {
+		ty = dy - (py.Min/dy)*c.GetAreaHeight()
+		ty = -ty
+	}
 	for i := range s.values {
 		var (
-			x = (s.values[i].X / dx) * c.GetAreaWidth()
-			y = c.GetAreaHeight() - (s.values[i].Y/dy)*c.GetAreaHeight()
-			p = svg.NewPos(x, y)
+			x = dx + (s.values[i].X/dx)*c.GetAreaWidth()
+			y = dy + c.GetAreaHeight() - (s.values[i].Y/dy)*c.GetAreaHeight()
+			p = svg.NewPos(x+tx, y+ty)
 		)
 		if i == 0 {
 			pat.AbsMoveTo(p)
@@ -131,16 +134,16 @@ func (c LineChart) drawAxisX(rg pair) svg.Element {
 		pos2  = svg.NewPos(c.GetAreaWidth(), 0)
 		line  = svg.NewLine(pos1, pos2, axisstrok.Option(), svg.WithClass("domain"))
 		coeff = c.GetAreaWidth() / float64(c.TicksX)
-		step  = rg.Max / float64(c.TicksX)
+		step  = math.Ceil(rg.Diff() / float64(c.TicksX))
 	)
-	for i := 0; i < c.TicksX+1; i++ {
+	for i, j := rg.Min, 0; i < rg.Max+step; i, j = i+step, j+1 {
 		var (
 			grp  = svg.NewGroup(svg.WithClass("tick"))
-			off  = float64(i) * coeff
-			pos0 = svg.NewPos(off-(step*1.5), textick+(textick/3))
+			off  = float64(j) * coeff
+			pos0 = svg.NewPos(off-(coeff*0.1), textick+(textick/3))
 			pos1 = svg.NewPos(off, 0)
 			pos2 = svg.NewPos(off, ticklen)
-			text = svg.NewText(formatFloat(float64(i)*step), pos0.Option())
+			text = svg.NewText(formatFloat(i), pos0.Option())
 			line = svg.NewLine(pos1, pos2, axisstrok.Option())
 		)
 		grp.Append(text.AsElement())
@@ -158,17 +161,16 @@ func (c LineChart) drawAxisY(rg pair) svg.Element {
 		pos2  = svg.NewPos(0, c.GetAreaHeight()+1)
 		line  = svg.NewLine(pos1, pos2, axisstrok.Option(), svg.WithClass("domain"))
 		coeff = c.GetAreaHeight() / float64(c.TicksY)
-		step  = rg.Max / float64(c.TicksY)
+		step  = rg.Diff() / float64(c.TicksY)
 	)
 	axis.Append(line.AsElement())
-	for i := c.TicksY; i >= 0; i-- {
+	for i, j := rg.Min, 0; i < rg.Max+step; i, j = i+step, j+1 {
 		var (
 			grp  = svg.NewGroup(svg.WithClass("tick"))
-			ypos = c.GetAreaHeight() - (float64(i) * coeff)
-			val  = step * float64(i)
+			ypos = c.GetAreaHeight() - (float64(j) * coeff)
 			pos  = svg.NewPos(0, ypos+(ticklen/2))
 			anc  = svg.WithAnchor("end")
-			text = svg.NewText(formatFloat(val), anc, pos.Option())
+			text = svg.NewText(formatFloat(i), anc, pos.Option())
 			pos1 = svg.NewPos(-ticklen, ypos)
 			pos2 = svg.NewPos(0, ypos)
 			line = svg.NewLine(pos1, pos2, axisstrok.Option())

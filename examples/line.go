@@ -7,14 +7,14 @@ import (
 	"github.com/midbel/svg/chart"
 )
 
-const limit = 100
+const limit = 200
 
 func main() {
 	var xs []chart.LineSerie
 	for i := 0; i < 2; i++ {
 		var sr chart.LineSerie
-		for i := 0; i < 20; i++ {
-			sr.Add(float64(i), float64(5+rand.Intn(limit)))
+		for i := -1000; i <= 1000; i += 50 {
+			sr.Add(float64(i), float64(-100+rand.Intn(limit)))
 		}
 		xs = append(xs, sr)
 	}
@@ -25,10 +25,10 @@ func main() {
 		Bottom: 60,
 		Right:  30,
 	}
-	c.Width = 960
-	c.Height = 720
-	c.TicksY = 10
-	c.TicksX = 5
+	c.Width = 1516
+	c.Height = 770
+	c.TicksY = 15
+	c.TicksX = 15
 
 	c.Render(os.Stdout, xs)
 }

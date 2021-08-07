@@ -719,7 +719,46 @@ func (p *Path) RelQuadraticCurveSimple(pos Pos) {
 	p.commands = append(p.commands, c)
 }
 
-func (p *Path) Arc(pos Pos, rx, ry float64, large, sweep bool) {
+func (p *Path) AbsArcTo(pos Pos, rx, ry, rot float64, large, sweep bool) {
+	args := []float64{
+		rx,
+		ry,
+		rot,
+	}
+	if large {
+		args = append(args, 1)
+	} else {
+		args = append(args, 0)
+	}
+	if sweep {
+		args = append(args, 1)
+	} else {
+		args = append(args, 0)
+	}
+	args = append(args, pos.array()...)
+	c := makeCommand(cmdArcAbs, args)
+	p.commands = append(p.commands, c)
+}
+
+func (p *Path) RelArcTo(pos Pos, rx, ry, rot float64, large, sweep bool) {
+	args := []float64{
+		rx,
+		ry,
+		rot,
+	}
+	if large {
+		args = append(args, 1)
+	} else {
+		args = append(args, 0)
+	}
+	if sweep {
+		args = append(args, 1)
+	} else {
+		args = append(args, 0)
+	}
+	args = append(args, pos.array()...)
+	c := makeCommand(cmdArcAbs, args)
+	p.commands = append(p.commands, c)
 }
 
 const (

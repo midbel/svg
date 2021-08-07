@@ -28,6 +28,10 @@ func (c *Chart) GetAreaHeight() float64 {
 	return c.Height - c.Vertical()
 }
 
+func (c *Chart) GetAreaCenter() (float64, float64) {
+	return c.GetAreaWidth() / 2, c.GetAreaHeight() / 2
+}
+
 func (c *Chart) checkDefault() {
 	if c.Width == 0 {
 		c.Width = DefaultWidth
@@ -111,17 +115,11 @@ func getTick(pos1, pos2 svg.Pos) svg.Element {
 }
 
 func getLesser(v1, v2 float64) float64 {
-	if math.IsNaN(v1) || v2 < v1 {
-		return v2
-	}
-	return v1
+	return math.Min(v1, v2)
 }
 
 func getGreater(v1, v2 float64) float64 {
-	if math.IsNaN(v1) || v2 > v1 {
-		return v2
-	}
-	return v1
+	return math.Max(v1, v2)
 }
 
 func getPathLine(stk string) svg.Path {
@@ -134,5 +132,9 @@ func getPathLine(stk string) svg.Path {
 }
 
 func formatFloat(val float64) string {
+	val = math.Ceil(val)
+	if val == 0 {
+		return "0.00"
+	}
 	return strconv.FormatFloat(val, 'f', 2, 64)
 }
