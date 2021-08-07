@@ -11,43 +11,66 @@ import (
 	"github.com/midbel/svg/colors"
 )
 
+type valuelabel struct {
+	Label string
+	Value float64
+}
+
 type Serie struct {
 	Title  string
-	Labels []string
-	Values []float64
-	Colors []string
+	values []valuelabel
+	colors []string
 }
 
 func NewSerie(title string) Serie {
-	return NewSerieWithColors(title, colors.Reverse(colors.RdYlBu6))
+	return NewSerieWithColors(title, colors.Reverse(colors.PuBu6))
 }
 
 func NewSerieWithColors(title string, colors []string) Serie {
 	return Serie{
 		Title:  title,
-		Colors: colors,
+		colors: colors,
 	}
 }
 
 func (s *Serie) Add(label string, value float64) {
-	s.Labels = append(s.Labels, label)
-	s.Values = append(s.Values, value)
+	vl := valuelabel{
+		Label: label,
+		Value: value,
+	}
+	s.values = append(s.values, vl)
 }
 
 func (s Serie) Sum() float64 {
 	var sum float64
-	for i := range s.Values {
-		sum += s.Values[i]
+	for i := range s.values {
+		sum += s.values[i].Value
 	}
 	return sum
 }
 
 func (s Serie) Len() int {
-	return len(s.Values)
+	return len(s.values)
+}
+
+func (s Serie) Labels() []string {
+	var str []string
+	for i := range s.values {
+		str = append(str, s.values[i].Label)
+	}
+	return str
+}
+
+func (s Serie) Values() []float64 {
+	var str []float64
+	for i := range s.values {
+		str = append(str, s.values[i].Value)
+	}
+	return str
 }
 
 func (s Serie) peekFill(i int) svg.Option {
-	color := s.Colors[i%len(s.Colors)]
+	color := s.colors[i%len(s.colors)]
 	return svg.NewFill(color).Option()
 }
 
@@ -97,7 +120,7 @@ func (c StackedChart) render(w svg.Writer, series []StackedSerie) {
 		area    = svg.NewGroup(svg.WithID("area"), c.translate())
 		max, ds = getStackedDomains(series)
 	)
-
+	max *= 1.01
 	if c.Ticks > 0 {
 		area.Append(c.drawTicks(max))
 	}
@@ -141,12 +164,12 @@ func (c StackedChart) drawSerie(s StackedSerie, band, max float64) svg.Element {
 			rw = width
 			ro = c.GetAreaHeight()
 		)
-		for i := range s.Series[j].Labels {
-			if s.Series[j].Values[i] == 0 {
+		for i, v := range s.Series[j].values {
+			if v.Value == 0 {
 				continue
 			}
 			var (
-				rh   = s.Series[j].Values[i] * height
+				rh   = v.Value * height
 				rx   = (float64(j) * width) + ((width / 2) - (rw / 2))
 				ry   float64
 				fill = s.Series[j].peekFill(i)
@@ -155,7 +178,7 @@ func (c StackedChart) drawSerie(s StackedSerie, band, max float64) svg.Element {
 			ry = ro
 
 			r := getRect(svg.WithPosition(rx, ry), svg.WithDimension(rw, rh), fill)
-			r.Title = fmt.Sprintf("%s/%s", s.Title, s.Series[j].Labels[i])
+			r.Title = fmt.Sprintf("%s/%s", s.Title, v.Label)
 			g.Append(r.AsElement())
 		}
 		grp.Append(g.AsElement())

@@ -28,9 +28,11 @@ func main() {
 	sc.Padding = pad //chart.CreatePadding(40, 20)
 	sc.Ticks = 10
 	sc.BarWidth = 22
-	var (
-		count = flag.Int("c", 5, "count")
-	)
+
+	count := flag.Int("c", 5, "count")
+	flag.Float64Var(&sc.Width, "x", sc.Width, "")
+	flag.Float64Var(&sc.Height, "y", sc.Height, "")
+	flag.Float64Var(&sc.BarWidth, "b", sc.BarWidth, "")
 	flag.Parse()
 	var xs []chart.StackedSerie
 	for i := 0; i < *count; i++ {
