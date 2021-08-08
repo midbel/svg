@@ -52,22 +52,6 @@ func (s Serie) Len() int {
 	return len(s.values)
 }
 
-func (s Serie) Labels() []string {
-	var str []string
-	for i := range s.values {
-		str = append(str, s.values[i].Label)
-	}
-	return str
-}
-
-func (s Serie) Values() []float64 {
-	var str []float64
-	for i := range s.values {
-		str = append(str, s.values[i].Value)
-	}
-	return str
-}
-
 func (s Serie) peekFill(i int) svg.Option {
 	color := s.colors[i%len(s.colors)]
 	return svg.NewFill(color).Option()
@@ -95,6 +79,29 @@ func (sr *StackedSerie) Append(s Serie) {
 
 func (sr *StackedSerie) Len() int {
 	return len(sr.Series)
+}
+
+type BarChart struct {
+	Chart
+	BarWidth float64
+	Ticks    int
+}
+
+func (c BarChart) Render(w io.Writer, serie []Serie) {
+	ws := bufio.NewWriter(w)
+	defer ws.Flush()
+	c.render(ws, serie)
+}
+
+func (c BarChart) render(w svg.Writer, serie []Serie) {
+	c.checkDefault()
+	var (
+		dim  = svg.NewDim(c.Width, c.Height)
+		cs   = svg.NewSVG(dim.Option())
+		area = svg.NewGroup(svg.WithID("area"), c.translate())
+	)
+	cs.Append(area.AsElement())
+	cs.Render(w)
 }
 
 type StackedChart struct {

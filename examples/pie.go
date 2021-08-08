@@ -1,36 +1,68 @@
 package main
 
 import (
+	"io"
+	"math/rand"
 	"os"
-  "io"
+	"time"
 
 	"github.com/midbel/svg/chart"
 )
+
+func init() {
+	rand.Seed(time.Now().Unix())
+}
 
 func main() {
 	var (
 		c chart.PieChart
 		s chart.Serie
 	)
-  var w io.Writer = os.Stdout
-  // w = ioutil.Discard
-  c.Padding = chart.CreatePadding(20, 20)
-  c.Width = 600
-  c.Height = 600
-	c.MaxRadius = 250
-	c.MinRadius = 50
-	s.Add("toml", 150)
-	s.Add("json", 78)
-	s.Add("xml", 12)
-	s.Add("ber", 70)
-	s.Add("cbor", 80)
-	s.Add("ldap", 98)
-	s.Add("transmit", 200)
-	s.Add("achile", 100)
-	s.Add("prospect", 50)
-	s.Add("svg", 178)
-	s.Add("hadock", 500)
-	s.Add("assist", 280)
-	s.Add("inspect", 270)
+	var w io.Writer = os.Stdout
+	c.Padding = chart.CreatePadding(20, 20)
+	c.Width = 720
+	c.Height = 720
+	c.OutRadius = 300
+	c.InRadius = 120
+
+	repos := []string{
+		"toml",
+		"json",
+		"xml",
+		"pcap",
+		"pdf",
+		"try",
+		"tail",
+		"linewriter",
+		"wip",
+		"cbor",
+		"ldap",
+		"transmit",
+		"achile",
+		"prospect",
+		"svg",
+		"hadock",
+		"assist",
+		"fig",
+		"dissect",
+		"pl",
+		"comma",
+		"jwt",
+		"packit",
+		"tape",
+		"upifinder",
+		"alea",
+		"fetch",
+		"uuid",
+		"cli",
+		"xxh",
+		"ipaddr",
+		"sdp",
+		"hexdump",
+		"curly",
+	}
+	for _, str := range repos {
+		s.Add(str, float64(rand.Intn(10000)))
+	}
 	c.Render(w, s)
 }
