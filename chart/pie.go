@@ -55,7 +55,7 @@ func (c PieChart) render(w svg.Writer, serie Serie) {
 		pat.AbsMoveTo(pos1)
 		pat.AbsArcTo(pos2, float64(c.MaxRadius), float64(c.MaxRadius), 0, swap, true)
 		pat.AbsLineTo(pos3)
-		if c.MinRadius == c.MaxRadius {
+		if pos3.X != pos4.X && pos3.Y != pos4.Y {
 			pat.AbsArcTo(pos4, float64(c.MaxRadius-c.MinRadius), float64(c.MaxRadius-c.MinRadius), 0, swap, false)
 		}
 		pat.AbsLineTo(pos1)

@@ -15,9 +15,9 @@ func main() {
   var w io.Writer = os.Stdout
   // w = ioutil.Discard
   c.Padding = chart.CreatePadding(20, 20)
-  c.Width = 400
-  c.Height = 400
-	c.MaxRadius = 150
+  c.Width = 600
+  c.Height = 600
+	c.MaxRadius = 250
 	c.MinRadius = 50
 	s.Add("toml", 150)
 	s.Add("json", 78)
