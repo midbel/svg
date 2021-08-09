@@ -46,14 +46,6 @@ func NewLineSerieWithColor(title, color string) LineSerie {
 	return LineSerie{
 		Title: title,
 		Color: color,
-		min: valuepoint{
-			X: math.NaN(),
-			Y: math.NaN(),
-		},
-		max: valuepoint{
-			X: math.NaN(),
-			Y: math.NaN(),
-		},
 	}
 }
 
@@ -67,6 +59,10 @@ func (ir *LineSerie) Add(x, y float64) {
 		Y: y,
 	}
 	ir.values = append(ir.values, vp)
+}
+
+func (ir *LineSerie) Len() int {
+	return len(ir.values)
 }
 
 type CurveStyle int8
@@ -104,9 +100,22 @@ func (c LineChart) render(w svg.Writer, series []LineSerie) {
 		area.Append(c.drawTicks(ry))
 	}
 	for i := range series {
-		grp := svg.NewGroup()
-		grp.Append(c.drawSerie(series[i], rx, ry))
-		area.Append(grp.AsElement())
+		var elem svg.Element
+		switch c.Curve {
+		case CurveLinear:
+			elem = c.drawLinearSerie(series[i], rx, ry)
+		case CurveStep:
+			elem = c.drawStepSerie(series[i], rx, ry)
+		case CurveStepBefore:
+			elem = c.drawStepBeforeSerie(series[i], rx, ry)
+		case CurveStepAfter:
+			elem = c.drawStepAfterSerie(series[i], rx, ry)
+		default:
+		}
+		if elem == nil {
+			continue
+		}
+		area.Append(elem)
 	}
 	cs.Append(area.AsElement())
 	if c.TicksX > 0 {
@@ -118,9 +127,61 @@ func (c LineChart) render(w svg.Writer, series []LineSerie) {
 	cs.Render(w)
 }
 
-func (c LineChart) drawSerie(s LineSerie, px, py pair) svg.Element {
+func (c LineChart) drawStepSerie(s LineSerie, px, py pair) svg.Element {
+	return nil
+}
+
+func (c LineChart) drawStepBeforeSerie(s LineSerie, px, py pair) svg.Element {
 	var (
-		grp = svg.NewGroup(svg.WithClass("line"))
+		wx  = c.GetAreaWidth() / px.Diff()
+		wy  = c.GetAreaHeight() / py.Diff()
+		pat = getPathLine(s.Color)
+		y   = c.GetAreaHeight() - (s.values[0].Y * wy)
+		x   float64
+	)
+	if py.Min < 0 {
+		y -= math.Abs(py.Min) * wy
+	}
+	pat.AbsMoveTo(svg.NewPos(x, y))
+	for i := 1; i < s.Len(); i++ {
+		y = c.GetAreaHeight() - (s.values[i].Y * wy)
+		if py.Min < 0 {
+			y -= math.Abs(py.Min) * wy
+		}
+		pat.AbsLineTo(svg.NewPos(x, y))
+		x += (s.values[i].X - s.values[i-1].X) * wx
+		pat.AbsLineTo(svg.NewPos(x, y))
+	}
+	return pat.AsElement()
+}
+
+func (c LineChart) drawStepAfterSerie(s LineSerie, px, py pair) svg.Element {
+	var (
+		wx  = c.GetAreaWidth() / px.Diff()
+		wy  = c.GetAreaHeight() / py.Diff()
+		pat = getPathLine(s.Color)
+		y   = c.GetAreaHeight() - (s.values[0].Y * wy)
+		x   float64
+	)
+	if py.Min < 0 {
+		y -= math.Abs(py.Min) * wy
+	}
+	pat.AbsMoveTo(svg.NewPos(x, y))
+	for i := 1; i < s.Len(); i++ {
+		x += (s.values[i].X - s.values[i-1].X) * wx
+		pat.AbsLineTo(svg.NewPos(x, y))
+
+		y = c.GetAreaHeight() - (s.values[i].Y * wy)
+		if py.Min < 0 {
+			y -= math.Abs(py.Min) * wy
+		}
+		pat.AbsLineTo(svg.NewPos(x, y))
+	}
+	return pat.AsElement()
+}
+
+func (c LineChart) drawLinearSerie(s LineSerie, px, py pair) svg.Element {
+	var (
 		wx  = c.GetAreaWidth() / px.Diff()
 		wy  = c.GetAreaHeight() / py.Diff()
 		pat = getPathLine(s.Color)
@@ -140,8 +201,7 @@ func (c LineChart) drawSerie(s LineSerie, px, py pair) svg.Element {
 		}
 		pat.AbsLineTo(svg.NewPos(x, y))
 	}
-	grp.Append(pat.AsElement())
-	return grp.AsElement()
+	return pat.AsElement()
 }
 
 func (c LineChart) drawAxisX(rg pair) svg.Element {

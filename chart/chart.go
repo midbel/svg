@@ -115,28 +115,10 @@ func getTick(pos1, pos2 svg.Pos) svg.Element {
 }
 
 func getLesser(v1, v2 float64) float64 {
-	if math.IsNaN(v1) && math.IsNaN(v2) {
-		return 0
-	}
-	if math.IsNaN(v1) && !math.IsNaN(v2) {
-		return v2
-	}
-	if math.IsNaN(v2) && !math.IsNaN(v1) {
-		return v1
-	}
 	return math.Min(v1, v2)
 }
 
 func getGreater(v1, v2 float64) float64 {
-	if math.IsNaN(v1) && math.IsNaN(v2) {
-		return 0
-	}
-	if math.IsNaN(v1) && !math.IsNaN(v2) {
-		return v2
-	}
-	if math.IsNaN(v2) && !math.IsNaN(v1) {
-		return v1
-	}
 	return math.Max(v1, v2)
 }
 
@@ -146,7 +128,7 @@ func getPathLine(stk string) svg.Path {
 		strok = svg.NewStroke(stk, 1)
 	)
 	fill.Opacity = 0
-	return svg.NewPath(fill.Option(), strok.Option())
+	return svg.NewPath(fill.Option(), strok.Option(), svg.WithClass("line"))
 }
 
 func formatFloat(val float64) string {
