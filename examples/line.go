@@ -1,20 +1,33 @@
 package main
 
 import (
+	"fmt"
 	"math/rand"
 	"os"
+	"time"
 
 	"github.com/midbel/svg/chart"
 )
 
 const limit = 200
 
+func init() {
+	rand.Seed(time.Now().Unix())
+}
+
 func main() {
-	var xs []chart.LineSerie
-	for i := 0; i < 2; i++ {
-		var sr chart.LineSerie
-		for i := -1000; i <= 1000; i += 50 {
-			sr.Add(float64(i), float64(-100+rand.Intn(limit)))
+	var (
+		xs []chart.LineSerie
+		cs = []string{"red", "blue", "green"}
+	)
+	for i := 0; i < 3; i++ {
+		var (
+			s    = fmt.Sprint("serie-%d", i)
+			sr   = chart.NewLineSerieWithColor(s, cs[i])
+			step = 5 + rand.Intn(5)
+		)
+		for i := -100; i <= 100; i += step {
+			sr.Add(float64(i), float64(-20+rand.Intn(41)))
 		}
 		xs = append(xs, sr)
 	}

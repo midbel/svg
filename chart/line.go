@@ -22,16 +22,30 @@ func (p pair) Diff() float64 {
 	return p.Max - p.Min
 }
 
+func (p pair) AbsMax() float64 {
+	return math.Max(math.Abs(p.Min), math.Abs(p.Max))
+}
+
+func (p pair) AbsMin() float64 {
+	return math.Min(math.Abs(p.Min), math.Abs(p.Max))
+}
+
 type LineSerie struct {
 	Title  string
+	Color  string
 	values []valuepoint
 	min    valuepoint
 	max    valuepoint
 }
 
 func NewLineSerie(title string) LineSerie {
+	return NewLineSerieWithColor(title, "steelblue")
+}
+
+func NewLineSerieWithColor(title, color string) LineSerie {
 	return LineSerie{
 		Title: title,
+		Color: color,
 		min: valuepoint{
 			X: math.NaN(),
 			Y: math.NaN(),
@@ -55,10 +69,20 @@ func (ir *LineSerie) Add(x, y float64) {
 	ir.values = append(ir.values, vp)
 }
 
+type CurveStyle int8
+
+const (
+	CurveLinear CurveStyle = iota
+	CurveStep
+	CurveStepBefore
+	CurveStepAfter
+)
+
 type LineChart struct {
 	Chart
 	TicksY int
 	TicksX int
+	Curve  CurveStyle
 }
 
 func (c LineChart) Render(w io.Writer, series []LineSerie) {
@@ -97,31 +121,24 @@ func (c LineChart) render(w svg.Writer, series []LineSerie) {
 func (c LineChart) drawSerie(s LineSerie, px, py pair) svg.Element {
 	var (
 		grp = svg.NewGroup(svg.WithClass("line"))
-		dx  = px.Diff()
-		dy  = py.Diff()
-		pat = getPathLine("steelblue")
-		tx  float64
-		ty  float64
+		wx  = c.GetAreaWidth() / px.Diff()
+		wy  = c.GetAreaHeight() / py.Diff()
+		pat = getPathLine(s.Color)
+		x   float64
 	)
-	if x := s.values[0].X; x < 0 {
-		tx = dx + (x/dx)*c.GetAreaWidth()
-		tx = -tx
-	}
-	if y := s.values[0].Y; y < 0 {
-		ty = dy - (py.Min/dy)*c.GetAreaHeight()
-		ty = -ty
-	}
 	for i := range s.values {
-		var (
-			x = dx + (s.values[i].X/dx)*c.GetAreaWidth()
-			y = dy + c.GetAreaHeight() - (s.values[i].Y/dy)*c.GetAreaHeight()
-			p = svg.NewPos(x+tx, y+ty)
-		)
+		if i > 0 {
+			x += (s.values[i].X - s.values[i-1].X) * wx
+		}
+		y := c.GetAreaHeight() - (s.values[i].Y * wy)
+		if py.Min < 0 {
+			y -= math.Abs(py.Min) * wy
+		}
 		if i == 0 {
-			pat.AbsMoveTo(p)
+			pat.AbsMoveTo(svg.NewPos(x, y))
 			continue
 		}
-		pat.AbsLineTo(p)
+		pat.AbsLineTo(svg.NewPos(x, y))
 	}
 	grp.Append(pat.AsElement())
 	return grp.AsElement()
@@ -185,9 +202,10 @@ func (c LineChart) drawAxisY(rg pair) svg.Element {
 
 func (c LineChart) drawTicks(rg pair) svg.Element {
 	var (
+		max   = rg.AbsMax()
 		grp   = svg.NewGroup(svg.WithID("ticks"))
-		step  = c.GetAreaHeight() / rg.Max
-		coeff = rg.Max / float64(c.TicksY)
+		step  = c.GetAreaHeight() / max
+		coeff = max / float64(c.TicksY)
 	)
 	for i := c.TicksY; i > 0; i-- {
 		var (
