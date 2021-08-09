@@ -4,23 +4,23 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
-	// "time"
+	"time"
 
 	"github.com/midbel/svg/chart"
 )
 
 const limit = 200
 
-// func init() {
-// 	rand.Seed(time.Now().Unix())
-// }
+func init() {
+	rand.Seed(time.Now().Unix())
+}
 
 func main() {
 	var (
 		xs []chart.LineSerie
 		cs = []string{"red", "blue", "green"}
 	)
-	for i := 0; i < 1; i++ {
+	for i := 0; i < 2; i++ {
 		var (
 			s    = fmt.Sprint("serie-%d", i)
 			sr   = chart.NewLineSerieWithColor(s, cs[i])
@@ -38,7 +38,7 @@ func main() {
 		Bottom: 60,
 		Right:  30,
 	}
-	c.Curve = chart.CurveStepBefore
+	c.Curve = chart.CurveStep
 	c.Width = 1516
 	c.Height = 770
 	c.TicksY = 15

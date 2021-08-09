@@ -128,7 +128,32 @@ func (c LineChart) render(w svg.Writer, series []LineSerie) {
 }
 
 func (c LineChart) drawStepSerie(s LineSerie, px, py pair) svg.Element {
-	return nil
+	var (
+		wx  = c.GetAreaWidth() / px.Diff()
+		wy  = c.GetAreaHeight() / py.Diff()
+		pat = getPathLine(s.Color)
+		y   = c.GetAreaHeight() - (s.values[0].Y * wy)
+		x   float64
+	)
+	if py.Min < 0 {
+		y -= math.Abs(py.Min) * wy
+	}
+	pat.AbsMoveTo(svg.NewPos(x, y))
+
+	for i := 1; i < s.Len(); i++ {
+		delta := (s.values[i].X - s.values[i-1].X) / 2
+		x += delta * wx
+		pat.AbsLineTo(svg.NewPos(x, y))
+
+		y = c.GetAreaHeight() - (s.values[i].Y * wy)
+		if py.Min < 0 {
+			y -= math.Abs(py.Min) * wy
+		}
+		pat.AbsLineTo(svg.NewPos(x, y))
+		x += delta * wx
+		pat.AbsLineTo(svg.NewPos(x, y))
+	}
+	return pat.AsElement()
 }
 
 func (c LineChart) drawStepBeforeSerie(s LineSerie, px, py pair) svg.Element {
