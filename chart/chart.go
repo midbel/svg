@@ -132,9 +132,14 @@ func getPathLine(stk string) svg.Path {
 }
 
 func formatFloat(val float64) string {
-	val = math.Ceil(val)
-	if val == 0 {
+	if almostZero(val) {
 		return "0.00"
 	}
 	return strconv.FormatFloat(val, 'f', 2, 64)
+}
+
+const threshold = 1e-9
+
+func almostZero(val float64) bool {
+	return math.Abs(val-0) <= threshold
 }

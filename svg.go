@@ -119,6 +119,7 @@ type SVG struct {
 	node
 	List
 
+	OmitProlog    bool
 	PreserveRatio []string
 	Box
 	Pos
@@ -137,7 +138,9 @@ func NewSVG(options ...Option) SVG {
 }
 
 func (s *SVG) Render(w Writer) {
-	w.WriteString(prolog)
+	if !s.OmitProlog {
+		w.WriteString(prolog)
+	}
 	s.render(w, "svg", s.List, s, s.Pos, s.Dim, s.Box)
 }
 

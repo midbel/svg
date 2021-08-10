@@ -23,6 +23,15 @@ func WithStyle(prop string, values ...string) Option {
 	}
 }
 
+func OmitProlog() Option {
+	return func(e Element) error {
+		if e, ok := e.(*SVG); ok {
+			e.OmitProlog = true
+		}
+		return nil
+	}
+}
+
 func WithList(es ...Element) Option {
 	return func(e Element) error {
 		list := NewList(es...)

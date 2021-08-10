@@ -72,6 +72,8 @@ const (
 	CurveStep
 	CurveStepBefore
 	CurveStepAfter
+	CurveCubic
+	CurveQuadratic
 )
 
 type LineChart struct {
@@ -84,10 +86,12 @@ type LineChart struct {
 func (c LineChart) Render(w io.Writer, series []LineSerie) {
 	ws := bufio.NewWriter(w)
 	defer ws.Flush()
-	c.render(ws, series)
+
+	elem := c.RenderElement(series)
+	elem.Render(ws)
 }
 
-func (c LineChart) render(w svg.Writer, series []LineSerie) {
+func (c LineChart) RenderElement(series []LineSerie) svg.Element {
 	c.checkDefault()
 
 	var (
@@ -110,6 +114,10 @@ func (c LineChart) render(w svg.Writer, series []LineSerie) {
 			elem = c.drawStepBeforeSerie(series[i], rx, ry)
 		case CurveStepAfter:
 			elem = c.drawStepAfterSerie(series[i], rx, ry)
+		case CurveCubic:
+			elem = c.drawCubicSerie(series[i], rx, ry)
+		case CurveQuadratic:
+			elem = c.drawQuadraticSerie(series[i], rx, ry)
 		default:
 		}
 		if elem == nil {
@@ -124,7 +132,65 @@ func (c LineChart) render(w svg.Writer, series []LineSerie) {
 	if c.TicksY > 0 {
 		cs.Append(c.drawAxisY(ry))
 	}
-	cs.Render(w)
+	return cs.AsElement()
+}
+
+func (c LineChart) drawQuadraticSerie(s LineSerie, px, py pair) svg.Element {
+	var (
+		wx   = c.GetAreaWidth() / px.Diff()
+		wy   = c.GetAreaHeight() / py.Diff()
+		pat  = getPathLine(s.Color)
+		pos  svg.Pos
+		ctrl svg.Pos
+	)
+	pos.Y = c.GetAreaHeight() - (s.values[0].Y * wy)
+	if py.Min < 0 {
+		pos.Y -= math.Abs(py.Min) * wy
+	}
+	pat.AbsMoveTo(pos)
+	for i := 2; i < s.Len(); i += 2 {
+		pos.X = (s.values[i].X - s.values[0].X) * wx
+		pos.Y = c.GetAreaHeight() - (s.values[i].Y * wy)
+		if py.Min < 0 {
+			pos.Y -= math.Abs(py.Min) * wy
+		}
+		ctrl.X = (s.values[i-1].X - s.values[0].X) * wx
+		ctrl.Y = c.GetAreaHeight() - (s.values[i-1].Y * wy)
+		if py.Min < 0 {
+			ctrl.Y -= math.Abs(py.Min) * wy
+		}
+		pat.AbsQuadraticCurve(pos, ctrl)
+	}
+	return pat.AsElement()
+}
+
+func (c LineChart) drawCubicSerie(s LineSerie, px, py pair) svg.Element {
+	var (
+		wx  = c.GetAreaWidth() / px.Diff()
+		wy  = c.GetAreaHeight() / py.Diff()
+		pat = getPathLine(s.Color)
+		pos svg.Pos
+	)
+	pos.Y = c.GetAreaHeight() - (s.values[0].Y * wy)
+	if py.Min < 0 {
+		pos.Y -= math.Abs(py.Min) * wy
+	}
+	pat.AbsMoveTo(pos)
+	for i := 1; i < s.Len(); i++ {
+		var (
+			ctrl = pos
+			old  = pos
+		)
+		pos.Y = c.GetAreaHeight() - (s.values[i].Y * wy)
+		if py.Min < 0 {
+			pos.Y -= math.Abs(py.Min) * wy
+		}
+		pos.X += (s.values[i].X - s.values[i-1].X) * wx
+		ctrl.X = old.X - (old.X-pos.X)/2
+		ctrl.Y = pos.Y
+		pat.AbsCubicCurveSimple(pos, ctrl)
+	}
+	return pat.AsElement()
 }
 
 func (c LineChart) drawStepSerie(s LineSerie, px, py pair) svg.Element {
@@ -242,7 +308,7 @@ func (c LineChart) drawAxisX(rg pair) svg.Element {
 		var (
 			grp  = svg.NewGroup(svg.WithClass("tick"))
 			off  = float64(j) * coeff
-			pos0 = svg.NewPos(off-(coeff*0.1), textick+(textick/3))
+			pos0 = svg.NewPos(off-(coeff*0.2), textick+(textick/3))
 			pos1 = svg.NewPos(off, 0)
 			pos2 = svg.NewPos(off, ticklen)
 			text = svg.NewText(formatFloat(i), pos0.Option())
