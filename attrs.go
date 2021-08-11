@@ -265,6 +265,9 @@ type Fill struct {
 }
 
 func NewFill(color string) Fill {
+	if color == "" {
+		color = "black"
+	}
 	return Fill{Color: color, Opacity: 100}
 }
 

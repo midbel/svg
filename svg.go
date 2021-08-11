@@ -375,6 +375,14 @@ type Polygon struct {
 	Transform
 }
 
+func NewPolygon(pos []Pos, options ...Option) Polygon {
+	p := Polygon{Points: pos}
+	for _, o := range options {
+		o(&p)
+	}
+	return p
+}
+
 func (p *Polygon) Render(w Writer) {
 	p.render(w, "polygon", p.List, p, p.Fill, p.Stroke, p.Transform)
 }
@@ -584,6 +592,14 @@ type PolyLine struct {
 	Stroke
 	Fill
 	Transform
+}
+
+func NewPolyLine(pos []Pos, options ...Option) PolyLine {
+	p := PolyLine{Points: pos}
+	for _, o := range options {
+		o(&p)
+	}
+	return p
 }
 
 func (p *PolyLine) Render(w Writer) {
