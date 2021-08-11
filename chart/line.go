@@ -19,30 +19,6 @@ type valuepoint struct {
 	Y float64
 }
 
-type pair struct {
-	Min float64
-	Max float64
-}
-
-func (p pair) Diff() float64 {
-	return p.Max - p.Min
-}
-
-func (p pair) AbsMax() float64 {
-	return math.Max(math.Abs(p.Min), math.Abs(p.Max))
-}
-
-func (p pair) AbsMin() float64 {
-	return math.Min(math.Abs(p.Min), math.Abs(p.Max))
-}
-
-func (p pair) extend() pair {
-	x := p
-	x.Min *= 1.1
-	x.Max *= 1.1
-	return x
-}
-
 type LineSerie struct {
 	Title  string
 	Color  string
@@ -78,7 +54,7 @@ func (ir *LineSerie) Len() int {
 	return len(ir.values)
 }
 
-type CurveStyle int8
+type CurveStyle uint8
 
 const (
 	CurveLinear CurveStyle = iota
@@ -89,9 +65,21 @@ const (
 	CurveQuadratic
 )
 
+type ShapeType uint8
+
+const (
+	ShapeDefault ShapeType = iota
+	ShapeSquare
+	ShapeCircle
+	ShapeTriangle
+	ShapeStar
+	ShapeDiamond
+)
+
 type ScatterChart struct {
 	Chart
 	LineAxis
+	Shape  ShapeType
 	Radius float64
 }
 
@@ -109,10 +97,11 @@ func (c ScatterChart) RenderElement(serie LineSerie) svg.Element {
 		dim    = svg.NewDim(c.Width, c.Height)
 		cs     = svg.NewSVG(dim.Option())
 		area   = svg.NewGroup(svg.WithID("area"), c.translate())
-		rx, ry = getLineDomains([]LineSerie{serie})
+		rx, ry = getLineDomains([]LineSerie{serie}, 1.15)
 		dx     = c.GetAreaWidth() / rx.Diff()
 		dy     = c.GetAreaHeight() / ry.Diff()
-		fill   = svg.NewFill("steelblue")
+		fill   = svg.NewFill(serie.Color)
+		strok  = svg.NewStroke("none", 0)
 		pos    svg.Pos
 	)
 	cs.Append(c.drawAxisX(c.Chart, rx))
@@ -127,8 +116,59 @@ func (c ScatterChart) RenderElement(serie LineSerie) svg.Element {
 		if ry.Min < 0 {
 			pos.Y -= math.Abs(ry.Min) * dy
 		}
-		ci := svg.NewCircle(pos.Option(), fill.Option(), svg.WithRadius(c.Radius))
-		area.Append(ci.AsElement())
+		var elem svg.Element
+		switch c.Shape {
+		case ShapeDefault, ShapeCircle:
+			i := svg.NewCircle(pos.Option(), strok.Option(), fill.Option(), svg.WithRadius(c.Radius))
+			elem = i.AsElement()
+		case ShapeTriangle:
+			pos.X -= c.Radius / 2
+			pos.Y -= c.Radius / 2
+			list := []svg.Pos{
+				svg.NewPos(0, c.Radius),
+				svg.NewPos(c.Radius/2, 0),
+				svg.NewPos(c.Radius, c.Radius),
+			}
+			g := svg.NewGroup(svg.WithTranslate(pos.X, pos.Y))
+			p := svg.NewPolygon(list, strok.Option(), fill.Option())
+			g.Append(p.AsElement())
+			elem = g.AsElement()
+		case ShapeStar:
+			pos.X -= c.Radius / 2
+			pos.Y -= c.Radius / 2
+			list := []svg.Pos{
+				svg.NewPos(0, c.Radius),
+				svg.NewPos(c.Radius/3, c.Radius/2),
+				svg.NewPos(0, c.Radius/3),
+				svg.NewPos(c.Radius/3, c.Radius/3),
+				svg.NewPos(c.Radius/2, 0),
+				svg.NewPos(c.Radius*2/3, c.Radius/3),
+				svg.NewPos(c.Radius, c.Radius/3),
+				svg.NewPos(c.Radius*2/3, c.Radius/2),
+				svg.NewPos(c.Radius, c.Radius),
+				svg.NewPos(c.Radius/2, c.Radius*2/3),
+				svg.NewPos(0, c.Radius),
+			}
+			g := svg.NewGroup(svg.WithTranslate(pos.X, pos.Y))
+			p := svg.NewPolygon(list, strok.Option(), fill.Option())
+			g.Append(p.AsElement())
+			elem = g.AsElement()
+		case ShapeDiamond:
+			pos.X -= c.Radius / 2
+			pos.Y -= c.Radius / 2
+			i := svg.NewRect(pos.Option(), fill.Option(), strok.Option(), svg.WithDimension(c.Radius, c.Radius), svg.WithRotate(45, pos.X, pos.Y))
+			elem = i.AsElement()
+		case ShapeSquare:
+			pos.X -= c.Radius / 2
+			pos.Y -= c.Radius / 2
+			i := svg.NewRect(pos.Option(), fill.Option(), strok.Option(), svg.WithDimension(c.Radius, c.Radius))
+			elem = i.AsElement()
+		default:
+		}
+		if elem == nil {
+			continue
+		}
+		area.Append(elem)
 	}
 	cs.Append(area.AsElement())
 	return cs.AsElement()
@@ -164,7 +204,7 @@ func (c LineChart) RenderElement(series []LineSerie) svg.Element {
 		dim    = svg.NewDim(c.Width, c.Height)
 		cs     = svg.NewSVG(dim.Option())
 		area   = svg.NewGroup(svg.WithID("area"), c.translate())
-		rx, ry = getLineDomains(series)
+		rx, ry = getLineDomains(series, 0)
 	)
 	cs.Append(c.drawAxisX(c.Chart, rx))
 	cs.Append(c.drawAxisY(c.Chart, ry))
@@ -367,17 +407,6 @@ func (c *LineChart) checkDefault() {
 	}
 }
 
-func getLineDomains(series []LineSerie) (pair, pair) {
-	var x, y pair
-	for i := range series {
-		x.Min = getLesser(series[i].min.X, x.Min)
-		y.Min = getLesser(series[i].min.Y, y.Min)
-		x.Max = getGreater(series[i].max.X, x.Max)
-		y.Max = getGreater(series[i].max.Y, y.Max)
-	}
-	return x, y
-}
-
 type LineAxis struct {
 	TicksX int
 	TicksY int
@@ -456,4 +485,41 @@ func (a LineAxis) drawTicksY(c Chart, rg pair) svg.Element {
 		grp.Append(getTick(pos1, pos2))
 	}
 	return grp.AsElement()
+}
+
+type pair struct {
+	Min float64
+	Max float64
+}
+
+func (p pair) Diff() float64 {
+	return p.Max - p.Min
+}
+
+func (p pair) AbsMax() float64 {
+	return math.Max(math.Abs(p.Min), math.Abs(p.Max))
+}
+
+func (p pair) AbsMin() float64 {
+	return math.Min(math.Abs(p.Min), math.Abs(p.Max))
+}
+
+func (p pair) extendBy(by float64) pair {
+	p.Min *= by
+	p.Max *= by
+	return p
+}
+
+func getLineDomains(series []LineSerie, mul float64) (pair, pair) {
+	var x, y pair
+	for i := range series {
+		x.Min = getLesser(series[i].min.X, x.Min)
+		y.Min = getLesser(series[i].min.Y, y.Min)
+		x.Max = getGreater(series[i].max.X, x.Max)
+		y.Max = getGreater(series[i].max.Y, y.Max)
+	}
+	if mul <= 1 {
+		return x, y
+	}
+	return x.extendBy(mul), y.extendBy(mul)
 }

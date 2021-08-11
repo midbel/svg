@@ -15,12 +15,14 @@ func main() {
 		Bottom: 40,
 		Top:    20,
 	}
+	c.Radius = 10
+	c.Shape = chart.ShapeStar
 	c.Width = 640
 	c.Height = 480
 	c.TicksY = 10
 	c.TicksX = 5
 
-	var sr chart.LineSerie
+	sr := chart.NewLineSerieWithColor("my serie", "salmon")
 	for i := -100; i < 100; i += 5 {
 		sr.Add(float64(i), float64(-20+rand.Intn(41)))
 	}
