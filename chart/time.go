@@ -74,7 +74,7 @@ func (c TimeChart) Render(w io.Writer, series []TimeSerie) {
 	ws := bufio.NewWriter(w)
 	defer ws.Flush()
 	cs := c.RenderElement(series)
-	cs.Render(w)
+	cs.Render(ws)
 }
 
 func (c TimeChart) RenderElement(series []TimeSerie) svg.Element {

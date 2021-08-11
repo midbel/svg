@@ -27,7 +27,7 @@ func main() {
 			s  = fmt.Sprint("serie-%d", i)
 			sr = chart.NewLineSerieWithColor(s, cs[i])
 		)
-		for i := -100; i < 100; i+=20	 {
+		for i := -100; i < 100; i += 20 {
 			sr.Add(float64(i), float64(-20+rand.Intn(41)))
 		}
 		xs = append(xs, sr)
