@@ -20,8 +20,10 @@ type valuepoint struct {
 }
 
 type LineSerie struct {
-	Title  string
-	Color  string
+	Title string
+	Color string
+	Shape ShapeType
+
 	values []valuepoint
 	min    valuepoint
 	max    valuepoint
@@ -83,30 +85,45 @@ type ScatterChart struct {
 	Radius float64
 }
 
-func (c ScatterChart) Render(w io.Writer, serie LineSerie) {
+func (c ScatterChart) Render(w io.Writer, series []LineSerie) {
 	ws := bufio.NewWriter(w)
 	defer ws.Flush()
-	cs := c.RenderElement(serie)
+	cs := c.RenderElement(series)
 	cs.Render(ws)
 }
 
-func (c ScatterChart) RenderElement(serie LineSerie) svg.Element {
+func (c ScatterChart) RenderElement(series []LineSerie) svg.Element {
 	c.checkDefault()
-
 	var (
 		dim    = svg.NewDim(c.Width, c.Height)
 		cs     = svg.NewSVG(dim.Option())
 		area   = svg.NewGroup(svg.WithID("area"), c.translate())
-		rx, ry = getLineDomains([]LineSerie{serie}, 1.15)
-		dx     = c.GetAreaWidth() / rx.Diff()
-		dy     = c.GetAreaHeight() / ry.Diff()
-		fill   = svg.NewFill(serie.Color)
-		strok  = svg.NewStroke("none", 0)
-		pos    svg.Pos
+		rx, ry = getLineDomains(series, 1.15)
 	)
 	cs.Append(c.drawAxisX(c.Chart, rx))
 	cs.Append(c.drawAxisY(c.Chart, ry))
 	area.Append(c.drawTicksY(c.Chart, ry))
+	for i := range series {
+		grp := c.drawSerie(series[i], rx, ry)
+		area.Append(grp)
+	}
+
+	cs.Append(area.AsElement())
+	return cs.AsElement()
+}
+
+func (c ScatterChart) drawSerie(serie LineSerie, rx, ry pair) svg.Element {
+	var (
+		grp   = svg.NewGroup()
+		dx    = c.GetAreaWidth() / rx.Diff()
+		dy    = c.GetAreaHeight() / ry.Diff()
+		fill  = svg.NewFill(serie.Color)
+		strok = svg.NewStroke("none", 0)
+		pos   svg.Pos
+	)
+	if serie.Shape == ShapeDefault {
+		serie.Shape = ShapeCircle
+	}
 	for i := 0; i < serie.Len(); i++ {
 		pos.X = serie.values[i].X * dx
 		if rx.Min < 0 {
@@ -117,7 +134,7 @@ func (c ScatterChart) RenderElement(serie LineSerie) svg.Element {
 			pos.Y -= math.Abs(ry.Min) * dy
 		}
 		var elem svg.Element
-		switch c.Shape {
+		switch serie.Shape {
 		case ShapeDefault, ShapeCircle:
 			i := svg.NewCircle(pos.Option(), strok.Option(), fill.Option(), svg.WithRadius(c.Radius))
 			elem = i.AsElement()
@@ -137,17 +154,17 @@ func (c ScatterChart) RenderElement(serie LineSerie) svg.Element {
 			pos.X -= c.Radius / 2
 			pos.Y -= c.Radius / 2
 			list := []svg.Pos{
-				svg.NewPos(0, c.Radius),
-				svg.NewPos(c.Radius/3, c.Radius/2),
-				svg.NewPos(0, c.Radius/3),
-				svg.NewPos(c.Radius/3, c.Radius/3),
+				svg.NewPos(c.Radius*1/5, c.Radius),
+				svg.NewPos(c.Radius*2/5, c.Radius/2),
+				svg.NewPos(0, c.Radius*2/5),
+				svg.NewPos(c.Radius*2/5, c.Radius*2/5),
 				svg.NewPos(c.Radius/2, 0),
-				svg.NewPos(c.Radius*2/3, c.Radius/3),
-				svg.NewPos(c.Radius, c.Radius/3),
-				svg.NewPos(c.Radius*2/3, c.Radius/2),
-				svg.NewPos(c.Radius, c.Radius),
-				svg.NewPos(c.Radius/2, c.Radius*2/3),
-				svg.NewPos(0, c.Radius),
+				svg.NewPos(c.Radius*3/5, c.Radius*2/5),
+				svg.NewPos(c.Radius, c.Radius*2/5),
+				svg.NewPos(c.Radius*3/5, c.Radius/2),
+				svg.NewPos(c.Radius*4/5, c.Radius),
+				svg.NewPos(c.Radius/2, c.Radius*3/5),
+				svg.NewPos(c.Radius*1/5, c.Radius),
 			}
 			g := svg.NewGroup(svg.WithTranslate(pos.X, pos.Y))
 			p := svg.NewPolygon(list, strok.Option(), fill.Option())
@@ -168,10 +185,9 @@ func (c ScatterChart) RenderElement(serie LineSerie) svg.Element {
 		if elem == nil {
 			continue
 		}
-		area.Append(elem)
+		grp.Append(elem)
 	}
-	cs.Append(area.AsElement())
-	return cs.AsElement()
+	return grp.AsElement()
 }
 
 func (c *ScatterChart) checkDefault() {
