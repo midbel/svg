@@ -114,10 +114,11 @@ type StackedChart struct {
 func (c StackedChart) Render(w io.Writer, series []StackedSerie) {
 	ws := bufio.NewWriter(w)
 	defer ws.Flush()
-	c.render(ws, series)
+	cs := c.RenderElement(series)
+	cs.Render(ws)
 }
 
-func (c StackedChart) render(w svg.Writer, series []StackedSerie) {
+func (c StackedChart) RenderElement(series []StackedSerie) svg.Element {
 	c.checkDefault()
 
 	var (
@@ -145,7 +146,7 @@ func (c StackedChart) render(w svg.Writer, series []StackedSerie) {
 	if c.Ticks > 0 {
 		cs.Append(c.drawAxisY(max))
 	}
-	cs.Render(w)
+	return cs.AsElement()
 }
 
 func (c StackedChart) drawSerie(s StackedSerie, band, max float64) svg.Element {

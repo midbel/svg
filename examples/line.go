@@ -22,13 +22,13 @@ func main() {
 		xs []chart.LineSerie
 		cs = []string{"red", "blue", "green"}
 	)
-	for i := 0; i < 2; i++ {
+	for i := 0; i < 1; i++ {
 		var (
 			s  = fmt.Sprint("serie-%d", i)
 			sr = chart.NewLineSerieWithColor(s, cs[i])
 		)
-		for i := -100; i <= 100; i += 5 + rand.Intn(5) {
-			sr.Add(float64(i), float64(-15+rand.Intn(200)))
+		for i := -100; i < 100; i+=20	 {
+			sr.Add(float64(i), float64(-20+rand.Intn(41)))
 		}
 		xs = append(xs, sr)
 	}

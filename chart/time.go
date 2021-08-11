@@ -48,10 +48,11 @@ type ContribChart struct {
 func (c ContribChart) Render(w io.Writer, series []TimeSerie) {
 	ws := bufio.NewWriter(w)
 	defer ws.Flush()
-	c.render(ws, series)
+	cs := c.RenderElement(series)
+	cs.Render(ws)
 }
 
-func (c ContribChart) render(w svg.Writer, series []TimeSerie) {
+func (c ContribChart) RenderElement(series []TimeSerie) svg.Element {
 	c.checkDefault()
 
 	var (
@@ -60,7 +61,7 @@ func (c ContribChart) render(w svg.Writer, series []TimeSerie) {
 		area = svg.NewGroup(svg.WithID("area"), c.translate())
 	)
 	cs.Append(area.AsElement())
-	cs.Render(w)
+	return cs.AsElement()
 }
 
 type TimeChart struct {
@@ -72,10 +73,11 @@ type TimeChart struct {
 func (c TimeChart) Render(w io.Writer, series []TimeSerie) {
 	ws := bufio.NewWriter(w)
 	defer ws.Flush()
-	c.render(ws, series)
+	cs := c.RenderElement(series)
+	cs.Render(w)
 }
 
-func (c TimeChart) render(w svg.Writer, series []TimeSerie) {
+func (c TimeChart) RenderElement(series []TimeSerie) svg.Element {
 	c.checkDefault()
 
 	var (
@@ -84,7 +86,7 @@ func (c TimeChart) render(w svg.Writer, series []TimeSerie) {
 		area = svg.NewGroup(svg.WithID("area"), c.translate())
 	)
 	cs.Append(area.AsElement())
-	cs.Render(w)
+	return cs.AsElement()
 }
 
 func (c TimeChart) drawSerie(s TimeSerie) svg.Element {

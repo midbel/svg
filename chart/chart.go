@@ -125,7 +125,7 @@ func getGreater(v1, v2 float64) float64 {
 func getPathLine(stk string) svg.Path {
 	var (
 		fill  = svg.NewFill("transparent")
-		strok = svg.NewStroke(stk, 1)
+		strok = svg.NewStroke(stk, 2)
 	)
 	fill.Opacity = 0
 	return svg.NewPath(fill.Option(), strok.Option(), svg.WithClass("line"))

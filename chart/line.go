@@ -81,6 +81,8 @@ type LineChart struct {
 	TicksY int
 	TicksX int
 	Curve  CurveStyle
+	StretchX float64
+	StretchY float64
 }
 
 func (c LineChart) Render(w io.Writer, series []LineSerie) {
@@ -141,6 +143,7 @@ func (c LineChart) drawQuadraticSerie(s LineSerie, px, py pair) svg.Element {
 		wy   = c.GetAreaHeight() / py.Diff()
 		pat  = getPathLine(s.Color)
 		pos  svg.Pos
+		old  svg.Pos
 		ctrl svg.Pos
 	)
 	pos.Y = c.GetAreaHeight() - (s.values[0].Y * wy)
@@ -148,17 +151,15 @@ func (c LineChart) drawQuadraticSerie(s LineSerie, px, py pair) svg.Element {
 		pos.Y -= math.Abs(py.Min) * wy
 	}
 	pat.AbsMoveTo(pos)
-	for i := 2; i < s.Len(); i += 2 {
-		pos.X = (s.values[i].X - s.values[0].X) * wx
+	for i := 1; i < s.Len(); i++ {
+		old = pos
+		pos.X += (s.values[i].X - s.values[i-1].X) * wx
 		pos.Y = c.GetAreaHeight() - (s.values[i].Y * wy)
 		if py.Min < 0 {
 			pos.Y -= math.Abs(py.Min) * wy
 		}
-		ctrl.X = (s.values[i-1].X - s.values[0].X) * wx
-		ctrl.Y = c.GetAreaHeight() - (s.values[i-1].Y * wy)
-		if py.Min < 0 {
-			ctrl.Y -= math.Abs(py.Min) * wy
-		}
+		ctrl.X = old.X
+		ctrl.Y = pos.Y
 		pat.AbsQuadraticCurve(pos, ctrl)
 	}
 	return pat.AsElement()
@@ -186,7 +187,7 @@ func (c LineChart) drawCubicSerie(s LineSerie, px, py pair) svg.Element {
 			pos.Y -= math.Abs(py.Min) * wy
 		}
 		pos.X += (s.values[i].X - s.values[i-1].X) * wx
-		ctrl.X = old.X - (old.X-pos.X)/2
+		ctrl.X = old.X - (old.X-pos.X) * c.StretchX
 		ctrl.Y = pos.Y
 		pat.AbsCubicCurveSimple(pos, ctrl)
 	}
@@ -367,6 +368,20 @@ func (c LineChart) drawTicks(rg pair) svg.Element {
 		grp.Append(getTick(pos1, pos2))
 	}
 	return grp.AsElement()
+}
+
+const defaultStretch = 0.5
+
+func (c *LineChart) checkDefault() {
+	c.Chart.checkDefault()
+	if c.Curve == CurveCubic || c.Curve == CurveQuadratic {
+		if c.StretchX == 0 {
+			c.StretchX = defaultStretch
+		}
+		if c.StretchY == 0 {
+			c.StretchY = defaultStretch
+		}
+	}
 }
 
 func getLineDomains(series []LineSerie) (pair, pair) {

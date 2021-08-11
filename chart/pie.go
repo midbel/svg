@@ -24,10 +24,11 @@ type PieChart struct {
 func (c PieChart) Render(w io.Writer, serie Serie) {
 	ws := bufio.NewWriter(w)
 	defer ws.Flush()
-	c.render(ws, serie)
+	cs := c.RenderElement(serie)
+	cs.Render(ws)
 }
 
-func (c PieChart) render(w svg.Writer, serie Serie) {
+func (c PieChart) RenderElement(serie Serie) svg.Element {
 	c.checkDefault()
 
 	var (
@@ -65,7 +66,7 @@ func (c PieChart) render(w svg.Writer, serie Serie) {
 		angle += v.Value * part
 	}
 	cs.Append(area.AsElement())
-	cs.Render(w)
+	return cs.AsElement()
 }
 
 func (c *PieChart) checkDefault() {

@@ -58,6 +58,9 @@ func (i *List) Append(e Element) {
 	if e == nil {
 		return
 	}
+	if e, ok := e.(*SVG); ok {
+		e.OmitProlog = ok
+	}
 	i.List = append(i.List, e)
 }
 
