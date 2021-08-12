@@ -10,13 +10,6 @@ import (
 	"github.com/midbel/svg/chart"
 )
 
-var pad = chart.Padding{
-	Top:    20,
-	Bottom: 20,
-	Left:   60,
-	Right:  20,
-}
-
 func init() {
 	rand.Seed(time.Now().Unix())
 }
@@ -25,8 +18,8 @@ func main() {
 	var sc chart.StackedChart
 	sc.Width = 640
 	sc.Height = 480
-	sc.Padding = pad //chart.CreatePadding(40, 20)
-	sc.Ticks = 10
+	sc.Padding = chart.CreatePadding(60, 20)
+	sc.CategoryAxis = chart.NewCategoryAxisWith(10, true, true)
 	sc.BarWidth = 22
 
 	count := flag.Int("c", 5, "count")

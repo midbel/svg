@@ -1,7 +1,7 @@
 package chart
 
 import (
-  "github.com/midbel/svg"
+	"github.com/midbel/svg"
 )
 
 type ShapeType uint8
@@ -16,21 +16,21 @@ const (
 )
 
 func (s ShapeType) Draw(rad float64, options ...svg.Option) svg.Element {
-  var elem svg.Element
-  switch s {
-  case ShapeCircle:
-    elem = getCircle(rad, options...)
-  case ShapeTriangle:
-    elem = getTriangle(rad, options...)
-  case ShapeStar:
-    elem = getStar(rad, options...)
-  case ShapeDiamond:
-    elem = getDiamond(rad, options...)
-  case ShapeSquare:
-    elem = getSquare(rad, options...)
-  default:
-  }
-  return elem
+	var elem svg.Element
+	switch s {
+	case ShapeCircle:
+		elem = getCircle(rad, options...)
+	case ShapeTriangle:
+		elem = getTriangle(rad, options...)
+	case ShapeStar:
+		elem = getStar(rad, options...)
+	case ShapeDiamond:
+		elem = getDiamond(rad, options...)
+	case ShapeSquare:
+		elem = getSquare(rad, options...)
+	default:
+	}
+	return elem
 }
 
 func getDiamond(rad float64, options ...svg.Option) svg.Element {

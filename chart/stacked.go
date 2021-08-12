@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-	"math"
 
 	"github.com/midbel/svg"
 	"github.com/midbel/svg/colors"
@@ -61,19 +60,19 @@ type StackedSerie struct {
 	Title  string
 	Series []Serie
 	max    float64
+	min    float64
 }
 
 func NewStackedSerie(title string) StackedSerie {
 	return StackedSerie{
 		Title: title,
-		max:   math.NaN(),
 	}
 }
 
 func (sr *StackedSerie) Append(s Serie) {
-	if sum := s.Sum(); math.IsNaN(sr.max) || sum > sr.max {
-		sr.max = sum
-	}
+	sum := s.Sum()
+	sr.min = getLesser(sr.min, sum)
+	sr.max = getGreater(sr.max, sum)
 	sr.Series = append(sr.Series, s)
 }
 
@@ -83,6 +82,8 @@ func (sr *StackedSerie) Len() int {
 
 type BarChart struct {
 	Chart
+	CategoryAxis
+
 	BarWidth float64
 	Ticks    int
 }
@@ -90,10 +91,11 @@ type BarChart struct {
 func (c BarChart) Render(w io.Writer, serie []Serie) {
 	ws := bufio.NewWriter(w)
 	defer ws.Flush()
-	c.render(ws, serie)
+	cs := c.RenderElement(serie)
+	cs.Render(ws)
 }
 
-func (c BarChart) render(w svg.Writer, serie []Serie) {
+func (c BarChart) RenderElement(serie []Serie) svg.Element {
 	c.checkDefault()
 	var (
 		dim  = svg.NewDim(c.Width, c.Height)
@@ -101,11 +103,12 @@ func (c BarChart) render(w svg.Writer, serie []Serie) {
 		area = svg.NewGroup(svg.WithID("area"), c.translate())
 	)
 	cs.Append(area.AsElement())
-	cs.Render(w)
+	return cs.AsElement()
 }
 
 type StackedChart struct {
 	Chart
+	CategoryAxis
 
 	BarWidth float64
 	Ticks    int
@@ -122,30 +125,24 @@ func (c StackedChart) RenderElement(series []StackedSerie) svg.Element {
 	c.checkDefault()
 
 	var (
-		dim     = svg.NewDim(c.Width, c.Height)
-		cs      = svg.NewSVG(dim.Option())
-		area    = svg.NewGroup(svg.WithID("area"), c.translate())
-		max, ds = getStackedDomains(series)
+		dim    = svg.NewDim(c.Width, c.Height)
+		cs     = svg.NewSVG(dim.Option())
+		area   = svg.NewGroup(svg.WithID("area"), c.translate())
+		rg, ds = getStackedDomains(series)
+		offset = c.GetAreaWidth() / float64(len(series))
 	)
-	if c.Ticks > 0 {
-		area.Append(c.drawTicks(max))
-	}
 
-	offset := c.GetAreaWidth() / float64(len(series))
+	cs.Append(c.drawAxis(c.Chart, rg, ds))
 	for i := range series {
 		var (
 			off  = offset * float64(i)
 			grp  = svg.NewGroup(svg.WithTranslate(off, 0))
-			elem = c.drawSerie(series[i], offset, max)
+			elem = c.drawSerie(series[i], offset, rg.Max)
 		)
 		grp.Append(elem)
 		area.Append(grp.AsElement())
 	}
 	cs.Append(area.AsElement())
-	cs.Append(c.drawAxisX(ds))
-	if c.Ticks > 0 {
-		cs.Append(c.drawAxisY(max))
-	}
 	return cs.AsElement()
 }
 
@@ -192,88 +189,15 @@ func (c StackedChart) drawSerie(s StackedSerie, band, max float64) svg.Element {
 	return grp.AsElement()
 }
 
-func (c StackedChart) drawAxisX(domains []string) svg.Element {
-	var (
-		axis = svg.NewGroup(c.getOptionsAxisX()...)
-		pos1 = svg.NewPos(0, 0)
-		pos2 = svg.NewPos(c.GetAreaWidth(), 0)
-		line = svg.NewLine(pos1, pos2, axisstrok.Option(), svg.WithClass("domain"))
-		step = c.GetAreaWidth() / float64(len(domains))
-	)
-	axis.Append(line.AsElement())
-	for i := 0; i < len(domains); i++ {
-		var (
-			grp  = svg.NewGroup(svg.WithClass("tick"))
-			off  = float64(i) * step
-			pos0 = svg.NewPos(off+(step/3), textick)
-			pos1 = svg.NewPos(off+step, 0)
-			pos2 = svg.NewPos(off+step, ticklen)
-			text = svg.NewText(domains[i], pos0.Option())
-			line = svg.NewLine(pos1, pos2, axisstrok.Option())
-		)
-		grp.Append(text.AsElement())
-		grp.Append(line.AsElement())
-		axis.Append(grp.AsElement())
-	}
-	return axis.AsElement()
-}
-
-func (c StackedChart) drawAxisY(max float64) svg.Element {
-	var (
-		axis  = svg.NewGroup(c.getOptionsAxisY()...)
-		pos1  = svg.NewPos(0, 0)
-		pos2  = svg.NewPos(0, c.GetAreaHeight()+1)
-		line  = svg.NewLine(pos1, pos2, axisstrok.Option(), svg.WithClass("domain"))
-		step  = c.GetAreaHeight() / max
-		coeff = max / float64(c.Ticks)
-	)
-	axis.Append(line.AsElement())
-	for i := c.Ticks; i >= 0; i-- {
-		var (
-			grp  = svg.NewGroup(svg.WithClass("tick"))
-			val  = coeff * float64(i)
-			pos  = svg.NewPos(0, c.GetAreaHeight()-(step*val)+(ticklen/2))
-			anc  = svg.WithAnchor("end")
-			text = svg.NewText(formatFloat(val), anc, pos.Option())
-			pos1 = svg.NewPos(-ticklen, c.GetAreaHeight()-(step*val))
-			pos2 = svg.NewPos(0, c.GetAreaHeight()-(step*val))
-			line = svg.NewLine(pos1, pos2, axisstrok.Option())
-		)
-		text.Shift = svg.NewPos(-ticklen*2, 0)
-		grp.Append(text.AsElement())
-		grp.Append(line.AsElement())
-		axis.Append(grp.AsElement())
-	}
-	return axis.AsElement()
-}
-
-func (c StackedChart) drawTicks(max float64) svg.Element {
-	var (
-		grp   = svg.NewGroup(svg.WithID("ticks"))
-		step  = c.GetAreaHeight() / max
-		coeff = max / float64(c.Ticks)
-	)
-	for i := c.Ticks; i > 0; i-- {
-		var (
-			ypos = c.GetAreaHeight() - (float64(i) * coeff * step)
-			pos1 = svg.NewPos(0, ypos)
-			pos2 = svg.NewPos(c.GetAreaWidth(), ypos)
-		)
-		grp.Append(getTick(pos1, pos2))
-	}
-	return grp.AsElement()
-}
-
-func getStackedDomains(cs []StackedSerie) (float64, []string) {
+func getStackedDomains(cs []StackedSerie) (pair, []string) {
 	var (
 		ys []string
-		xs float64
+		xs pair
 	)
 	for i := range cs {
 		ys = append(ys, cs[i].Title)
-		if i == 0 || cs[i].max > xs {
-			xs = cs[i].max
-		}
+		xs.Max = getGreater(xs.Max, cs[i].max)
+		xs.Min = getLesser(xs.Min, cs[i].min)
 	}
 	return xs, ys
 }
