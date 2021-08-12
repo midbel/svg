@@ -2,7 +2,6 @@ package chart
 
 import (
 	"bufio"
-	"fmt"
 	"io"
 	"math"
 
@@ -89,9 +88,7 @@ func (c ScatterChart) RenderElement(series []LineSerie) svg.Element {
 		area   = svg.NewGroup(svg.WithID("area"), c.translate())
 		rx, ry = getLineDomains(series, 1.15)
 	)
-	cs.Append(c.drawAxisX(c.Chart, rx))
-	cs.Append(c.drawAxisY(c.Chart, ry))
-	area.Append(c.drawTicksY(c.Chart, ry))
+	cs.Append(c.drawAxis(c.Chart, rx, ry))
 	for i := range series {
 		grp := c.drawSerie(series[i], rx, ry)
 		area.Append(grp)
@@ -185,9 +182,7 @@ func (c LineChart) RenderElement(series []LineSerie) svg.Element {
 		rx, ry = getLineDomains(series, 0)
 	)
 	ry = ry.extendBy(1.2)
-	cs.Append(c.drawAxisX(c.Chart, rx))
-	cs.Append(c.drawAxisY(c.Chart, ry))
-	area.Append(c.drawTicksY(c.Chart, ry))
+	cs.Append(c.drawAxis(c.Chart, rx, ry))
 	for i := range series {
 		var elem svg.Element
 		switch c.Curve {
@@ -384,86 +379,6 @@ func (c *LineChart) checkDefault() {
 			c.StretchY = defaultStretch
 		}
 	}
-}
-
-type LineAxis struct {
-	TicksX int
-	TicksY int
-}
-
-func (a LineAxis) drawAxisX(c Chart, rg pair) svg.Element {
-	var (
-		axis  = svg.NewGroup(c.getOptionsAxisX()...)
-		pos1  = svg.NewPos(0, 0)
-		pos2  = svg.NewPos(c.GetAreaWidth(), 0)
-		line  = svg.NewLine(pos1, pos2, axisstrok.Option(), svg.WithClass("domain"))
-		coeff = c.GetAreaWidth() / float64(a.TicksX)
-		step  = math.Ceil(rg.Diff() / float64(a.TicksX))
-	)
-	_ = fmt.Sprintf
-	for i, j := rg.Min, 0; i < rg.Max+step; i, j = i+step, j+1 {
-		var (
-			grp  = svg.NewGroup(svg.WithClass("tick"))
-			off  = float64(j) * coeff
-			pos0 = svg.NewPos(off-(coeff*0.2), textick+(textick/3))
-			pos1 = svg.NewPos(off, 0)
-			pos2 = svg.NewPos(off, ticklen)
-			text = svg.NewText(formatFloat(i), pos0.Option())
-			line = svg.NewLine(pos1, pos2, axisstrok.Option())
-		)
-		grp.Append(text.AsElement())
-		grp.Append(line.AsElement())
-		axis.Append(grp.AsElement())
-	}
-	axis.Append(line.AsElement())
-	return axis.AsElement()
-}
-
-func (a LineAxis) drawAxisY(c Chart, rg pair) svg.Element {
-	var (
-		axis  = svg.NewGroup(c.getOptionsAxisY()...)
-		pos1  = svg.NewPos(0, 0)
-		pos2  = svg.NewPos(0, c.GetAreaHeight()+1)
-		line  = svg.NewLine(pos1, pos2, axisstrok.Option(), svg.WithClass("domain"))
-		coeff = c.GetAreaHeight() / float64(a.TicksY)
-		step  = rg.Diff() / float64(a.TicksY)
-	)
-	axis.Append(line.AsElement())
-	for i, j := rg.Min, 0; i < rg.Max+step; i, j = i+step, j+1 {
-		var (
-			grp  = svg.NewGroup(svg.WithClass("tick"))
-			ypos = c.GetAreaHeight() - (float64(j) * coeff)
-			pos  = svg.NewPos(0, ypos+(ticklen/2))
-			anc  = svg.WithAnchor("end")
-			text = svg.NewText(formatFloat(i), anc, pos.Option())
-			pos1 = svg.NewPos(-ticklen, ypos)
-			pos2 = svg.NewPos(0, ypos)
-			line = svg.NewLine(pos1, pos2, axisstrok.Option())
-		)
-		text.Shift = svg.NewPos(-ticklen*2, 0)
-		grp.Append(text.AsElement())
-		grp.Append(line.AsElement())
-		axis.Append(grp.AsElement())
-	}
-	return axis.AsElement()
-}
-
-func (a LineAxis) drawTicksY(c Chart, rg pair) svg.Element {
-	var (
-		max   = rg.AbsMax()
-		grp   = svg.NewGroup(svg.WithID("ticks"))
-		step  = c.GetAreaHeight() / max
-		coeff = max / float64(a.TicksY)
-	)
-	for i := a.TicksY; i > 0; i-- {
-		var (
-			ypos = c.GetAreaHeight() - (float64(i) * coeff * step)
-			pos1 = svg.NewPos(0, ypos)
-			pos2 = svg.NewPos(c.GetAreaWidth(), ypos)
-		)
-		grp.Append(getTick(pos1, pos2))
-	}
-	return grp.AsElement()
 }
 
 type pair struct {

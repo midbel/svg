@@ -19,8 +19,13 @@ func main() {
 	c.Shape = chart.ShapeStar
 	c.Width = 640
 	c.Height = 480
-	c.TicksY = 10
-	c.TicksX = 5
+	c.OuterTicksY = 10
+	c.InnerTicksX = 5
+	c.InnerTicksY = 5
+	c.DomainX = true
+	c.LabelX = true
+	c.LabelY = true
+	// c.DomainY = true
 
 	sr1 := chart.NewLineSerieWithColor("triangle", "salmon")
 	sr1.Shape = chart.ShapeTriangle

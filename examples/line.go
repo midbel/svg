@@ -77,8 +77,14 @@ func getChart(curve chart.CurveStyle, data []chart.LineSerie) svg.Element {
 	c.Curve = curve
 	c.Width = 480
 	c.Height = 360
-	c.TicksY = 7
-	c.TicksX = 7
+	c.InnerTicksY = 7
+	c.OuterTicksY = 7
+	c.InnerTicksX = 7
+	c.OuterTicksX = 7
+	c.DomainX = true
+	c.DomainY = true
+	c.LabelX = true
+	c.LabelY = true
 
 	e := c.RenderElement(data)
 	if e, ok := e.(*svg.SVG); ok {
