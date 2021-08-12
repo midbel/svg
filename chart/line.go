@@ -117,8 +117,8 @@ func (c ScatterChart) drawSerie(serie LineSerie, rx, ry pair) svg.Element {
 		grp   = svg.NewGroup()
 		dx    = c.GetAreaWidth() / rx.Diff()
 		dy    = c.GetAreaHeight() / ry.Diff()
-		fill  = svg.NewFill(serie.Color)
-		strok = svg.NewStroke("none", 0)
+		fill  = svg.NewFill(serie.Color).Option()
+		strok = svg.NewStroke("none", 0).Option()
 		pos   svg.Pos
 	)
 	if serie.Shape == ShapeDefault {
@@ -134,52 +134,32 @@ func (c ScatterChart) drawSerie(serie LineSerie, rx, ry pair) svg.Element {
 			pos.Y -= math.Abs(ry.Min) * dy
 		}
 		var elem svg.Element
-		switch serie.Shape {
+		switch xy := pos.Option(); serie.Shape {
 		case ShapeDefault, ShapeCircle:
-			i := svg.NewCircle(pos.Option(), strok.Option(), fill.Option(), svg.WithRadius(c.Radius))
-			elem = i.AsElement()
+			elem = getCircle(c.Radius, xy, strok, fill)
 		case ShapeTriangle:
 			pos.X -= c.Radius / 2
 			pos.Y -= c.Radius / 2
-			list := []svg.Pos{
-				svg.NewPos(0, c.Radius),
-				svg.NewPos(c.Radius/2, 0),
-				svg.NewPos(c.Radius, c.Radius),
-			}
 			g := svg.NewGroup(svg.WithTranslate(pos.X, pos.Y))
-			p := svg.NewPolygon(list, strok.Option(), fill.Option())
-			g.Append(p.AsElement())
+			i := getTriangle(c.Radius, strok, fill)
+			g.Append(i)
 			elem = g.AsElement()
 		case ShapeStar:
 			pos.X -= c.Radius / 2
 			pos.Y -= c.Radius / 2
-			list := []svg.Pos{
-				svg.NewPos(c.Radius*1/5, c.Radius),
-				svg.NewPos(c.Radius*2/5, c.Radius/2),
-				svg.NewPos(0, c.Radius*2/5),
-				svg.NewPos(c.Radius*2/5, c.Radius*2/5),
-				svg.NewPos(c.Radius/2, 0),
-				svg.NewPos(c.Radius*3/5, c.Radius*2/5),
-				svg.NewPos(c.Radius, c.Radius*2/5),
-				svg.NewPos(c.Radius*3/5, c.Radius/2),
-				svg.NewPos(c.Radius*4/5, c.Radius),
-				svg.NewPos(c.Radius/2, c.Radius*3/5),
-				svg.NewPos(c.Radius*1/5, c.Radius),
-			}
 			g := svg.NewGroup(svg.WithTranslate(pos.X, pos.Y))
-			p := svg.NewPolygon(list, strok.Option(), fill.Option())
-			g.Append(p.AsElement())
+			i := getStar(c.Radius, strok, fill)
+			g.Append(i)
 			elem = g.AsElement()
 		case ShapeDiamond:
 			pos.X -= c.Radius / 2
 			pos.Y -= c.Radius / 2
-			i := svg.NewRect(pos.Option(), fill.Option(), strok.Option(), svg.WithDimension(c.Radius, c.Radius), svg.WithRotate(45, pos.X, pos.Y))
-			elem = i.AsElement()
+			rot := svg.WithRotate(45, pos.X, pos.Y)
+			elem = getDiamond(c.Radius, xy, fill, strok, rot)
 		case ShapeSquare:
 			pos.X -= c.Radius / 2
 			pos.Y -= c.Radius / 2
-			i := svg.NewRect(pos.Option(), fill.Option(), strok.Option(), svg.WithDimension(c.Radius, c.Radius))
-			elem = i.AsElement()
+			elem = getSquare(c.Radius, xy, fill, strok)
 		default:
 		}
 		if elem == nil {
@@ -538,4 +518,58 @@ func getLineDomains(series []LineSerie, mul float64) (pair, pair) {
 		return x, y
 	}
 	return x.extendBy(mul), y.extendBy(mul)
+}
+
+func getDiamond(rad float64, options ...svg.Option) svg.Element {
+	options = append(options, svg.WithDimension(rad, rad))
+	i := svg.NewRect(options...)
+	return i.AsElement()
+}
+
+func getSquare(rad float64, options ...svg.Option) svg.Element {
+	options = append(options, svg.WithDimension(rad, rad))
+	i := svg.NewRect(options...)
+	return i.AsElement()
+}
+
+func getTriangle(rad float64, options ...svg.Option) svg.Element {
+	points := []svg.Pos{
+		svg.NewPos(0, rad),
+		svg.NewPos(rad/2, 0),
+		svg.NewPos(rad, rad),
+	}
+	i := svg.NewPolygon(points, options...)
+	return i.AsElement()
+}
+
+func getCircle(rad float64, options ...svg.Option) svg.Element {
+	options = append(options, svg.WithRadius(rad/2))
+	i := svg.NewCircle(options...)
+	return i.AsElement()
+}
+
+func getStar(rad float64, options ...svg.Option) svg.Element {
+	rad *= 2
+	var (
+		onerad   = rad / 5
+		tworad   = onerad * 2
+		threerad = onerad * 3
+		fourrad  = onerad * 4
+		halfrad  = rad / 2
+	)
+	points := []svg.Pos{
+		svg.NewPos(onerad, rad),
+		svg.NewPos(tworad, halfrad),
+		svg.NewPos(0, tworad),
+		svg.NewPos(tworad, tworad),
+		svg.NewPos(halfrad, 0),
+		svg.NewPos(threerad, tworad),
+		svg.NewPos(rad, tworad),
+		svg.NewPos(threerad, halfrad),
+		svg.NewPos(fourrad, rad),
+		svg.NewPos(halfrad, threerad),
+		svg.NewPos(onerad, rad),
+	}
+	i := svg.NewPolygon(points, options...)
+	return i.AsElement()
 }
