@@ -22,8 +22,8 @@ func main() {
 	c.Padding = chart.CreatePadding(20, 20)
 	c.Width = 720
 	c.Height = 720
-	c.OutRadius = 300
-	c.InRadius = 120
+	c.OuterRadius = 300
+	c.InnerRadius = 120
 
 	repos := []string{
 		"toml",

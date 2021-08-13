@@ -41,6 +41,10 @@ func (ir *TimeSerie) Add(x time.Time, y float64) {
 	ir.values = append(ir.values, vp)
 }
 
+type GanttChart struct {
+	Chart
+}
+
 type ContribChart struct {
 	Chart
 }
