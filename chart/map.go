@@ -3,6 +3,7 @@ package chart
 import (
 	"bufio"
 	"io"
+	// "fmt"
 
 	"github.com/midbel/svg"
 )
@@ -92,10 +93,90 @@ func (c TreemapChart) RenderElement(series []Hierarchy) svg.Element {
 	case TilingHorizontal:
 		c.drawHorizontal(&area, series, c.GetAreaWidth()/getSum(series))
 	case TilingAlternate:
+		c.drawAlternate(&area, series)
 	default:
 	}
 	cs.Append(area.AsElement())
 	return cs.AsElement()
+}
+
+func (c TreemapChart) drawAlternate(a appender, series []Hierarchy) {
+	var (
+		part = c.GetAreaWidth() / getSum(series)
+		off  float64
+	)
+	for i := range series {
+		var (
+			grp   = svg.NewGroup(svg.WithTranslate(off, 0))
+			width = series[i].Value * part
+		)
+		if m := series[i].Len() % 2; m == 0 {
+			c.alternateHorizontal(&grp, series[i], width, c.GetAreaHeight())
+		} else {
+			c.alternateVertical(&grp, series[i], width, c.GetAreaHeight())
+		}
+		off += series[i].Value * part
+		a.Append(grp.AsElement())
+	}
+}
+
+func (c TreemapChart) alternateHorizontal(a appender, serie Hierarchy, width, height float64) {
+	var (
+		sum   = serie.Sum()
+		wpart = width / sum
+		off   float64
+	)
+	for i := range serie.Sub {
+		sub := serie.Sub[i].Value * wpart
+		if serie.Sub[i].isLeaf() {
+			var (
+				fill  = svg.NewFill("steelblue")
+				strok = svg.NewStroke("white", 2)
+				dim   = svg.NewDim(sub, height)
+			)
+			r := svg.NewRect(svg.WithPosition(off, 0), dim.Option(), fill.Option(), strok.Option())
+			a.Append(r.AsElement())
+		} else {
+			grp := svg.NewGroup(svg.WithTranslate(off, 0), svg.WithClass("horizontal"))
+			if m := serie.Sub[i].Depth(); m == 0 {
+				c.alternateHorizontal(&grp, serie.Sub[i], sub, height)
+			} else {
+				c.alternateVertical(&grp, serie.Sub[i], sub, height)
+			}
+			a.Append(grp.AsElement())
+		}
+		off += sub
+	}
+}
+
+func (c TreemapChart) alternateVertical(a appender, serie Hierarchy, width, height float64) {
+	var (
+		sum   = serie.Sum()
+		hpart = height / sum
+		wpart = width / sum
+		off   float64
+	)
+	for i := range serie.Sub {
+		sub := serie.Sub[i].Value * hpart
+		if serie.Sub[i].isLeaf() {
+			var (
+				fill  = svg.NewFill("steelblue")
+				strok = svg.NewStroke("white", 2)
+				dim   = svg.NewDim(width, sub)
+			)
+			r := svg.NewRect(svg.WithPosition(0, off), dim.Option(), fill.Option(), strok.Option())
+			a.Append(r.AsElement())
+		} else {
+			grp := svg.NewGroup(svg.WithTranslate(0, off), svg.WithClass("vertical"))
+			if m := serie.Sub[i].Depth(); m == 0 {
+				c.alternateHorizontal(&grp, serie.Sub[i], serie.Sub[i].Value*wpart, sub)
+			} else {
+				c.alternateVertical(&grp, serie.Sub[i], width, sub)
+			}
+			a.Append(grp.AsElement())
+		}
+		off += sub
+	}
 }
 
 func (c TreemapChart) drawHorizontal(a appender, series []Hierarchy, part float64) {
