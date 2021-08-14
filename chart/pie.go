@@ -25,6 +25,9 @@ type SunburstChart struct {
 func (c SunburstChart) Render(w io.Writer, series []Hierarchy) {
 	ws := bufio.NewWriter(w)
 	defer ws.Flush()
+	if len(series) == 1 {
+		series = series[0].Sub
+	}
 	cs := c.RenderElement(series)
 	cs.Render(ws)
 }
@@ -43,18 +46,18 @@ func (c SunburstChart) RenderElement(series []Hierarchy) svg.Element {
 	)
 	for i := range series {
 		var (
-			color = colors.PuBu6[len(series)-i%len(colors.PuBu6)]
-			elem  = c.drawSerie(series[i], color, angle, part, float64(height), 0)
+			color = colors.RdYlBu11[i%len(colors.RdYlBu11)]
+			grp   = svg.NewGroup()
 		)
-		area.Append(elem)
+		c.drawSerie(&grp, series[i], color, angle, part, float64(height), 0)
+		area.Append(grp.AsElement())
 		angle += series[i].Value * part
 	}
 	cs.Append(area.AsElement())
 	return cs.AsElement()
 }
 
-func (c SunburstChart) drawSerie(serie Hierarchy, color string, angle, part, height, depth float64) svg.Element {
-	grp := svg.NewGroup()
+func (c SunburstChart) drawSerie(grp appender, serie Hierarchy, color string, angle, part, height, depth float64) {
 	var (
 		inner = height
 		outer = c.distanceFromCenter() + (height * depth) + inner
@@ -81,11 +84,9 @@ func (c SunburstChart) drawSerie(serie Hierarchy, color string, angle, part, hei
 
 	subpart := (serie.Value * part) / serie.Sum()
 	for i := range serie.Sub {
-		elem := c.drawSerie(serie.Sub[i], color, angle, subpart, height, depth+1)
-		grp.Append(elem)
+		c.drawSerie(grp, serie.Sub[i], color, angle, subpart, height, depth+1)
 		angle += serie.Sub[i].Value * subpart
 	}
-	return grp.AsElement()
 }
 
 func (c *SunburstChart) distanceFromCenter() float64 {

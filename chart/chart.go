@@ -12,6 +12,10 @@ const (
 	DefaultHeight = 600
 )
 
+type appender interface {
+	Append(svg.Element)
+}
+
 type Chart struct {
 	Width  float64
 	Height float64
