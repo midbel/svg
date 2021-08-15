@@ -51,7 +51,7 @@ func (c SunburstChart) RenderElement(series []Hierarchy) svg.Element {
 		)
 		c.drawSerie(&grp, series[i], color, angle, part, float64(height), 0)
 		area.Append(grp.AsElement())
-		angle += series[i].Value * part
+		angle += series[i].GetValue() * part
 	}
 	cs.Append(area.AsElement())
 	return cs.AsElement()
@@ -63,13 +63,13 @@ func (c SunburstChart) drawSerie(grp appender, serie Hierarchy, color string, an
 		outer = c.distanceFromCenter() + (height * depth) + inner
 		fill  = svg.NewFill(color)
 		pos1  = getPosFromAngle(angle*deg2rad, outer)
-		pos2  = getPosFromAngle((angle+(serie.Value*part))*deg2rad, outer)
-		pos3  = getPosFromAngle((angle+(serie.Value*part))*deg2rad, outer-inner)
+		pos2  = getPosFromAngle((angle+(serie.GetValue()*part))*deg2rad, outer)
+		pos3  = getPosFromAngle((angle+(serie.GetValue()*part))*deg2rad, outer-inner)
 		pos4  = getPosFromAngle(angle*deg2rad, outer-inner)
 		pat   = svg.NewPath(svg.WithID(serie.Label), fill.Option(), whitstrok.Option())
 		swap  bool
 	)
-	if tmp := serie.Value * part; tmp > halfcirc {
+	if tmp := serie.GetValue() * part; tmp > halfcirc {
 		swap = true
 	}
 	pat.AbsMoveTo(pos1)
@@ -79,13 +79,13 @@ func (c SunburstChart) drawSerie(grp appender, serie Hierarchy, color string, an
 		pat.AbsArcTo(pos4, outer-inner, outer-inner, 0, swap, false)
 	}
 	pat.AbsLineTo(pos1)
-	pat.Title = fmt.Sprintf("%s - %f", serie.Label, serie.Value)
+	pat.Title = fmt.Sprintf("%s - %f", serie.Label, serie.GetValue())
 	grp.Append(pat.AsElement())
 
-	subpart := (serie.Value * part) / serie.Sum()
+	subpart := (serie.GetValue() * part) / serie.Sum()
 	for i := range serie.Sub {
 		c.drawSerie(grp, serie.Sub[i], color, angle, subpart, height, depth+1)
-		angle += serie.Sub[i].Value * subpart
+		angle += serie.Sub[i].GetValue() * subpart
 	}
 }
 

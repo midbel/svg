@@ -161,7 +161,7 @@ func (c TreemapChart) alternateVertical(a appender, serie Hierarchy, color strin
 	var (
 		sum   = serie.Sum()
 		hpart = height / sum
-		off float64
+		off   float64
 	)
 	for i := range serie.Sub {
 		sub := serie.Sub[i].GetValue() * hpart
