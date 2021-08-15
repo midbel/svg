@@ -101,9 +101,6 @@ func (c *SunburstChart) checkDefault() {
 	if c.OuterRadius == 0 {
 		c.OuterRadius = int(math.Min(c.Width, c.Height))
 	}
-	if c.InnerRadius == 0 {
-		c.InnerRadius = c.OuterRadius
-	}
 }
 
 type PieChart struct {

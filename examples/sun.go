@@ -1,7 +1,9 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"flag"
 	"io"
 	"math/rand"
 	"os"
@@ -17,16 +19,30 @@ func init() {
 const limit = 100
 
 func main() {
+	flag.Parse()
 	var c chart.SunburstChart
 	var w io.Writer = os.Stdout
 	c.Padding = chart.CreatePadding(20, 20)
-	c.Width = 720
-	c.Height = 720
-	c.OuterRadius = 320
-	c.InnerRadius = 60
+	c.Width = 800
+	c.Height = 800
+	c.OuterRadius = 380
+	c.InnerRadius = 0
 
-	hs := getHierarchy(1 + rand.Intn(5))
+	hs := load(flag.Arg(0), 1 + rand.Intn(5))
 	c.Render(w, hs)
+}
+
+func load(file string, level int) []chart.Hierarchy {
+	r, err := os.Open(file)
+	if err != nil {
+		return getHierarchy(level)
+	}
+	defer r.Close()
+	var h chart.Hierarchy
+	if err := json.NewDecoder(r).Decode(&h); err != nil {
+		return nil
+	}
+	return []chart.Hierarchy{h}
 }
 
 var letters = "ABCDEFGHIJKLMNOPQRSTUVXYZ"
