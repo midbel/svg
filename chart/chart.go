@@ -108,7 +108,7 @@ const (
 )
 
 func getRect(options ...svg.Option) svg.Rect {
-	options = append(options, whitstrok.Option())
+	options = append(options)
 	return svg.NewRect(options...)
 }
 

@@ -76,20 +76,24 @@ type TreemapChart struct {
 func (c TreemapChart) Render(w io.Writer, series []Hierarchy) {
 	ws := bufio.NewWriter(w)
 	defer ws.Flush()
-	if len(series) == 1 {
-		series = series[0].Sub
-	}
+
 	cs := c.RenderElement(series)
 	cs.Render(ws)
 }
 
 func (c TreemapChart) RenderElement(series []Hierarchy) svg.Element {
+	for len(series) == 1 {
+		series = series[0].Sub
+	}
+	return c.renderElement(series)
+}
+
+func (c TreemapChart) renderElement(series []Hierarchy) svg.Element {
 	c.checkDefault()
 	var (
-		dim   = svg.NewDim(c.Width, c.Height)
-		cs    = svg.NewSVG(dim.Option())
-		strok = svg.NewStroke("white", 2)
-		area  = svg.NewGroup(svg.WithID("area"), strok.Option(), c.translate())
+		dim  = svg.NewDim(c.Width, c.Height)
+		cs   = svg.NewSVG(dim.Option())
+		area = svg.NewGroup(svg.WithID("area"), whitstrok.Option(), c.translate())
 	)
 	switch c.Tiling {
 	case TilingDefault:

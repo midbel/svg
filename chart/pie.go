@@ -39,7 +39,7 @@ func (c SunburstChart) RenderElement(series []Hierarchy) svg.Element {
 		dim    = svg.NewDim(c.Width, c.Height)
 		cs     = svg.NewSVG(dim.Option())
 		cx, cy = c.GetAreaCenter()
-		area   = svg.NewGroup(svg.WithID("area"), svg.WithTranslate(cx, cy))
+		area   = svg.NewGroup(svg.WithID("area"), svg.WithTranslate(cx, cy), whitstrok.Option())
 		height = float64(c.OuterRadius-c.InnerRadius) / getDepth(series)
 		part   = fullcirc / getSum(series)
 		angle  float64
@@ -66,7 +66,7 @@ func (c SunburstChart) drawSerie(grp appender, serie Hierarchy, color string, an
 		pos2  = getPosFromAngle((angle+(serie.GetValue()*part))*deg2rad, outer)
 		pos3  = getPosFromAngle((angle+(serie.GetValue()*part))*deg2rad, outer-inner)
 		pos4  = getPosFromAngle(angle*deg2rad, outer-inner)
-		pat   = svg.NewPath(svg.WithID(serie.Label), fill.Option(), whitstrok.Option())
+		pat   = svg.NewPath(svg.WithID(serie.Label), fill.Option())
 		swap  bool
 	)
 	if tmp := serie.GetValue() * part; tmp > halfcirc {
@@ -125,7 +125,7 @@ func (c PieChart) RenderElement(serie Serie) svg.Element {
 		sum    = serie.Sum()
 		part   = fullcirc / sum
 		cx, cy = c.GetAreaCenter()
-		area   = svg.NewGroup(svg.WithID("area"), svg.WithTranslate(cx, cy))
+		area   = svg.NewGroup(svg.WithID("area"), svg.WithTranslate(cx, cy), whitstrok.Option())
 		angle  float64
 	)
 	for i, v := range serie.values {
@@ -135,7 +135,7 @@ func (c PieChart) RenderElement(serie Serie) svg.Element {
 			pos2 = getPosFromAngle((angle+(v.Value*part))*deg2rad, float64(c.OuterRadius))
 			pos3 = getPosFromAngle((angle+(v.Value*part))*deg2rad, float64(c.OuterRadius-c.InnerRadius))
 			pos4 = getPosFromAngle(angle*deg2rad, float64(c.OuterRadius-c.InnerRadius))
-			pat  = svg.NewPath(svg.WithID(v.Label), fill.Option(), whitstrok.Option())
+			pat  = svg.NewPath(svg.WithID(v.Label), fill.Option())
 			swap bool
 		)
 		if tmp := v.Value * part; tmp > halfcirc {

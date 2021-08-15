@@ -127,7 +127,7 @@ func (c StackedChart) RenderElement(series []StackedSerie) svg.Element {
 	var (
 		dim    = svg.NewDim(c.Width, c.Height)
 		cs     = svg.NewSVG(dim.Option())
-		area   = svg.NewGroup(svg.WithID("area"), c.translate())
+		area   = svg.NewGroup(svg.WithID("area"), c.translate(), whitstrok.Option())
 		rg, ds = getStackedDomains(series)
 		offset = c.GetAreaWidth() / float64(len(series))
 	)
