@@ -1,14 +1,15 @@
 package main
 
 import (
+	"bufio"
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io"
 	"math/rand"
 	"os"
 	"time"
 
+	"github.com/midbel/svg"
 	"github.com/midbel/svg/chart"
 )
 
@@ -20,18 +21,39 @@ const limit = 100
 
 func main() {
 	flag.Parse()
-	var c chart.TreemapChart
-	var w io.Writer = os.Stdout
-	c.Padding = chart.CreatePadding(20, 20)
-	c.Tiling = chart.TilingAlternate
-	c.Width = 1280
-	c.Height = 960
+	var (
+		hs = load(flag.Arg(0), 1+rand.Intn(5))
+		c1 = getChart(hs, chart.TilingHorizontal)
+		c2 = getChart(hs, chart.TilingVertical)
+		c3 = getChart(hs, chart.TilingAlternate)
+	)
+	area := svg.NewSVG(svg.WithDimension(1440, 720))
+	gp1 := svg.NewGroup(svg.WithTranslate(0, 0))
+	gp1.Append(c1)
+	area.Append(gp1.AsElement())
+	gp2 := svg.NewGroup(svg.WithTranslate(480, 0))
+	gp2.Append(c2)
+	area.Append(gp2.AsElement())
+	gp3 := svg.NewGroup(svg.WithTranslate(0, 360))
+	gp3.Append(c3)
+	area.Append(gp3.AsElement())
 
-	hs := load(flag.Arg(0), 1+rand.Intn(5))
-	c.Render(w, hs)
+	w := bufio.NewWriter(os.Stdout)
+	defer w.Flush()
+	area.Render(w)
 }
 
 var letters = "ABCDEFGHIJKLMNOPQRSTUVXYZ"
+
+func getChart(hs []chart.Hierarchy, tiling chart.TilingMethod) svg.Element {
+	var c chart.TreemapChart
+	c.Padding = chart.CreatePadding(20, 20)
+	c.Tiling = tiling
+	c.Width = 480
+	c.Height = 360
+
+	return c.RenderElement(hs)
+}
 
 func load(file string, level int) []chart.Hierarchy {
 	r, err := os.Open(file)

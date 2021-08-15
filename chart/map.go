@@ -86,9 +86,10 @@ func (c TreemapChart) Render(w io.Writer, series []Hierarchy) {
 func (c TreemapChart) RenderElement(series []Hierarchy) svg.Element {
 	c.checkDefault()
 	var (
-		dim  = svg.NewDim(c.Width, c.Height)
-		cs   = svg.NewSVG(dim.Option())
-		area = svg.NewGroup(svg.WithID("area"), c.translate())
+		dim   = svg.NewDim(c.Width, c.Height)
+		cs    = svg.NewSVG(dim.Option())
+		strok = svg.NewStroke("white", 2)
+		area  = svg.NewGroup(svg.WithID("area"), strok.Option(), c.translate())
 	)
 	switch c.Tiling {
 	case TilingDefault:
@@ -114,21 +115,22 @@ func (c TreemapChart) drawAlternate(a appender, series []Hierarchy) {
 	)
 	for i := range series {
 		var (
-			grp   = svg.NewGroup(svg.WithTranslate(off, 0))
-			width = series[i].GetValue() * part
 			color = colors.RdYlBu11[i%len(colors.RdYlBu11)]
+			fill  = svg.NewFill(color)
+			grp   = svg.NewGroup(svg.WithTranslate(off, 0), fill.Option())
+			width = series[i].GetValue() * part
 		)
 		if m := series[i].Depth() % 2; m == 1 {
-			c.alternateHorizontal(&grp, series[i], color, width, c.GetAreaHeight())
+			c.alternateHorizontal(&grp, series[i], width, c.GetAreaHeight())
 		} else {
-			c.alternateVertical(&grp, series[i], color, width, c.GetAreaHeight())
+			c.alternateVertical(&grp, series[i], width, c.GetAreaHeight())
 		}
 		off += series[i].GetValue() * part
 		a.Append(grp.AsElement())
 	}
 }
 
-func (c TreemapChart) alternateHorizontal(a appender, serie Hierarchy, color string, width, height float64) {
+func (c TreemapChart) alternateHorizontal(a appender, serie Hierarchy, width, height float64) {
 	var (
 		sum   = serie.Sum()
 		wpart = width / sum
@@ -138,18 +140,16 @@ func (c TreemapChart) alternateHorizontal(a appender, serie Hierarchy, color str
 		sub := serie.Sub[i].GetValue() * wpart
 		if serie.Sub[i].isLeaf() {
 			var (
-				fill  = svg.NewFill(color)
-				strok = svg.NewStroke("white", 2)
-				dim   = svg.NewDim(sub, height)
+				dim = svg.NewDim(sub, height)
+				rec = svg.NewRect(svg.WithPosition(off, 0), dim.Option())
 			)
-			r := svg.NewRect(svg.WithPosition(off, 0), dim.Option(), fill.Option(), strok.Option())
-			a.Append(r.AsElement())
+			a.Append(rec.AsElement())
 		} else {
 			grp := svg.NewGroup(svg.WithTranslate(off, 0), svg.WithClass("horizontal"))
 			if m := serie.Sub[i].Depth() % 2; m == 1 {
-				c.alternateHorizontal(&grp, serie.Sub[i], color, sub, height)
+				c.alternateHorizontal(&grp, serie.Sub[i], sub, height)
 			} else {
-				c.alternateVertical(&grp, serie.Sub[i], color, sub, height)
+				c.alternateVertical(&grp, serie.Sub[i], sub, height)
 			}
 			a.Append(grp.AsElement())
 		}
@@ -157,7 +157,7 @@ func (c TreemapChart) alternateHorizontal(a appender, serie Hierarchy, color str
 	}
 }
 
-func (c TreemapChart) alternateVertical(a appender, serie Hierarchy, color string, width, height float64) {
+func (c TreemapChart) alternateVertical(a appender, serie Hierarchy, width, height float64) {
 	var (
 		sum   = serie.Sum()
 		hpart = height / sum
@@ -167,18 +167,16 @@ func (c TreemapChart) alternateVertical(a appender, serie Hierarchy, color strin
 		sub := serie.Sub[i].GetValue() * hpart
 		if serie.Sub[i].isLeaf() {
 			var (
-				fill  = svg.NewFill(color)
-				strok = svg.NewStroke("white", 2)
-				dim   = svg.NewDim(width, sub)
+				dim = svg.NewDim(width, sub)
+				rec = svg.NewRect(svg.WithPosition(0, off), dim.Option())
 			)
-			r := svg.NewRect(svg.WithPosition(0, off), dim.Option(), fill.Option(), strok.Option())
-			a.Append(r.AsElement())
+			a.Append(rec.AsElement())
 		} else {
 			grp := svg.NewGroup(svg.WithTranslate(0, off), svg.WithClass("vertical"))
 			if m := serie.Sub[i].Depth() % 2; m == 1 {
-				c.alternateHorizontal(&grp, serie.Sub[i], color, width, sub)
+				c.alternateHorizontal(&grp, serie.Sub[i], width, sub)
 			} else {
-				c.alternateVertical(&grp, serie.Sub[i], color, width, sub)
+				c.alternateVertical(&grp, serie.Sub[i], width, sub)
 			}
 			a.Append(grp.AsElement())
 		}
@@ -191,12 +189,11 @@ func (c TreemapChart) drawHorizontal(a appender, series []Hierarchy, part float6
 	for i := range series {
 		if series[i].isLeaf() {
 			var (
-				pos   = svg.NewPos(off, 0)
-				dim   = svg.NewDim(series[i].GetValue()*part, c.GetAreaHeight())
-				fill  = svg.NewFill("steelblue")
-				strok = svg.NewStroke("white", 2)
+				pos  = svg.NewPos(off, 0)
+				dim  = svg.NewDim(series[i].GetValue()*part, c.GetAreaHeight())
+				fill = svg.NewFill("steelblue")
 			)
-			r := svg.NewRect(pos.Option(), dim.Option(), fill.Option(), strok.Option())
+			r := svg.NewRect(pos.Option(), dim.Option(), fill.Option())
 			r.Title = series[i].Label
 			a.Append(r.AsElement())
 		} else {
@@ -213,12 +210,11 @@ func (c TreemapChart) drawVertical(a appender, series []Hierarchy, part float64)
 	for i := range series {
 		if series[i].isLeaf() {
 			var (
-				pos   = svg.NewPos(0, off)
-				dim   = svg.NewDim(c.GetAreaWidth(), series[i].GetValue()*part)
-				fill  = svg.NewFill("steelblue")
-				strok = svg.NewStroke("white", 2)
+				pos  = svg.NewPos(0, off)
+				dim  = svg.NewDim(c.GetAreaWidth(), series[i].GetValue()*part)
+				fill = svg.NewFill("steelblue")
 			)
-			r := svg.NewRect(pos.Option(), dim.Option(), fill.Option(), strok.Option())
+			r := svg.NewRect(pos.Option(), dim.Option(), fill.Option())
 			r.Title = series[i].Label
 			a.Append(r.AsElement())
 		} else {

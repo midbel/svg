@@ -2,8 +2,8 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"flag"
+	"fmt"
 	"io"
 	"math/rand"
 	"os"
@@ -28,7 +28,7 @@ func main() {
 	c.OuterRadius = 380
 	c.InnerRadius = 0
 
-	hs := load(flag.Arg(0), 1 + rand.Intn(5))
+	hs := load(flag.Arg(0), 1+rand.Intn(5))
 	c.Render(w, hs)
 }
 
