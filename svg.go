@@ -412,6 +412,14 @@ type Ellipse struct {
 	Transform
 }
 
+func NewEllipse(options ...Option) Ellipse {
+	var e Ellipse
+	for _, o := range options {
+		o(&e)
+	}
+	return e
+}
+
 func (e *Ellipse) Render(w Writer) {
 	e.render(w, "ellipse", e.List, e, e.Stroke, e.Fill, e.Transform)
 }
@@ -477,10 +485,7 @@ type Text struct {
 }
 
 func NewText(str string, options ...Option) Text {
-	t := Text{
-		Font: DefaultFont,
-		Fill: DefaultFill,
-	}
+	var t Text
 	t.Append(Literal(str))
 	for _, o := range options {
 		o(&t)
@@ -559,7 +564,6 @@ func NewLine(starts, ends Pos, options ...Option) Line {
 	i := Line{
 		Starts: starts,
 		Ends:   ends,
-		Stroke: DefaultStroke,
 	}
 	for _, o := range options {
 		o(&i)
@@ -631,7 +635,6 @@ type Path struct {
 
 func NewPath(options ...Option) Path {
 	var p Path
-	p.Stroke = DefaultStroke
 	for _, o := range options {
 		o(&p)
 	}
