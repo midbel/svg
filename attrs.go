@@ -145,15 +145,23 @@ func (p Pos) Option() Option {
 
 func (p Pos) Attributes() []string {
 	var attrs []string
-	attrs = append(attrs, appendFloat("x", p.X))
-	attrs = append(attrs, appendFloat("y", p.Y))
+	if p.X != 0 {
+		attrs = append(attrs, appendFloat("x", p.X))
+	}
+	if p.Y != 0 {
+		attrs = append(attrs, appendFloat("y", p.Y))
+	}
 	return attrs
 }
 
 func (p Pos) Center() []string {
 	var attrs []string
-	attrs = append(attrs, appendFloat("cx", p.X))
-	attrs = append(attrs, appendFloat("cy", p.Y))
+	if p.X != 0 {
+		attrs = append(attrs, appendFloat("cx", p.X))
+	}
+	if p.Y != 0 {
+		attrs = append(attrs, appendFloat("cy", p.Y))
+	}
 	return attrs
 }
 
@@ -179,8 +187,12 @@ func (d Dim) Option() Option {
 
 func (d Dim) Attributes() []string {
 	var attrs []string
-	attrs = append(attrs, appendFloat("width", d.W))
-	attrs = append(attrs, appendFloat("height", d.H))
+	if d.W != 0 {
+		attrs = append(attrs, appendFloat("width", d.W))
+	}
+	if d.H != 0 {
+		attrs = append(attrs, appendFloat("height", d.H))
+	}
 	return attrs
 }
 
@@ -266,7 +278,7 @@ type Fill struct {
 
 func NewFill(color string) Fill {
 	if color == "" {
-		color = "black"
+		color = "none"
 	}
 	return Fill{Color: color, Opacity: 100}
 }
