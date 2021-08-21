@@ -26,6 +26,7 @@ func main() {
 		c1 = getChart(hs, chart.TilingHorizontal)
 		c2 = getChart(hs, chart.TilingVertical)
 		c3 = getChart(hs, chart.TilingAlternate)
+		c4 = getChart(hs, chart.TilingDefault)
 	)
 	area := svg.NewSVG(svg.WithDimension(1440, 720))
 	gp1 := svg.NewGroup(svg.WithTranslate(0, 0))
@@ -37,10 +38,15 @@ func main() {
 	gp3 := svg.NewGroup(svg.WithTranslate(0, 360))
 	gp3.Append(c3)
 	area.Append(gp3.AsElement())
+	gp4 := svg.NewGroup(svg.WithTranslate(480, 360))
+	gp4.Append(c4)
+	area.Append(gp4.AsElement())
 
 	w := bufio.NewWriter(os.Stdout)
 	defer w.Flush()
 	area.Render(w)
+
+	// getChart(hs, chart.TilingDefault)
 }
 
 var letters = "ABCDEFGHIJKLMNOPQRSTUVXYZ"

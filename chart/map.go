@@ -2,7 +2,10 @@ package chart
 
 import (
 	"bufio"
+	"fmt"
 	"io"
+	"math"
+	"sort"
 
 	"github.com/midbel/svg"
 	"github.com/midbel/svg/colors"
@@ -62,6 +65,7 @@ type TilingMethod uint8
 
 const (
 	TilingDefault TilingMethod = iota
+	TillingSquarify
 	TilingBinary
 	TilingVertical
 	TilingHorizontal
@@ -97,7 +101,7 @@ func (c TreemapChart) renderElement(series []Hierarchy) svg.Element {
 	)
 	switch c.Tiling {
 	case TilingDefault:
-		c.drawDefault(&area, series)
+		c.drawDefault(&area, series, c.GetAreaWidth(), c.GetAreaHeight())
 	case TilingBinary:
 		c.drawBinary(&area, series)
 	case TilingVertical:
@@ -106,6 +110,8 @@ func (c TreemapChart) renderElement(series []Hierarchy) svg.Element {
 		c.drawHorizontal(&area, series, c.GetAreaWidth()/getSum(series))
 	case TilingAlternate:
 		c.drawAlternate(&area, series)
+	case TillingSquarify:
+		c.drawSquarify(&area, series)
 	default:
 	}
 	cs.Append(area.AsElement())
@@ -234,8 +240,81 @@ func (c TreemapChart) drawBinary(a appender, series []Hierarchy) {
 
 }
 
-func (c TreemapChart) drawDefault(a appender, series []Hierarchy) {
+func (c TreemapChart) drawSquarify(a appender, series []Hierarchy) {
 
+}
+
+func (c TreemapChart) drawDefault(a appender, series []Hierarchy, width, height float64) {
+	sort.Slice(series, func(i, j int) bool {
+		return series[i].GetValue() > series[j].GetValue()
+	})
+	var (
+		sum  = getSum(series)
+		area = width * height
+		offx float64
+		offy float64
+	)
+	for i := range series {
+		var (
+			s  = series[i].GetValue() / sum
+			w  float64
+			h  float64
+			ox float64
+			oy float64
+		)
+		if math.Max(width, height) == width {
+			h = height
+			w = (s * area) / height
+			ox = w
+		} else {
+			w = width
+			h = (s * area) / width
+			oy = h
+		}
+		if series[i].isLeaf() {
+			var (
+				dim  = svg.NewDim(w, h)
+				fill = svg.NewFill("steelblue")
+				rect = svg.NewRect(dim.Option(), fill.Option(), svg.WithTranslate(offx, offy))
+			)
+			rect.Title = series[i].Label
+			a.Append(rect.AsElement())
+		} else {
+			grp := svg.NewGroup(svg.WithTranslate(offx, offy))
+			a.Append(grp.AsElement())
+			c.drawDefault(&grp, series[i].Sub, w, h)
+		}
+		width -= ox
+		height -= oy
+		offx += ox
+		offy += oy
+	}
+}
+
+func (c TreemapChart) drawSquarify(a appender, series []Hierarchy) {
+	sort.Slice(series, func(i, j int) bool {
+		return series[i].GetValue() > series[j].GetValue()
+	})
+	fmt.Println("start squarify")
+	var (
+		sum    = getSum(series)
+		width  = c.GetAreaWidth()
+		height = c.GetAreaHeight()
+		area   = width * height
+		total  float64
+	)
+	fmt.Println("width :", width)
+	fmt.Println("height:", height)
+	fmt.Println("area  :", area)
+	for i := range series {
+		var (
+			percent = series[i].GetValue() / sum
+			used    = area * percent
+		)
+		total += used
+		fmt.Println(i, int(used), int(percent*100))
+	}
+	fmt.Println("total:", int(total))
 }
 
 func getDepth(series []Hierarchy) float64 {
