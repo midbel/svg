@@ -303,38 +303,34 @@ func (c TreemapChart) drawSquarify(a appender, series []Hierarchy, color string,
 		var (
 			val   float64
 			ratio float64
+			curr  float64
 			prev  = math.NaN()
-			min   = prev
-			max   = prev
+			min   = curr
+			max   = curr
 			short = width
-			j     = i
+			j     int
 		)
 		if width > height {
 			short = height
 		}
-		for j < len(series) {
+		for j = i; j < len(series); j++ {
+			curr = series[j].GetValue()
+			min  = math.Min(min, curr)
+			max = math.Max(max, curr)
+			val += curr
+			
 			var (
-				ssq  = math.Pow(short, 2)
-				vsq  = math.Pow(val, 2)
+				ssq  = short * short
+				vsq  = val * val
 				r1   = (ssq * max) / vsq
 				r2   = vsq / (ssq * min)
-				curr float64
 			)
 			ratio = math.Max(r1, r2)
-			if !math.IsNaN(prev) && ratio >= phi {
+			if !math.IsNaN(prev) && ratio >= prev {
+				val -= curr
 				break
 			}
 			prev = ratio
-
-			curr = series[j].GetValue()
-			val += curr
-			if math.IsNaN(min) || curr < min {
-				min = curr
-			}
-			if math.IsNaN(max) || curr > max {
-				max = curr
-			}
-			j++
 		}
 		var w, h float64
 		if used := val / sum; short == width {
@@ -346,6 +342,7 @@ func (c TreemapChart) drawSquarify(a appender, series []Hierarchy, color string,
 			h = short
 			width -= w
 		}
+		// fmt.Printf("width: %6.2f, height: %6.2f - used: %6.2f\n", w, h, val/sum)
 		parent := svg.NewGroup(svg.WithTranslate(offx, offy))
 		a.Append(parent.AsElement())
 		var (
