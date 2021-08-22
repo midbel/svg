@@ -110,7 +110,7 @@ func (c TreemapChart) renderElement(series []Hierarchy) svg.Element {
 	case TilingAlternate:
 		c.drawAlternate(&area, series)
 	case TilingSquarify:
-		c.drawSquarify(&area, series, c.GetAreaWidth(), c.GetAreaHeight())
+		c.drawSquarify(&area, series, "steelblue", c.GetAreaWidth(), c.GetAreaHeight())
 	default:
 	}
 	cs.Append(area.AsElement())
@@ -286,7 +286,9 @@ func (c TreemapChart) drawDefault(a appender, series []Hierarchy, width, height 
 	}
 }
 
-func (c TreemapChart) drawSquarify(a appender, series []Hierarchy, width, height float64) {
+const phi = 1.618
+
+func (c TreemapChart) drawSquarify(a appender, series []Hierarchy, color string, width, height float64) {
 	sort.Slice(series, func(i, j int) bool {
 		return series[i].GetValue() > series[j].GetValue()
 	})
@@ -319,7 +321,7 @@ func (c TreemapChart) drawSquarify(a appender, series []Hierarchy, width, height
 				curr float64
 			)
 			ratio = math.Max(r1, r2)
-			if !math.IsNaN(prev) && ratio >= prev {
+			if !math.IsNaN(prev) && ratio >= phi {
 				break
 			}
 			prev = ratio
@@ -363,7 +365,7 @@ func (c TreemapChart) drawSquarify(a appender, series []Hierarchy, width, height
 			if series[i].isLeaf() {
 				var (
 					p = svg.NewPos(float64(k)*ox, float64(k)*oy)
-					f = svg.NewFill("steelblue")
+					f = svg.NewFill(color)
 					d = svg.NewDim(tw, th)
 					r = svg.NewRect(p.Option(), f.Option(), d.Option())
 				)
@@ -371,7 +373,7 @@ func (c TreemapChart) drawSquarify(a appender, series []Hierarchy, width, height
 				parent.Append(r.AsElement())
 			} else {
 				grp := svg.NewGroup(svg.WithTranslate(float64(k)*ox, float64(k)*oy))
-				c.drawSquarify(&grp, series[i].Sub, tw, th)
+				c.drawSquarify(&grp, series[i].Sub, color, tw, th)
 				parent.Append(grp.AsElement())
 			}
 			i++
