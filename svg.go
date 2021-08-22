@@ -360,8 +360,12 @@ func (r *Rect) AsElement() Element {
 
 func (r *Rect) Attributes() []string {
 	var attrs []string
-	attrs = append(attrs, appendFloat("rx", r.RX))
-	attrs = append(attrs, appendFloat("ry", r.RY))
+	if r.RX != 0 {
+		attrs = append(attrs, appendFloat("rx", r.RX))
+	}
+	if r.RY != 0 {
+		attrs = append(attrs, appendFloat("ry", r.RY))
+	}
 	return attrs
 }
 

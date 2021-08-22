@@ -2,7 +2,6 @@ package chart
 
 import (
 	"bufio"
-	"fmt"
 	"io"
 	"math"
 	"sort"
@@ -65,7 +64,7 @@ type TilingMethod uint8
 
 const (
 	TilingDefault TilingMethod = iota
-	TillingSquarify
+	TilingSquarify
 	TilingBinary
 	TilingVertical
 	TilingHorizontal
@@ -110,8 +109,8 @@ func (c TreemapChart) renderElement(series []Hierarchy) svg.Element {
 		c.drawHorizontal(&area, series, c.GetAreaWidth()/getSum(series))
 	case TilingAlternate:
 		c.drawAlternate(&area, series)
-	case TillingSquarify:
-		c.drawSquarify(&area, series)
+	case TilingSquarify:
+		c.drawSquarify(&area, series, c.GetAreaWidth(), c.GetAreaHeight())
 	default:
 	}
 	cs.Append(area.AsElement())
@@ -240,10 +239,6 @@ func (c TreemapChart) drawBinary(a appender, series []Hierarchy) {
 
 }
 
-func (c TreemapChart) drawSquarify(a appender, series []Hierarchy) {
-
-}
-
 func (c TreemapChart) drawDefault(a appender, series []Hierarchy, width, height float64) {
 	sort.Slice(series, func(i, j int) bool {
 		return series[i].GetValue() > series[j].GetValue()
@@ -291,30 +286,103 @@ func (c TreemapChart) drawDefault(a appender, series []Hierarchy, width, height 
 	}
 }
 
-func (c TreemapChart) drawSquarify(a appender, series []Hierarchy) {
+func (c TreemapChart) drawSquarify(a appender, series []Hierarchy, width, height float64) {
 	sort.Slice(series, func(i, j int) bool {
 		return series[i].GetValue() > series[j].GetValue()
 	})
-	fmt.Println("start squarify")
 	var (
-		sum    = getSum(series)
-		width  = c.GetAreaWidth()
-		height = c.GetAreaHeight()
-		area   = width * height
-		total  float64
+		i    int
+		offx float64
+		offy float64
+		sum  = getSum(series)
+		area = width * height
 	)
-	fmt.Println("width :", width)
-	fmt.Println("height:", height)
-	fmt.Println("area  :", area)
-	for i := range series {
+	for i < len(series) {
 		var (
-			percent = series[i].GetValue() / sum
-			used    = area * percent
+			val   float64
+			ratio float64
+			prev  = math.NaN()
+			min   = prev
+			max   = prev
+			short = width
+			j     = i
 		)
-		total += used
-		fmt.Println(i, int(used), int(percent*100))
+		if width > height {
+			short = height
+		}
+		for j < len(series) {
+			var (
+				ssq  = math.Pow(short, 2)
+				vsq  = math.Pow(val, 2)
+				r1   = (ssq * max) / vsq
+				r2   = vsq / (ssq * min)
+				curr float64
+			)
+			ratio = math.Max(r1, r2)
+			if !math.IsNaN(prev) && ratio >= prev {
+				break
+			}
+			prev = ratio
+
+			curr = series[j].GetValue()
+			val += curr
+			if math.IsNaN(min) || curr < min {
+				min = curr
+			}
+			if math.IsNaN(max) || curr > max {
+				max = curr
+			}
+			j++
+		}
+		var w, h float64
+		if used := val / sum; short == width {
+			w = short
+			h = (area * used) / short
+			height -= h
+		} else {
+			w = (area * used) / short
+			h = short
+			width -= w
+		}
+		parent := svg.NewGroup(svg.WithTranslate(offx, offy))
+		a.Append(parent.AsElement())
+		var (
+			tw, th float64
+			ox, oy float64
+		)
+		if short == w {
+			tw = w
+			th = h / float64(j-i)
+			oy = th
+		} else {
+			th = h
+			tw = w / float64(j-i)
+			ox = tw
+		}
+		for k := 0; i < j; k++ {
+			if series[i].isLeaf() {
+				var (
+					p = svg.NewPos(float64(k)*ox, float64(k)*oy)
+					f = svg.NewFill("steelblue")
+					d = svg.NewDim(tw, th)
+					r = svg.NewRect(p.Option(), f.Option(), d.Option())
+				)
+				r.Title = series[i].Label
+				parent.Append(r.AsElement())
+			} else {
+				grp := svg.NewGroup(svg.WithTranslate(float64(k)*ox, float64(k)*oy))
+				c.drawSquarify(&grp, series[i].Sub, tw, th)
+				parent.Append(grp.AsElement())
+			}
+			i++
+		}
+		if short == w {
+			offy += h
+		} else {
+			offx += w
+		}
+		i = j
 	}
-	fmt.Println("total:", int(total))
 }
 
 func getDepth(series []Hierarchy) float64 {

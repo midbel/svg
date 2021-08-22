@@ -27,36 +27,38 @@ func main() {
 		c2 = getChart(hs, chart.TilingVertical)
 		c3 = getChart(hs, chart.TilingAlternate)
 		c4 = getChart(hs, chart.TilingDefault)
+		c5 = getChart(hs, chart.TilingSquarify)
 	)
-	area := svg.NewSVG(svg.WithDimension(1440, 720))
+	area := svg.NewSVG(svg.WithDimension(1440, 960))
 	gp1 := svg.NewGroup(svg.WithTranslate(0, 0))
 	gp1.Append(c1)
 	area.Append(gp1.AsElement())
 	gp2 := svg.NewGroup(svg.WithTranslate(480, 0))
 	gp2.Append(c2)
 	area.Append(gp2.AsElement())
-	gp3 := svg.NewGroup(svg.WithTranslate(0, 360))
+	gp3 := svg.NewGroup(svg.WithTranslate(0, 480))
 	gp3.Append(c3)
 	area.Append(gp3.AsElement())
-	gp4 := svg.NewGroup(svg.WithTranslate(480, 360))
+	gp4 := svg.NewGroup(svg.WithTranslate(480, 480))
 	gp4.Append(c4)
 	area.Append(gp4.AsElement())
+	gp5 := svg.NewGroup(svg.WithTranslate(960, 0))
+	gp5.Append(c5)
+	area.Append(gp5.AsElement())
 
 	w := bufio.NewWriter(os.Stdout)
 	defer w.Flush()
 	area.Render(w)
-
-	// getChart(hs, chart.TilingDefault)
 }
 
 var letters = "ABCDEFGHIJKLMNOPQRSTUVXYZ"
 
 func getChart(hs []chart.Hierarchy, tiling chart.TilingMethod) svg.Element {
 	var c chart.TreemapChart
-	c.Padding = chart.CreatePadding(20, 20)
+	c.Padding = chart.CreatePadding(10, 10)
 	c.Tiling = tiling
 	c.Width = 480
-	c.Height = 360
+	c.Height = 480
 
 	return c.RenderElement(hs)
 }
