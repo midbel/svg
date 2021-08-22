@@ -2,6 +2,7 @@ package chart
 
 import (
 	"bufio"
+	"fmt"
 	"io"
 	"math"
 	"sort"
@@ -304,69 +305,66 @@ func (c TreemapChart) drawSquarify(a appender, series []Hierarchy, color string,
 			val   float64
 			ratio float64
 			curr  float64
-			prev  = math.NaN()
 			min   = curr
 			max   = curr
 			short = width
 			j     int
 		)
-		if width > height {
+		if height <= width {
 			short = height
 		}
+		min, max = series[i].GetValue(), series[i].GetValue()
 		for j = i; j < len(series); j++ {
 			curr = series[j].GetValue()
-			min  = math.Min(min, curr)
+			min = math.Min(min, curr)
 			max = math.Max(max, curr)
-			val += curr
-			
+
 			var (
-				ssq  = short * short
-				vsq  = val * val
-				r1   = (ssq * max) / vsq
-				r2   = vsq / (ssq * min)
+				ssq = short * short
+				vsq = val * val
+				r1  = (ssq * max) / vsq
+				r2  = vsq / (ssq * min)
 			)
 			ratio = math.Max(r1, r2)
-			if !math.IsNaN(prev) && ratio >= prev {
-				val -= curr
+			if j > i && ratio > phi {
 				break
 			}
-			prev = ratio
+			val += curr
 		}
 		var w, h float64
-		if used := val / sum; short == width {
+		if used := area * (val / sum); short == width {
 			w = short
-			h = (area * used) / short
+			h = used / short
 			height -= h
 		} else {
-			w = (area * used) / short
 			h = short
+			w = used / short
 			width -= w
 		}
-		// fmt.Printf("width: %6.2f, height: %6.2f - used: %6.2f\n", w, h, val/sum)
 		parent := svg.NewGroup(svg.WithTranslate(offx, offy))
 		a.Append(parent.AsElement())
 		var (
 			tw, th float64
 			ox, oy float64
 		)
-		if short == w {
+		if diff := float64(j - i); short == w {
 			tw = w
-			th = h / float64(j-i)
+			th = h / diff
 			oy = th
 		} else {
 			th = h
-			tw = w / float64(j-i)
+			tw = w / diff
 			ox = tw
 		}
 		for k := 0; i < j; k++ {
-			if series[i].isLeaf() {
+			if s, ok := getSerie(series[i]); ok {
 				var (
 					p = svg.NewPos(float64(k)*ox, float64(k)*oy)
 					f = svg.NewFill(color)
 					d = svg.NewDim(tw, th)
 					r = svg.NewRect(p.Option(), f.Option(), d.Option())
 				)
-				r.Title = series[i].Label
+				r.Title = fmt.Sprintf("%s (%.2fx%.2f)", s.Label, tw, th)
 				parent.Append(r.AsElement())
 			} else {
 				grp := svg.NewGroup(svg.WithTranslate(float64(k)*ox, float64(k)*oy))
@@ -382,6 +380,16 @@ func (c TreemapChart) drawSquarify(a appender, series []Hierarchy, color string,
 		}
 		i = j
 	}
+}
+
+func getSerie(s Hierarchy) (Hierarchy, bool) {
+	if s.isLeaf() {
+		return s, true
+	}
+	if len(s.Sub) == 1 {
+		return s.Sub[0], true
+	}
+	return s, false
 }
 
 func getDepth(series []Hierarchy) float64 {
