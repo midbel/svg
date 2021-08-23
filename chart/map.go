@@ -324,7 +324,7 @@ func squarify(a appender, series []Hierarchy, width, height float64) {
 				sum += curr
 			}
 			ratio = getAspectRatio(short, min, max, sum)
-			if len(groups) > 1 && ratio > prev {
+			if len(groups) > 0 && ratio > prev {
 				sum -= curr
 				break
 			}
@@ -342,7 +342,12 @@ func squarify(a appender, series []Hierarchy, width, height float64) {
 			width -= w
 		}
 		i = j
-		parent := svg.NewGroup(svg.WithTranslate(ox, oy), svg.WithClass("container"))
+		parent := svg.NewGroup(
+			svg.WithTranslate(ox, oy),
+			svg.WithClass("container"),
+			svg.WithDatum("height", h),
+			svg.WithDatum("width", w),
+		)
 		a.Append(parent.AsElement())
 		layout(&parent, groups, w, h, sum)
 		if w == width {

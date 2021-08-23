@@ -847,6 +847,7 @@ func (c command) String() string {
 type node struct {
 	Title string
 	Desc  string
+	Data  []Datum
 
 	Display    string
 	Visibility string
@@ -878,6 +879,11 @@ func (n *node) Attributes() []string {
 	}
 	if len(n.Class) > 0 {
 		attrs = append(attrs, appendStringArray("class", n.Class, space))
+	}
+	if len(n.Data) > 0 {
+		for i := range n.Data {
+			attrs = append(attrs, n.Data[i].Attributes()...)
+		}
 	}
 	return attrs
 }

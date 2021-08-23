@@ -1,6 +1,7 @@
 package svg
 
 import (
+	"fmt"
 	"math"
 	"strconv"
 	"strings"
@@ -71,6 +72,28 @@ func (c Clipping) Attributes() []string {
 		attrs = append(attrs, appendString("clipPathUnits", c.Units))
 	}
 	return attrs
+}
+
+type Datum struct {
+	Name  string
+	Value interface{}
+}
+
+func (d Datum) Option() Option {
+	return WithData(d)
+}
+
+func (d Datum) Attributes() []string {
+	var a string
+	switch v := d.Value.(type) {
+	case float64:
+		a = appendFloat(fmt.Sprintf("data-%s", d.Name), v)
+	case string:
+		a = appendString(fmt.Sprintf("data-%s", d.Name), v)
+	default:
+		return nil
+	}
+	return []string{a}
 }
 
 type Font struct {

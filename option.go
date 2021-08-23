@@ -2,6 +2,27 @@ package svg
 
 type Option func(Element) error
 
+func WithDatum(name string, value interface{}) Option {
+	d := Datum{
+		Name:  name,
+		Value: value,
+	}
+	return WithData(d)
+}
+
+func WithData(d Datum) Option {
+	return func(e Element) error {
+		switch e := e.(type) {
+		case *Group:
+			e.Data = append(e.Data, d)
+		case *SVG:
+			e.Data = append(e.Data, d)
+		default:
+		}
+		return nil
+	}
+}
+
 func WithID(id string) Option {
 	return func(e Element) error {
 		e.setId(id)
