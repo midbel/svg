@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"math/rand"
 	"os"
 	"time"
@@ -26,10 +25,9 @@ func main() {
 	)
 	c.Padding = chart.CreatePadding(10, 10)
 	c.Tiling = chart.TilingSquarify
+	c.Height = 960
 	c.Width = 960
-	c.Height = 640
 
-	c.Render(ioutil.Discard, hs)
 	c.Render(os.Stdout, hs)
 }
 

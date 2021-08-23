@@ -23,11 +23,11 @@ func main() {
 	flag.Parse()
 	var (
 		hs = load(flag.Arg(0), 1+rand.Intn(5))
+		c5 = getChart(hs, chart.TilingSquarify)
 		c1 = getChart(hs, chart.TilingHorizontal)
 		c2 = getChart(hs, chart.TilingVertical)
 		c3 = getChart(hs, chart.TilingAlternate)
 		c4 = getChart(hs, chart.TilingDefault)
-		c5 = getChart(hs, chart.TilingSquarify)
 	)
 	area := svg.NewSVG(svg.WithDimension(1440, 960))
 	gp1 := svg.NewGroup(svg.WithTranslate(0, 0))

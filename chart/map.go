@@ -111,7 +111,7 @@ func (c TreemapChart) renderElement(series []Hierarchy) svg.Element {
 	case TilingAlternate:
 		c.drawAlternate(&area, series)
 	case TilingSquarify:
-		c.drawSquarify(&area, series, "steelblue", c.GetAreaWidth(), c.GetAreaHeight())
+		c.drawSquarify(&area, series, c.GetAreaWidth(), c.GetAreaHeight())
 	default:
 	}
 	cs.Append(area.AsElement())
@@ -289,97 +289,118 @@ func (c TreemapChart) drawDefault(a appender, series []Hierarchy, width, height 
 
 const phi = 1.618
 
-func (c TreemapChart) drawSquarify(a appender, series []Hierarchy, color string, width, height float64) {
+func (c TreemapChart) drawSquarify(a appender, series []Hierarchy, width, height float64) {
+	squarify(a, series, width, height)
+}
+
+func squarify(a appender, series []Hierarchy, width, height float64) {
 	sort.Slice(series, func(i, j int) bool {
 		return series[i].GetValue() > series[j].GetValue()
 	})
 	var (
-		i    int
-		offx float64
-		offy float64
-		sum  = getSum(series)
-		area = width * height
+		area   = width * height
+		total  = getSum(series)
+		ox, oy float64
+		i      int
 	)
 	for i < len(series) {
 		var (
-			val   float64
-			ratio float64
-			curr  float64
-			min   = curr
-			max   = curr
-			short = width
-			j     int
+			groups []Hierarchy
+			ratio  float64
+			prev   float64
+			curr   = series[i].GetValue()
+			max    = curr
+			min    = curr
+			sum    = curr
+			short  = width
+			j      int
 		)
-		if height <= width {
+		if width >= height {
 			short = height
 		}
-		min, max = series[i].GetValue(), series[i].GetValue()
 		for j = i; j < len(series); j++ {
-			curr = series[j].GetValue()
-			min = math.Min(min, curr)
-			max = math.Max(max, curr)
-
-			var (
-				ssq = short * short
-				vsq = val * val
-				r1  = (ssq * max) / vsq
-				r2  = vsq / (ssq * min)
-			)
-			ratio = math.Max(r1, r2)
-			if j > i && ratio > phi {
+			if j > i {
+				curr = series[j].GetValue()
+				min = math.Min(min, curr)
+				max = math.Max(max, curr)
+				sum += curr
+			}
+			ratio = getAspectRatio(short, min, max, sum)
+			if j > i && ratio >= prev {
+				sum -= curr
 				break
 			}
-			val += curr
+			prev = ratio
+			groups = append(groups, series[j])
 		}
 		var w, h float64
-		if used := area * (val / sum); short == width {
-			w = short
-			h = used / short
+		if surface := area * (sum / total); short == width {
+			w = width
+			h = surface / width
 			height -= h
 		} else {
-			h = short
-			w = used / short
+			h = height
+			w = surface / height
 			width -= w
 		}
-		parent := svg.NewGroup(svg.WithTranslate(offx, offy))
-		a.Append(parent.AsElement())
-		var (
-			tw, th float64
-			ox, oy float64
-		)
-		if diff := float64(j - i); short == w {
-			tw = w
-			th = h / diff
-			oy = th
-		} else {
-			th = h
-			tw = w / diff
-			ox = tw
-		}
-		for k := 0; i < j; k++ {
-			if s, ok := getSerie(series[i]); ok {
-				var (
-					p = svg.NewPos(float64(k)*ox, float64(k)*oy)
-					f = svg.NewFill(color)
-					d = svg.NewDim(tw, th)
-					r = svg.NewRect(p.Option(), f.Option(), d.Option())
-				)
-				r.Title = fmt.Sprintf("%s (%.2fx%.2f)", s.Label, tw, th)
-				parent.Append(r.AsElement())
-			} else {
-				grp := svg.NewGroup(svg.WithTranslate(float64(k)*ox, float64(k)*oy))
-				c.drawSquarify(&grp, series[i].Sub, color, tw, th)
-				parent.Append(grp.AsElement())
-			}
-			i++
-		}
-		if short == w {
-			offy += h
-		} else {
-			offx += w
-		}
 		i = j
+		parent := svg.NewGroup(svg.WithTranslate(ox, oy))
+		a.Append(parent.AsElement())
+		layout(&parent, groups, w, h, sum)
+		if w == width {
+			oy += h
+		} else {
+			ox += w
+		}
 	}
+}
+
+func layout(a appender, series []Hierarchy, width, height, sum float64) {
+	var ox, oy float64
+	for i := range series {
+		var (
+			curr = series[i].GetValue()
+			used = curr / sum
+			w, h float64
+		)
+		if width > height {
+			w = width * used
+			h = height
+		} else {
+			h = height * used
+			w = width
+		}
+		s, ok := getSerie(series[i])
+		if !ok {
+			grp := svg.NewGroup(svg.WithTranslate(ox, oy))
+			a.Append(grp.AsElement())
+			squarify(&grp, s.Sub, w, h)
+		} else {
+			var (
+				p = svg.NewPos(ox, oy)
+				f = svg.NewFill("steelblue")
+				d = svg.NewDim(w, h)
+				r = svg.NewRect(p.Option(), f.Option(), d.Option())
+			)
+			r.Title = fmt.Sprintf("%s: %.0f", s.Label, curr)
+			a.Append(r.AsElement())
+		}
+		if width > height {
+			ox += w
+		} else {
+			oy += h
+		}
+	}
+}
+
+func getAspectRatio(short, min, max, sum float64) float64 {
+	var (
+		ssq = short * short
+		tsq = sum * sum
+		r1  = (ssq * max) / tsq
+		r2  = tsq / (ssq * min)
+	)
+	return math.Max(r1, r2)
 }
 
 func getSerie(s Hierarchy) (Hierarchy, bool) {
