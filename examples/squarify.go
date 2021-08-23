@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"math/rand"
 	"os"
 	"time"
@@ -18,6 +20,11 @@ func init() {
 const limit = 100
 
 func main() {
+	var (
+		width   = flag.Float64("x", 960, "width")
+		height  = flag.Float64("y", 960, "height")
+		discard = flag.Bool("d", false, "discard")
+	)
 	flag.Parse()
 	var (
 		hs = load(flag.Arg(0), 1+rand.Intn(5))
@@ -25,10 +32,14 @@ func main() {
 	)
 	c.Padding = chart.CreatePadding(10, 10)
 	c.Tiling = chart.TilingSquarify
-	c.Height = 480
-	c.Width = 480
+	c.Width = *width
+	c.Height = *height
 
-	c.Render(os.Stdout, hs)
+	var w io.Writer = os.Stdout
+	if *discard {
+		w = ioutil.Discard
+	}
+	c.Render(w, hs)
 }
 
 var letters = "ABCDEFGHIJKLMNOPQRSTUVXYZ"

@@ -313,7 +313,7 @@ func squarify(a appender, series []Hierarchy, width, height float64) {
 			short  = width
 			j      int
 		)
-		if width >= height {
+		if width > height {
 			short = height
 		}
 		for j = i; j < len(series); j++ {
@@ -324,7 +324,7 @@ func squarify(a appender, series []Hierarchy, width, height float64) {
 				sum += curr
 			}
 			ratio = getAspectRatio(short, min, max, sum)
-			if j > i && ratio > prev {
+			if len(groups) > 1 && ratio > prev {
 				sum -= curr
 				break
 			}
@@ -405,9 +405,9 @@ func getSerie(s Hierarchy) (Hierarchy, bool) {
 	if s.isLeaf() {
 		return s, true
 	}
-	if len(s.Sub) == 1 {
-		return s.Sub[0], true
-	}
+	// if len(s.Sub) == 1 {
+	// 	return s.Sub[0], true
+	// }
 	return s, false
 }
 
