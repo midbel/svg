@@ -287,8 +287,6 @@ func (c TreemapChart) drawDefault(a appender, series []Hierarchy, width, height 
 	}
 }
 
-const phi = 1.618
-
 func (c TreemapChart) drawSquarify(a appender, series []Hierarchy, width, height float64) {
 	squarify(a, series, width, height)
 }
@@ -326,7 +324,7 @@ func squarify(a appender, series []Hierarchy, width, height float64) {
 				sum += curr
 			}
 			ratio = getAspectRatio(short, min, max, sum)
-			if j > i && ratio >= prev {
+			if j > i && ratio > prev {
 				sum -= curr
 				break
 			}
@@ -344,7 +342,7 @@ func squarify(a appender, series []Hierarchy, width, height float64) {
 			width -= w
 		}
 		i = j
-		parent := svg.NewGroup(svg.WithTranslate(ox, oy))
+		parent := svg.NewGroup(svg.WithTranslate(ox, oy), svg.WithClass("container"))
 		a.Append(parent.AsElement())
 		layout(&parent, groups, w, h, sum)
 		if w == width {
@@ -372,7 +370,7 @@ func layout(a appender, series []Hierarchy, width, height, sum float64) {
 		}
 		s, ok := getSerie(series[i])
 		if !ok {
-			grp := svg.NewGroup(svg.WithTranslate(ox, oy))
+			grp := svg.NewGroup(svg.WithTranslate(ox, oy), svg.WithID(s.Label), svg.WithClass("row"))
 			a.Append(grp.AsElement())
 			squarify(&grp, s.Sub, w, h)
 		} else {

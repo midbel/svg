@@ -25,8 +25,8 @@ func main() {
 	)
 	c.Padding = chart.CreatePadding(10, 10)
 	c.Tiling = chart.TilingSquarify
-	c.Height = 960
-	c.Width = 960
+	c.Height = 480
+	c.Width = 480
 
 	c.Render(os.Stdout, hs)
 }
