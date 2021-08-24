@@ -291,6 +291,8 @@ func (c TreemapChart) drawSquarify(a appender, series []Hierarchy, width, height
 	squarify(a, series, width, height)
 }
 
+const phi = 1.618
+
 func squarify(a appender, series []Hierarchy, width, height float64) {
 	sort.Slice(series, func(i, j int) bool {
 		return series[i].GetValue() > series[j].GetValue()
@@ -298,41 +300,35 @@ func squarify(a appender, series []Hierarchy, width, height float64) {
 	var (
 		area   = width * height
 		total  = getSum(series)
+		full   = total
 		ox, oy float64
 		i      int
 	)
 	for i < len(series) {
 		var (
-			groups []Hierarchy
-			ratio  float64
-			prev   float64
-			curr   = series[i].GetValue()
-			max    = curr
-			min    = curr
-			sum    = curr
-			short  = width
-			j      int
+			alpha = getAlpha(width, height, total)
+			curr  = series[i].GetValue()
+			max   = curr
+			min   = curr
+			sum   = curr
+			ratio float64
+			last  = getAspectRatio(alpha, min, max, sum)
+			j     int
 		)
-		if width > height {
-			short = height
-		}
-		for j = i; j < len(series); j++ {
-			if j > i {
-				curr = series[j].GetValue()
-				min = math.Min(min, curr)
-				max = math.Max(max, curr)
-				sum += curr
-			}
-			ratio = getAspectRatio(short, min, max, sum)
-			if len(groups) > 0 && ratio > prev {
+		for j = i + 1; j < len(series); j++ {
+			curr = series[j].GetValue()
+			sum += curr
+			min = math.Min(min, curr)
+			max = math.Max(max, curr)
+			ratio = getAspectRatio(alpha, min, max, sum)
+			if ratio > last {
 				sum -= curr
 				break
 			}
-			prev = ratio
-			groups = append(groups, series[j])
+			last = ratio
 		}
 		var w, h float64
-		if surface := area * (sum / total); short == width {
+		if surface := area * (sum / full); width < height {
 			w = width
 			h = surface / width
 			height -= h
@@ -341,20 +337,16 @@ func squarify(a appender, series []Hierarchy, width, height float64) {
 			w = surface / height
 			width -= w
 		}
-		i = j
-		parent := svg.NewGroup(
-			svg.WithTranslate(ox, oy),
-			svg.WithClass("container"),
-			svg.WithDatum("height", h),
-			svg.WithDatum("width", w),
-		)
+		parent := svg.NewGroup(svg.WithTranslate(ox, oy), svg.WithClass("container"))
 		a.Append(parent.AsElement())
-		layout(&parent, groups, w, h, sum)
+		layout(&parent, series[i:j], w, h, sum)
 		if w == width {
 			oy += h
 		} else {
 			ox += w
 		}
+		i = j
+		total -= sum
 	}
 }
 
@@ -396,23 +388,19 @@ func layout(a appender, series []Hierarchy, width, height, sum float64) {
 	}
 }
 
-func getAspectRatio(short, min, max, sum float64) float64 {
-	var (
-		ssq = short * short
-		tsq = sum * sum
-		r1  = (ssq * max) / tsq
-		r2  = tsq / (ssq * min)
-	)
-	return math.Max(r1, r2)
+func getAlpha(width, height, sum float64) float64 {
+	return math.Max(width/height, height/width) / (sum * phi)
+}
+
+func getAspectRatio(alpha, min, max, sum float64) float64 {
+	beta := (sum * sum) * alpha
+	return math.Max(max/beta, beta/min)
 }
 
 func getSerie(s Hierarchy) (Hierarchy, bool) {
 	if s.isLeaf() {
 		return s, true
 	}
-	// if len(s.Sub) == 1 {
-	// 	return s.Sub[0], true
-	// }
 	return s, false
 }
 

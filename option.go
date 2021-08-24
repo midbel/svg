@@ -17,6 +17,8 @@ func WithData(d Datum) Option {
 			e.Data = append(e.Data, d)
 		case *SVG:
 			e.Data = append(e.Data, d)
+		case *Rect:
+			e.Data = append(e.Data, d)
 		default:
 		}
 		return nil

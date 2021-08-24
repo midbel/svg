@@ -90,6 +90,10 @@ func (d Datum) Attributes() []string {
 		a = appendFloat(fmt.Sprintf("data-%s", d.Name), v)
 	case string:
 		a = appendString(fmt.Sprintf("data-%s", d.Name), v)
+	case int:
+		a = appendInt(fmt.Sprintf("data-%s", d.Name), int64(v))
+	case int64:
+		a = appendInt(fmt.Sprintf("data-%s", d.Name), v)
 	default:
 		return nil
 	}
@@ -417,6 +421,14 @@ func appendFunc(name string, list ...float64) string {
 		buf = strconv.AppendFloat(buf, list[i], 'f', getPrecision(list[i]), 64)
 	}
 	buf = append(buf, rparen)
+	return string(buf)
+}
+
+func appendInt(attr string, v int64) string {
+	buf := []byte(attr)
+	buf = append(buf, equal, quote)
+	buf = strconv.AppendInt(buf, v, 10)
+	buf = append(buf, quote)
 	return string(buf)
 }
 
