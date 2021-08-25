@@ -3,6 +3,7 @@ package chart
 import (
 	"math"
 	"strconv"
+	"time"
 
 	"github.com/midbel/svg"
 )
@@ -133,6 +134,10 @@ func getPathLine(stk string) svg.Path {
 	)
 	fill.Opacity = 0
 	return svg.NewPath(fill.Option(), strok.Option(), svg.WithClass("line"))
+}
+
+func formatTime(t time.Time) string {
+	return t.Format("15:04:05")
 }
 
 func formatFloat(val float64) string {
