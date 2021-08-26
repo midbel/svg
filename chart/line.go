@@ -29,13 +29,8 @@ type LineSerie struct {
 }
 
 func NewLineSerie(title string) LineSerie {
-	return NewLineSerieWithColor(title, "steelblue")
-}
-
-func NewLineSerieWithColor(title, color string) LineSerie {
 	return LineSerie{
 		Title: title,
-		Color: color,
 	}
 }
 
@@ -90,7 +85,7 @@ func (c ScatterChart) RenderElement(series []LineSerie) svg.Element {
 	)
 	cs.Append(c.drawAxis(c.Chart, rx, ry))
 	for i := range series {
-		grp := c.drawSerie(series[i], rx, ry)
+		grp := c.drawSerie(series[i], c.GetColor(series[i].Title, i), rx, ry)
 		area.Append(grp)
 	}
 
@@ -98,12 +93,11 @@ func (c ScatterChart) RenderElement(series []LineSerie) svg.Element {
 	return cs.AsElement()
 }
 
-func (c ScatterChart) drawSerie(serie LineSerie, rx, ry pair) svg.Element {
+func (c ScatterChart) drawSerie(serie LineSerie, fill svg.Fill, rx, ry pair) svg.Element {
 	var (
-		grp   = svg.NewGroup()
+		grp   = svg.NewGroup(fill.Option())
 		dx    = c.GetAreaWidth() / rx.Diff()
 		dy    = c.GetAreaHeight() / ry.Diff()
-		fill  = svg.NewFill(serie.Color).Option()
 		strok = svg.NewStroke("none", 0).Option()
 		pos   svg.Pos
 	)
@@ -122,23 +116,23 @@ func (c ScatterChart) drawSerie(serie LineSerie, rx, ry pair) svg.Element {
 		var elem svg.Element
 		switch xy := pos.Option(); serie.Shape {
 		case ShapeDefault, ShapeCircle:
-			elem = serie.Shape.Draw(c.Radius, xy, strok, fill)
+			elem = serie.Shape.Draw(c.Radius, xy, strok, fill.Option())
 		case ShapeTriangle, ShapeStar:
 			pos.X -= c.Radius / 2
 			pos.Y -= c.Radius / 2
 			g := svg.NewGroup(svg.WithTranslate(pos.X, pos.Y))
-			i := serie.Shape.Draw(c.Radius, strok, fill)
+			i := serie.Shape.Draw(c.Radius, strok, fill.Option())
 			g.Append(i)
 			elem = g.AsElement()
 		case ShapeDiamond:
 			pos.X -= c.Radius / 2
 			pos.Y -= c.Radius / 2
 			rot := svg.WithRotate(45, pos.X, pos.Y)
-			elem = serie.Shape.Draw(c.Radius, xy, fill, strok, rot)
+			elem = serie.Shape.Draw(c.Radius, xy, fill.Option(), strok, rot)
 		case ShapeSquare:
 			pos.X -= c.Radius / 2
 			pos.Y -= c.Radius / 2
-			elem = serie.Shape.Draw(c.Radius, xy, fill, strok)
+			elem = serie.Shape.Draw(c.Radius, xy, fill.Option(), strok)
 		default:
 		}
 		if elem == nil {
@@ -187,17 +181,17 @@ func (c LineChart) RenderElement(series []LineSerie) svg.Element {
 		var elem svg.Element
 		switch c.Curve {
 		case CurveLinear:
-			elem = c.drawLinearSerie(series[i], rx, ry)
+			elem = c.drawLinearSerie(series[i], c.GetStroke(series[i].Title, i), rx, ry)
 		case CurveStep:
-			elem = c.drawStepSerie(series[i], rx, ry)
+			elem = c.drawStepSerie(series[i], c.GetStroke(series[i].Title, i), rx, ry)
 		case CurveStepBefore:
-			elem = c.drawStepBeforeSerie(series[i], rx, ry)
+			elem = c.drawStepBeforeSerie(series[i], c.GetStroke(series[i].Title, i), rx, ry)
 		case CurveStepAfter:
-			elem = c.drawStepAfterSerie(series[i], rx, ry)
+			elem = c.drawStepAfterSerie(series[i], c.GetStroke(series[i].Title, i), rx, ry)
 		case CurveCubic:
-			elem = c.drawCubicSerie(series[i], rx, ry)
+			elem = c.drawCubicSerie(series[i], c.GetStroke(series[i].Title, i), rx, ry)
 		case CurveQuadratic:
-			elem = c.drawQuadraticSerie(series[i], rx, ry)
+			elem = c.drawQuadraticSerie(series[i], c.GetStroke(series[i].Title, i), rx, ry)
 		default:
 		}
 		if elem == nil {
@@ -209,11 +203,11 @@ func (c LineChart) RenderElement(series []LineSerie) svg.Element {
 	return cs.AsElement()
 }
 
-func (c LineChart) drawQuadraticSerie(s LineSerie, px, py pair) svg.Element {
+func (c LineChart) drawQuadraticSerie(s LineSerie, strok svg.Stroke, px, py pair) svg.Element {
 	var (
 		wx   = c.GetAreaWidth() / px.Diff()
 		wy   = c.GetAreaHeight() / py.Diff()
-		pat  = getPathLine(s.Color)
+		pat  = svg.NewPath(strok.Option(), nonefill.Option())
 		pos  svg.Pos
 		old  svg.Pos
 		ctrl svg.Pos
@@ -237,11 +231,11 @@ func (c LineChart) drawQuadraticSerie(s LineSerie, px, py pair) svg.Element {
 	return pat.AsElement()
 }
 
-func (c LineChart) drawCubicSerie(s LineSerie, px, py pair) svg.Element {
+func (c LineChart) drawCubicSerie(s LineSerie, strok svg.Stroke, px, py pair) svg.Element {
 	var (
 		wx  = c.GetAreaWidth() / px.Diff()
 		wy  = c.GetAreaHeight() / py.Diff()
-		pat = getPathLine(s.Color)
+		pat  = svg.NewPath(strok.Option(), nonefill.Option())
 		pos svg.Pos
 	)
 	pos.Y = c.GetAreaHeight() - (s.values[0].Y * wy)
@@ -266,11 +260,11 @@ func (c LineChart) drawCubicSerie(s LineSerie, px, py pair) svg.Element {
 	return pat.AsElement()
 }
 
-func (c LineChart) drawStepSerie(s LineSerie, px, py pair) svg.Element {
+func (c LineChart) drawStepSerie(s LineSerie, strok svg.Stroke, px, py pair) svg.Element {
 	var (
 		wx  = c.GetAreaWidth() / px.Diff()
 		wy  = c.GetAreaHeight() / py.Diff()
-		pat = getPathLine(s.Color)
+		pat  = svg.NewPath(strok.Option(), nonefill.Option())
 		y   = c.GetAreaHeight() - (s.values[0].Y * wy)
 		x   float64
 	)
@@ -295,11 +289,11 @@ func (c LineChart) drawStepSerie(s LineSerie, px, py pair) svg.Element {
 	return pat.AsElement()
 }
 
-func (c LineChart) drawStepBeforeSerie(s LineSerie, px, py pair) svg.Element {
+func (c LineChart) drawStepBeforeSerie(s LineSerie, strok svg.Stroke, px, py pair) svg.Element {
 	var (
 		wx  = c.GetAreaWidth() / px.Diff()
 		wy  = c.GetAreaHeight() / py.Diff()
-		pat = getPathLine(s.Color)
+		pat  = svg.NewPath(strok.Option(), nonefill.Option())
 		y   = c.GetAreaHeight() - (s.values[0].Y * wy)
 		x   float64
 	)
@@ -319,11 +313,11 @@ func (c LineChart) drawStepBeforeSerie(s LineSerie, px, py pair) svg.Element {
 	return pat.AsElement()
 }
 
-func (c LineChart) drawStepAfterSerie(s LineSerie, px, py pair) svg.Element {
+func (c LineChart) drawStepAfterSerie(s LineSerie, strok svg.Stroke, px, py pair) svg.Element {
 	var (
 		wx  = c.GetAreaWidth() / px.Diff()
 		wy  = c.GetAreaHeight() / py.Diff()
-		pat = getPathLine(s.Color)
+		pat  = svg.NewPath(strok.Option(), nonefill.Option())
 		y   = c.GetAreaHeight() - (s.values[0].Y * wy)
 		x   float64
 	)
@@ -344,11 +338,11 @@ func (c LineChart) drawStepAfterSerie(s LineSerie, px, py pair) svg.Element {
 	return pat.AsElement()
 }
 
-func (c LineChart) drawLinearSerie(s LineSerie, px, py pair) svg.Element {
+func (c LineChart) drawLinearSerie(s LineSerie, strok svg.Stroke, px, py pair) svg.Element {
 	var (
 		wx  = c.GetAreaWidth() / px.Diff()
 		wy  = c.GetAreaHeight() / py.Diff()
-		pat = getPathLine(s.Color)
+		pat  = svg.NewPath(strok.Option(), nonefill.Option())
 		pos svg.Pos
 	)
 	pos.Y = c.GetAreaHeight() - (s.values[0].Y * wy)

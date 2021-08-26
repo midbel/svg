@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/midbel/svg"
+	"github.com/midbel/svg/colors"
 	"github.com/midbel/svg/chart"
 )
 
@@ -18,14 +19,11 @@ func init() {
 }
 
 func main() {
-	var (
-		xs []chart.LineSerie
-		cs = []string{"red", "blue", "green"}
-	)
+	var xs []chart.LineSerie
 	for i := 0; i < 1; i++ {
 		var (
 			s  = fmt.Sprint("serie-%d", i)
-			sr = chart.NewLineSerieWithColor(s, cs[i])
+			sr = chart.NewLineSerie(s)
 		)
 		for i := -100; i < 100; i++ {
 			c := rand.Intn(10)
@@ -90,6 +88,11 @@ func getChart(curve chart.CurveStyle, data []chart.LineSerie) svg.Element {
 	c.DomainY = true
 	c.LabelX = true
 	c.LabelY = true
+	c.GetStroke = func(_ string, _ int) svg.Stroke {
+		i := rand.Intn(100)
+		c := colors.Set36[i%len(colors.Set36)]
+		return svg.NewStroke(c, 2)
+	}
 
 	e := c.RenderElement(data)
 	if e, ok := e.(*svg.SVG); ok {

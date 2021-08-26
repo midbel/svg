@@ -21,6 +21,9 @@ type Chart struct {
 	Width  float64
 	Height float64
 	Padding
+
+	GetColor func(string, int) svg.Fill
+	GetStroke func(string, int) svg.Stroke
 }
 
 func (c *Chart) GetAreaWidth() float64 {
@@ -44,6 +47,21 @@ func (c *Chart) checkDefault() {
 	if c.Height == 0 {
 		c.Height = DefaultHeight
 	}
+
+	if c.GetColor == nil {
+		c.GetColor = defaultStroke
+	}
+	if c.GetStroke == nil {
+		c.GetStroke = defaultFill
+	}
+}
+
+func defaultFill(_ string, _ int) svg.Fill {
+	return svg.NewFill("steelblue")
+}
+
+func defaultStroke(_ string, _ int) svg.Stroke {
+	return svg.NewStroke("black", 1)
 }
 
 func (c *Chart) getOptionsAxisX() []svg.Option {
@@ -101,22 +119,12 @@ var (
 	axisstrok = svg.NewStroke("black", 1)
 	whitstrok = svg.NewStroke("white", 1)
 	linestrok = svg.NewStroke("steelblue", 1)
-)
-
-const (
-	ticklen = 7
-	textick = 18
+	nonefill = svg.NewFill("none")
 )
 
 func getRect(options ...svg.Option) svg.Rect {
 	options = append(options)
 	return svg.NewRect(options...)
-}
-
-func getTick(pos1, pos2 svg.Pos) svg.Element {
-	tickstrok.Dash.Array = []int{5}
-	line := svg.NewLine(pos1, pos2, tickstrok.Option())
-	return line.AsElement()
 }
 
 func getLesser(v1, v2 float64) float64 {
@@ -127,10 +135,10 @@ func getGreater(v1, v2 float64) float64 {
 	return math.Max(v1, v2)
 }
 
-func getPathLine(stk string) svg.Path {
+func getPathLine(color string) svg.Path {
 	var (
-		fill  = svg.NewFill("transparent")
-		strok = svg.NewStroke(stk, 2)
+		fill  = svg.NewFill("none")
+		strok = svg.NewStroke(color, 2)
 	)
 	fill.Opacity = 0
 	return svg.NewPath(fill.Option(), strok.Option(), svg.WithClass("line"))

@@ -419,3 +419,14 @@ func (a TimeAxis) drawTicksY(c Chart, rg pair) svg.Element {
 	}
 	return grp.AsElement()
 }
+
+const (
+	ticklen = 7
+	textick = 18
+)
+
+func getTick(pos1, pos2 svg.Pos) svg.Element {
+	tickstrok.Dash.Array = []int{5}
+	line := svg.NewLine(pos1, pos2, tickstrok.Option())
+	return line.AsElement()
+}
