@@ -19,7 +19,9 @@ func main() {
 	sc.Width = 640
 	sc.Height = 480
 	sc.Padding = chart.CreatePadding(60, 20)
-	sc.CategoryAxis = chart.NewCategoryAxisWith(10, true, true)
+	sc.CategoryAxis = chart.NewCategoryAxis(10, true, true)
+	sc.CategoryAxis.OuterY = true
+	sc.CategoryAxis.OuterX = true
 	sc.BarWidth = 22
 
 	count := flag.Int("c", 5, "count")

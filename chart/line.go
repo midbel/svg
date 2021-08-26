@@ -235,7 +235,7 @@ func (c LineChart) drawCubicSerie(s LineSerie, strok svg.Stroke, px, py pair) sv
 	var (
 		wx  = c.GetAreaWidth() / px.Diff()
 		wy  = c.GetAreaHeight() / py.Diff()
-		pat  = svg.NewPath(strok.Option(), nonefill.Option())
+		pat = svg.NewPath(strok.Option(), nonefill.Option())
 		pos svg.Pos
 	)
 	pos.Y = c.GetAreaHeight() - (s.values[0].Y * wy)
@@ -264,7 +264,7 @@ func (c LineChart) drawStepSerie(s LineSerie, strok svg.Stroke, px, py pair) svg
 	var (
 		wx  = c.GetAreaWidth() / px.Diff()
 		wy  = c.GetAreaHeight() / py.Diff()
-		pat  = svg.NewPath(strok.Option(), nonefill.Option())
+		pat = svg.NewPath(strok.Option(), nonefill.Option())
 		y   = c.GetAreaHeight() - (s.values[0].Y * wy)
 		x   float64
 	)
@@ -293,7 +293,7 @@ func (c LineChart) drawStepBeforeSerie(s LineSerie, strok svg.Stroke, px, py pai
 	var (
 		wx  = c.GetAreaWidth() / px.Diff()
 		wy  = c.GetAreaHeight() / py.Diff()
-		pat  = svg.NewPath(strok.Option(), nonefill.Option())
+		pat = svg.NewPath(strok.Option(), nonefill.Option())
 		y   = c.GetAreaHeight() - (s.values[0].Y * wy)
 		x   float64
 	)
@@ -317,7 +317,7 @@ func (c LineChart) drawStepAfterSerie(s LineSerie, strok svg.Stroke, px, py pair
 	var (
 		wx  = c.GetAreaWidth() / px.Diff()
 		wy  = c.GetAreaHeight() / py.Diff()
-		pat  = svg.NewPath(strok.Option(), nonefill.Option())
+		pat = svg.NewPath(strok.Option(), nonefill.Option())
 		y   = c.GetAreaHeight() - (s.values[0].Y * wy)
 		x   float64
 	)
@@ -342,7 +342,7 @@ func (c LineChart) drawLinearSerie(s LineSerie, strok svg.Stroke, px, py pair) s
 	var (
 		wx  = c.GetAreaWidth() / px.Diff()
 		wy  = c.GetAreaHeight() / py.Diff()
-		pat  = svg.NewPath(strok.Option(), nonefill.Option())
+		pat = svg.NewPath(strok.Option(), nonefill.Option())
 		pos svg.Pos
 	)
 	pos.Y = c.GetAreaHeight() - (s.values[0].Y * wy)

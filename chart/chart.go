@@ -22,7 +22,7 @@ type Chart struct {
 	Height float64
 	Padding
 
-	GetColor func(string, int) svg.Fill
+	GetColor  func(string, int) svg.Fill
 	GetStroke func(string, int) svg.Stroke
 }
 
@@ -49,10 +49,10 @@ func (c *Chart) checkDefault() {
 	}
 
 	if c.GetColor == nil {
-		c.GetColor = defaultStroke
+		c.GetColor = defaultFill
 	}
 	if c.GetStroke == nil {
-		c.GetStroke = defaultFill
+		c.GetStroke = defaultStroke
 	}
 }
 
@@ -119,7 +119,7 @@ var (
 	axisstrok = svg.NewStroke("black", 1)
 	whitstrok = svg.NewStroke("white", 1)
 	linestrok = svg.NewStroke("steelblue", 1)
-	nonefill = svg.NewFill("none")
+	nonefill  = svg.NewFill("none")
 )
 
 func getRect(options ...svg.Option) svg.Rect {

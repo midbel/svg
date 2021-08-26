@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/midbel/svg"
-	"github.com/midbel/svg/colors"
 	"github.com/midbel/svg/chart"
+	"github.com/midbel/svg/colors"
 )
 
 const limit = 200
@@ -80,14 +80,9 @@ func getChart(curve chart.CurveStyle, data []chart.LineSerie) svg.Element {
 	c.Curve = curve
 	c.Width = 480
 	c.Height = 360
-	c.InnerTicksY = 7
-	c.OuterTicksY = 7
-	c.InnerTicksX = 7
-	c.OuterTicksX = 7
-	c.DomainX = true
-	c.DomainY = true
-	c.LabelX = true
-	c.LabelY = true
+	c.LineAxis = chart.NewLineAxisWithTicks(7)
+	c.LineAxis.OuterY = true
+	c.LineAxis.OuterX = true
 	c.GetStroke = func(_ string, _ int) svg.Stroke {
 		i := rand.Intn(100)
 		c := colors.Set36[i%len(colors.Set36)]
