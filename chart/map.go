@@ -8,7 +8,6 @@ import (
 	"sort"
 
 	"github.com/midbel/svg"
-	"github.com/midbel/svg/colors"
 )
 
 type Hierarchy struct {
@@ -125,8 +124,7 @@ func (c TreemapChart) drawAlternate(a appender, series []Hierarchy) {
 	)
 	for i := range series {
 		var (
-			color = colors.RdYlBu11[i%len(colors.RdYlBu11)]
-			fill  = svg.NewFill(color)
+			fill  = c.GetColor(series[i].Label, i)
 			grp   = svg.NewGroup(svg.WithTranslate(off, 0), fill.Option())
 			width = series[i].GetValue() * part
 		)
@@ -201,7 +199,7 @@ func (c TreemapChart) drawHorizontal(a appender, series []Hierarchy, part float6
 			var (
 				pos  = svg.NewPos(off, 0)
 				dim  = svg.NewDim(series[i].GetValue()*part, c.GetAreaHeight())
-				fill = svg.NewFill("steelblue")
+				fill = c.GetColor(series[i].Label, i)
 			)
 			r := svg.NewRect(pos.Option(), dim.Option(), fill.Option())
 			r.Title = series[i].Label
@@ -222,7 +220,7 @@ func (c TreemapChart) drawVertical(a appender, series []Hierarchy, part float64)
 			var (
 				pos  = svg.NewPos(0, off)
 				dim  = svg.NewDim(c.GetAreaWidth(), series[i].GetValue()*part)
-				fill = svg.NewFill("steelblue")
+				fill = c.GetColor(series[i].Label, i)
 			)
 			r := svg.NewRect(pos.Option(), dim.Option(), fill.Option())
 			r.Title = series[i].Label
@@ -270,7 +268,7 @@ func (c TreemapChart) drawDefault(a appender, series []Hierarchy, width, height 
 		if series[i].isLeaf() {
 			var (
 				dim  = svg.NewDim(w, h)
-				fill = svg.NewFill("steelblue")
+				fill = c.GetColor(series[i].Label, i)
 				rect = svg.NewRect(dim.Option(), fill.Option(), svg.WithTranslate(offx, offy))
 			)
 			rect.Title = series[i].Label
@@ -288,12 +286,12 @@ func (c TreemapChart) drawDefault(a appender, series []Hierarchy, width, height 
 }
 
 func (c TreemapChart) drawSquarify(a appender, series []Hierarchy, width, height float64) {
-	squarify(a, series, width, height)
+	c.squarify(a, series, width, height, 0)
 }
 
 const phi = 1.618
 
-func squarify(a appender, series []Hierarchy, width, height float64) {
+func (c TreemapChart) squarify(a appender, series []Hierarchy, width, height float64, level int) {
 	sort.Slice(series, func(i, j int) bool {
 		return series[i].GetValue() > series[j].GetValue()
 	})
@@ -337,9 +335,15 @@ func squarify(a appender, series []Hierarchy, width, height float64) {
 			w = surface / height
 			width -= w
 		}
-		parent := svg.NewGroup(svg.WithTranslate(ox, oy), svg.WithClass("container"))
+		var parent svg.Group
+		if level < 2 {
+			fill := c.GetColor("", i)
+			parent = svg.NewGroup(svg.WithTranslate(ox, oy), svg.WithClass("container"), fill.Option())
+		} else {
+			parent = svg.NewGroup(svg.WithTranslate(ox, oy), svg.WithClass("container"))
+		}
 		a.Append(parent.AsElement())
-		layout(&parent, series[i:j], w, h, sum)
+		c.layout(&parent, series[i:j], w, h, sum, level+1)
 		if w == width {
 			oy += h
 		} else {
@@ -350,7 +354,7 @@ func squarify(a appender, series []Hierarchy, width, height float64) {
 	}
 }
 
-func layout(a appender, series []Hierarchy, width, height, sum float64) {
+func (c TreemapChart) layout(a appender, series []Hierarchy, width, height, sum float64, level int) {
 	var ox, oy float64
 	for i := range series {
 		var (
@@ -369,13 +373,14 @@ func layout(a appender, series []Hierarchy, width, height, sum float64) {
 		if !ok {
 			grp := svg.NewGroup(svg.WithTranslate(ox, oy), svg.WithID(s.Label), svg.WithClass("row"))
 			a.Append(grp.AsElement())
-			squarify(&grp, s.Sub, w, h)
+			c.squarify(&grp, s.Sub, w, h, level)
 		} else {
 			var (
 				p = svg.NewPos(ox, oy)
-				f = svg.NewFill("steelblue")
+				// f = svg.NewFill("steelblue")
 				d = svg.NewDim(w, h)
-				r = svg.NewRect(p.Option(), f.Option(), d.Option())
+				r = svg.NewRect(p.Option(), d.Option())
+				// r = svg.NewRect(p.Option(), f.Option(), d.Option())
 			)
 			r.Title = fmt.Sprintf("%s: %.0f", s.Label, curr)
 			a.Append(r.AsElement())

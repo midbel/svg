@@ -9,7 +9,9 @@ import (
 	"os"
 	"time"
 
+	"github.com/midbel/svg"
 	"github.com/midbel/svg/chart"
+	"github.com/midbel/svg/colors"
 )
 
 func init() {
@@ -20,8 +22,13 @@ const limit = 100
 
 func main() {
 	flag.Parse()
-	var c chart.SunburstChart
-	var w io.Writer = os.Stdout
+	var (
+		c chart.SunburstChart
+		w io.Writer = os.Stdout
+	)
+	c.GetColor = func(_ string, i int) svg.Fill {
+		return svg.NewFill(colors.Paired12[i%len(colors.Paired12)])
+	}
 	c.Padding = chart.CreatePadding(20, 20)
 	c.Width = 800
 	c.Height = 800

@@ -11,6 +11,7 @@ import (
 
 	"github.com/midbel/svg"
 	"github.com/midbel/svg/chart"
+	"github.com/midbel/svg/colors"
 )
 
 func init() {
@@ -59,6 +60,9 @@ func getChart(hs []chart.Hierarchy, tiling chart.TilingMethod) svg.Element {
 	c.Tiling = tiling
 	c.Width = 480
 	c.Height = 480
+	c.GetColor = func(_ string, i int) svg.Fill {
+		return svg.NewFill(colors.Paired12[i%len(colors.Paired12)])
+	}
 
 	return c.RenderElement(hs)
 }

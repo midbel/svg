@@ -18,7 +18,9 @@ func main() {
 		Bottom: 40,
 		Top:    20,
 	}
-	c.TimeAxis = chart.NewTimeAxisWith(5, true, true)
+	c.TimeAxis = chart.NewTimeAxis(10, true, true)
+	c.TimeAxis.OuterX = true
+	c.TimeAxis.OuterY = true
 	sr1 := getSerie()
 	c.Render(os.Stdout, []chart.TimeSerie{sr1})
 }

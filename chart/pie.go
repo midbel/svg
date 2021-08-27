@@ -7,7 +7,6 @@ import (
 	"math"
 
 	"github.com/midbel/svg"
-	"github.com/midbel/svg/colors"
 )
 
 const (
@@ -45,11 +44,8 @@ func (c SunburstChart) RenderElement(series []Hierarchy) svg.Element {
 		angle  float64
 	)
 	for i := range series {
-		var (
-			color = colors.RdYlBu11[i%len(colors.RdYlBu11)]
-			grp   = svg.NewGroup()
-		)
-		c.drawSerie(&grp, series[i], color, angle, part, float64(height), 0)
+		grp := svg.NewGroup()
+		c.drawSerie(&grp, series[i], c.GetColor(series[i].Label, i), angle, part, float64(height), 0)
 		area.Append(grp.AsElement())
 		angle += series[i].GetValue() * part
 	}
@@ -57,11 +53,10 @@ func (c SunburstChart) RenderElement(series []Hierarchy) svg.Element {
 	return cs.AsElement()
 }
 
-func (c SunburstChart) drawSerie(grp appender, serie Hierarchy, color string, angle, part, height, depth float64) {
+func (c SunburstChart) drawSerie(grp appender, serie Hierarchy, fill svg.Fill, angle, part, height, depth float64) {
 	var (
 		inner = height
 		outer = c.distanceFromCenter() + (height * depth) + inner
-		fill  = svg.NewFill(color)
 		pos1  = getPosFromAngle(angle*deg2rad, outer)
 		pos2  = getPosFromAngle((angle+(serie.GetValue()*part))*deg2rad, outer)
 		pos3  = getPosFromAngle((angle+(serie.GetValue()*part))*deg2rad, outer-inner)
@@ -84,7 +79,7 @@ func (c SunburstChart) drawSerie(grp appender, serie Hierarchy, color string, an
 
 	subpart := (serie.GetValue() * part) / serie.Sum()
 	for i := range serie.Sub {
-		c.drawSerie(grp, serie.Sub[i], color, angle, subpart, height, depth+1)
+		c.drawSerie(grp, serie.Sub[i], fill, angle, subpart, height, depth+1)
 		angle += serie.Sub[i].GetValue() * subpart
 	}
 }
@@ -130,7 +125,7 @@ func (c PieChart) RenderElement(serie Serie) svg.Element {
 	)
 	for i, v := range serie.values {
 		var (
-			fill = svg.NewFill(colors.RdYlBu11[i%len(colors.RdYlBu11)])
+			fill = c.GetColor(serie.Title, i)
 			pos1 = getPosFromAngle(angle*deg2rad, float64(c.OuterRadius))
 			pos2 = getPosFromAngle((angle+(v.Value*part))*deg2rad, float64(c.OuterRadius))
 			pos3 = getPosFromAngle((angle+(v.Value*part))*deg2rad, float64(c.OuterRadius-c.InnerRadius))
