@@ -2,14 +2,12 @@ package main
 
 import (
 	"bufio"
-	"fmt"
 	"math/rand"
 	"os"
 	"time"
 
 	"github.com/midbel/svg"
 	"github.com/midbel/svg/chart"
-	"github.com/midbel/svg/colors"
 )
 
 const limit = 200
@@ -19,30 +17,13 @@ func init() {
 }
 
 func main() {
-	var xs []chart.LineSerie
-	for i := 0; i < 1; i++ {
-		var (
-			s  = fmt.Sprint("serie-%d", i)
-			sr = chart.NewLineSerie(s)
-		)
-		for i := -100; i < 100; i++ {
-			c := rand.Intn(10)
-			if c == 0 {
-				continue
-			}
-			i += c
-			sr.Add(float64(i), float64(-20+rand.Intn(41)))
-		}
-		xs = append(xs, sr)
-	}
-
 	var (
-		c1 = getChart(chart.CurveLinear, xs)
-		c2 = getChart(chart.CurveCubic, xs)
-		c3 = getChart(chart.CurveStepBefore, xs)
-		c4 = getChart(chart.CurveStepAfter, xs)
-		c5 = getChart(chart.CurveQuadratic, xs)
-		c6 = getChart(chart.CurveStep, xs)
+		c1 = getChart(chart.CurveLinear, "salmon")
+		c2 = getChart(chart.CurveCubic, "olive")
+		c3 = getChart(chart.CurveStepBefore, "steelblue")
+		c4 = getChart(chart.CurveStepAfter, "orchid")
+		c5 = getChart(chart.CurveQuadratic, "orange")
+		c6 = getChart(chart.CurveStep, "teal")
 	)
 	area := svg.NewSVG(svg.WithDimension(1440, 720))
 	gp1 := svg.NewGroup(svg.WithTranslate(0, 0))
@@ -69,29 +50,37 @@ func main() {
 	area.Render(w)
 }
 
-func getChart(curve chart.CurveStyle, data []chart.LineSerie) svg.Element {
-	var c chart.LineChart
+func getSerie(curve chart.CurveStyle, color string) chart.LineSerie {
+	sr := chart.NewLineSerie(color)
+	sr.Curve = curve
+	sr.Stroke = svg.NewStroke(color, 1)
+	for i := -100; i < 100; i++ {
+		c := rand.Intn(10)
+		if c == 0 {
+			continue
+		}
+		i += c
+		sr.Add(float64(i), float64(-20+rand.Intn(41)))
+	}
+	return sr
+}
+
+func getChart(curve chart.CurveStyle, color string) svg.Element {
+	var (
+		c chart.LineChart
+		s = getSerie(curve, color)
+
+	)
 	c.Padding = chart.Padding{
 		Top:    20,
 		Left:   60,
 		Bottom: 60,
 		Right:  30,
 	}
-	c.Curve = curve
 	c.Width = 480
 	c.Height = 360
 	c.LineAxis = chart.NewLineAxisWithTicks(7)
 	c.LineAxis.OuterY = true
 	c.LineAxis.OuterX = true
-	c.GetStroke = func(_ string, _ int) svg.Stroke {
-		i := rand.Intn(100)
-		c := colors.Set36[i%len(colors.Set36)]
-		return svg.NewStroke(c, 2)
-	}
-
-	e := c.RenderElement(data)
-	if e, ok := e.(*svg.SVG); ok {
-		e.OmitProlog = ok
-	}
-	return e
+	return c.RenderElement([]chart.LineSerie{s})
 }
