@@ -69,7 +69,6 @@ func getChart(curve chart.CurveStyle, color string) svg.Element {
 	var (
 		c chart.LineChart
 		s = getSerie(curve, color)
-
 	)
 	c.Padding = chart.Padding{
 		Top:    20,
@@ -77,6 +76,9 @@ func getChart(curve chart.CurveStyle, color string) svg.Element {
 		Bottom: 60,
 		Right:  30,
 	}
+	// c.Area = svg.NewFill("ivory")
+	// c.Background = svg.NewFill("ivory")
+	// c.Border = svg.NewStroke("black", 1)
 	c.Width = 480
 	c.Height = 360
 	c.LineAxis = chart.NewLineAxisWithTicks(7)

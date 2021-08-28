@@ -254,12 +254,12 @@ type Stroke struct {
 	Width   float64
 	Opacity float64
 	Miter   float64
-	Fill    string
+	Color   string
 }
 
 func NewStroke(fill string, width int) Stroke {
 	return Stroke{
-		Fill:  fill,
+		Color: fill,
 		Width: float64(width),
 	}
 }
@@ -269,7 +269,12 @@ func (s Stroke) Option() Option {
 }
 
 func (s Stroke) Attributes() []string {
+	if s.IsZero() {
+		return nil
+	}
 	var attrs []string
+	attrs = append(attrs, appendString("stroke", s.Color))
+
 	if len(s.Dash.Array) > 0 {
 		attrs = append(attrs, appendIntArray("stroke-dasharray", s.Dash.Array, space))
 	}
@@ -291,10 +296,11 @@ func (s Stroke) Attributes() []string {
 	if s.Miter > 0 {
 		attrs = append(attrs, appendFloat("stroke-miterlimit", s.Miter))
 	}
-	if s.Fill != "" {
-		attrs = append(attrs, appendString("stroke", s.Fill))
-	}
 	return attrs
+}
+
+func (s Stroke) IsZero() bool {
+	return s.Color == ""
 }
 
 type Fill struct {
@@ -315,7 +321,7 @@ func (f Fill) Option() Option {
 }
 
 func (f Fill) Attributes() []string {
-	if f.Color == "" {
+	if f.IsZero() {
 		return nil
 	}
 	var attrs []string
@@ -327,6 +333,10 @@ func (f Fill) Attributes() []string {
 	}
 	attrs = append(attrs, appendFloat("fill-opacity", f.Opacity))
 	return attrs
+}
+
+func (f Fill) IsZero() bool {
+	return f.Color == ""
 }
 
 type Transform struct {

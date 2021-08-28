@@ -35,10 +35,9 @@ func (c SunburstChart) RenderElement(series []Hierarchy) svg.Element {
 	c.checkDefault()
 
 	var (
-		dim    = svg.NewDim(c.Width, c.Height)
-		cs     = svg.NewSVG(dim.Option())
 		cx, cy = c.GetAreaCenter()
-		area   = svg.NewGroup(svg.WithID("area"), svg.WithTranslate(cx, cy), whitstrok.Option())
+		cs     = c.getCanvas()
+		area   = c.getArea(whitstrok.Option(), svg.WithTranslate(cx, cy))
 		height = float64(c.OuterRadius-c.InnerRadius) / getDepth(series)
 		part   = fullcirc / getSum(series)
 		angle  float64
@@ -115,12 +114,11 @@ func (c PieChart) RenderElement(serie Serie) svg.Element {
 	c.checkDefault()
 
 	var (
-		dim    = svg.NewDim(c.Width, c.Height)
-		cs     = svg.NewSVG(dim.Option())
+		cx, cy = c.GetAreaCenter()
+		cs     = c.getCanvas()
+		area   = c.getArea(whitstrok.Option(), svg.WithTranslate(cx, cy))
 		sum    = serie.Sum()
 		part   = fullcirc / sum
-		cx, cy = c.GetAreaCenter()
-		area   = svg.NewGroup(svg.WithID("area"), svg.WithTranslate(cx, cy), whitstrok.Option())
 		angle  float64
 	)
 	for i, v := range serie.values {

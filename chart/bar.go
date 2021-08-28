@@ -9,11 +9,6 @@ import (
 	"github.com/midbel/svg/colors"
 )
 
-type valuelabel struct {
-	Label string
-	Value float64
-}
-
 type Serie struct {
 	Title  string
 	values []valuelabel
@@ -111,7 +106,6 @@ type StackedChart struct {
 	CategoryAxis
 
 	BarWidth float64
-	Ticks    int
 }
 
 func (c StackedChart) Render(w io.Writer, series []StackedSerie) {
@@ -187,6 +181,11 @@ func (c StackedChart) drawSerie(s StackedSerie, band, max float64) svg.Element {
 		grp.Append(g.AsElement())
 	}
 	return grp.AsElement()
+}
+
+type valuelabel struct {
+	Label string
+	Value float64
 }
 
 func getStackedDomains(cs []StackedSerie) (pair, []string) {

@@ -17,8 +17,10 @@ type timepoint struct {
 type TimeSerie struct {
 	Title  string
 	values []timepoint
-	min    timepoint
-	max    timepoint
+	svg.Stroke
+
+	px    timepair
+	py    pair
 }
 
 func NewTimeSerie(title string) TimeSerie {
@@ -28,19 +30,25 @@ func NewTimeSerie(title string) TimeSerie {
 }
 
 func (ir *TimeSerie) Add(x time.Time, y float64) {
+	if len(ir.values) == 0 {
+		ir.px.Min = x
+		ir.px.Max = x
+		ir.py.Min = y
+		ir.py.Max = y
+	}
+	if ir.px.Min.IsZero() || x.Before(ir.px.Min) {
+		ir.px.Min = x
+	}
+	if ir.px.Max.IsZero() || x.After(ir.px.Max) {
+		ir.px.Max = x
+	}
+	ir.py.Min = getLesser(ir.py.Min, y)
+	ir.py.Max = getGreater(ir.py.Max, y)
 	vp := timepoint{
 		X: x,
 		Y: y,
 	}
 	ir.values = append(ir.values, vp)
-	if ir.min.X.IsZero() || x.Before(ir.min.X) {
-		ir.min.X = x
-	}
-	if ir.max.X.IsZero() || x.After(ir.max.X) {
-		ir.max.X = x
-	}
-	ir.min.Y = getLesser(ir.min.Y, y)
-	ir.max.Y = getGreater(ir.max.Y, y)
 }
 
 func (ir *TimeSerie) Len() int {
@@ -91,9 +99,8 @@ func (c TimeChart) RenderElement(series []TimeSerie) svg.Element {
 	c.checkDefault()
 
 	var (
-		dim    = svg.NewDim(c.Width, c.Height)
-		cs     = svg.NewSVG(dim.Option())
-		area   = svg.NewGroup(svg.WithID("area"), c.translate())
+		cs = c.getCanvas()
+		area = c.getArea()
 		rx, ry = getTimeDomains(series)
 	)
 	ry = ry.extendBy(1.2)
@@ -147,14 +154,14 @@ func getTimeDomains(series []TimeSerie) (timepair, pair) {
 		rx pair
 	)
 	for i := range series {
-		if tx.Min.IsZero() || series[i].min.X.Before(tx.Min) {
-			tx.Min = series[i].min.X
+		if tx.Min.IsZero() || series[i].px.Min.Before(tx.Min) {
+			tx.Min = series[i].px.Min
 		}
-		if tx.Max.IsZero() || series[i].max.X.After(tx.Max) {
-			tx.Max = series[i].max.X
+		if tx.Max.IsZero() || series[i].px.Max.After(tx.Max) {
+			tx.Max = series[i].px.Max
 		}
-		rx.Min = getLesser(series[i].min.Y, rx.Min)
-		rx.Max = getGreater(series[i].max.Y, rx.Max)
+		rx.Min = getLesser(series[i].py.Min, rx.Min)
+		rx.Max = getGreater(series[i].py.Max, rx.Max)
 	}
 	return tx, rx
 }

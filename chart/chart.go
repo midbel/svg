@@ -18,9 +18,14 @@ type appender interface {
 }
 
 type Chart struct {
+	Title  string
 	Width  float64
 	Height float64
 	Padding
+
+	Border     svg.Stroke
+	Background svg.Fill
+	Area       svg.Fill
 
 	GetColor  func(string, int) svg.Fill
 	GetStroke func(string, int) svg.Stroke
@@ -38,6 +43,40 @@ func (c *Chart) GetAreaHeight() float64 {
 
 func (c *Chart) GetAreaCenter() (float64, float64) {
 	return c.GetAreaWidth() / 2, c.GetAreaHeight() / 2
+}
+
+func (c *Chart) getArea(options ...svg.Option) svg.Group {
+	os := []svg.Option{
+		svg.WithClass("area"),
+		c.translate(),
+	}
+	return svg.NewGroup(append(os, options...)...)
+}
+
+func (c *Chart) getCanvas() svg.SVG {
+	var (
+		dim = svg.NewDim(c.Width, c.Height)
+		cs  = svg.NewSVG(dim.Option())
+		bg  = svg.NewGroup(svg.WithClass("bg-chart"))
+	)
+
+	if !c.Background.IsZero() && !c.Padding.IsZero() {
+		var (
+			d = svg.NewDim(c.Width, c.Height)
+			r = svg.NewRect(d.Option(), c.Border.Option(), c.Background.Option())
+		)
+		bg.Append(r.AsElement())
+	}
+	if !c.Area.IsZero() {
+		var (
+			p = svg.NewPos(c.Left, c.Top)
+			d = svg.NewDim(c.GetAreaWidth(), c.GetAreaHeight())
+			r = svg.NewRect(p.Option(), d.Option(), c.Area.Option())
+		)
+		bg.Append(r.AsElement())
+	}
+	cs.Append(bg.AsElement())
+	return cs
 }
 
 func (c *Chart) checkDefault() {
@@ -112,6 +151,10 @@ func (p Padding) Vertical() float64 {
 
 func (p Padding) translate() svg.Option {
 	return svg.WithTranslate(p.Left, p.Top)
+}
+
+func (p Padding) IsZero() bool {
+	return p.Top == 0 && p.Bottom == 0 && p.Right == 0 && p.Left == 0
 }
 
 var (

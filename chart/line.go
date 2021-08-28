@@ -67,9 +67,8 @@ func (c ScatterChart) Render(w io.Writer, series []ScatterSerie) {
 func (c ScatterChart) RenderElement(series []ScatterSerie) svg.Element {
 	c.checkDefault()
 	var (
-		dim    = svg.NewDim(c.Width, c.Height)
-		cs     = svg.NewSVG(dim.Option())
-		area   = svg.NewGroup(svg.WithID("area"), c.translate())
+		cs     = c.getCanvas()
+		area   = c.getArea()
 		rx, ry = getScatterDomains(series, 1.15)
 	)
 	cs.Append(c.drawAxis(c.Chart, rx, ry))
@@ -179,9 +178,8 @@ func (c LineChart) RenderElement(series []LineSerie) svg.Element {
 	c.checkDefault()
 
 	var (
-		dim    = svg.NewDim(c.Width, c.Height)
-		cs     = svg.NewSVG(dim.Option())
-		area   = svg.NewGroup(svg.WithID("area"), c.translate())
+		cs     = c.getCanvas()
+		area   = c.getArea()
 		rx, ry = getLineDomains(series, 0)
 	)
 	ry = ry.extendBy(1.2)
