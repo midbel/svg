@@ -5,6 +5,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/midbel/svg"
 	"github.com/midbel/svg/chart"
 )
 
@@ -31,6 +32,7 @@ func getSerie() chart.TimeSerie {
 		now   = time.Now()
 		delta = time.Hour * 24
 	)
+	serie.Stroke = svg.NewStroke("olive", 1)
 	for i := 0; i < 100; i++ {
 		c := rand.Intn(5)
 		if c == 0 {

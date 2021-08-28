@@ -117,7 +117,7 @@ func (c TimeChart) drawSerie(s TimeSerie, px timepair, py pair) svg.Element {
 	var (
 		wx  = c.GetAreaWidth() / px.Diff()
 		wy  = c.GetAreaHeight() / py.Diff()
-		pat = getPathLine("steelblue")
+		pat = svg.NewPath(s.Stroke.Option(), nonefill.Option())
 		pos svg.Pos
 	)
 	pos.Y = c.GetAreaHeight() - (s.values[0].Y * wy)
