@@ -142,41 +142,27 @@ func (c GanttChart) RenderElement(series []GanttSerie) svg.Element {
 	rx = rx.extendBy(time.Hour * 4)
 	cs.Append(c.GanttAxis.drawAxis(c.Chart, rx, ds))
 	for i := range series {
-		var (
-			depth = series[i].Depth()
-			zone  = height / float64(depth)
-			grp   = svg.NewGroup(svg.WithTranslate(0, float64(i)*height))
-		)
-		c.drawSerie(&grp, series[i], rx, height, bar, zone, 0)
+		grp := svg.NewGroup(svg.WithTranslate(0, float64(i)*height))
+		c.drawSerie(&grp, series[i], rx, height, bar)
 		area.Append(grp.AsElement())
 	}
 	cs.Append(area.AsElement())
 	return cs.AsElement()
 }
 
-func (c GanttChart) drawSerie(a appender, serie GanttSerie, rx timepair, height, bar, part, level float64) {
+func (c GanttChart) drawSerie(a appender, serie GanttSerie, rx timepair, height, bar float64) {
 	dx := c.GetAreaWidth() / rx.Diff()
 	for _, v := range serie.values {
 		var (
 			x0 = v.Starts.Sub(rx.Min).Seconds() * dx
 			x1 = v.Ends.Sub(rx.Min).Seconds() * dx
 			y0 = (height / 2) - (bar / 2)
-		)
-		if !v.isLeaf() || level > 0 {
-			y0 = part * level
-			y0 += (part / 2) - (bar / 2)
-		}
-		var (
-			p = svg.NewPos(x0, y0)
-			d = svg.NewDim(x1-x0, bar)
-			r = svg.NewRect(p.Option(), d.Option(), serie.Fill.Option())
+			p  = svg.NewPos(x0, y0)
+			d  = svg.NewDim(x1-x0, bar)
+			r  = svg.NewRect(p.Option(), d.Option(), serie.Fill.Option())
 		)
 		r.Title = fmt.Sprintf("%s (%s - %s)", v.Title, v.Starts.Format(time.RFC3339), v.Ends.Format(time.RFC3339))
 		a.Append(r.AsElement())
-
-		sr := GanttSerie{values: v.Sub}
-		sr.Fill = serie.Fill
-		c.drawSerie(a, sr, rx, height, bar, part, level+1)
 	}
 }
 
@@ -192,11 +178,59 @@ func (c IntervalChart) Render(w io.Writer, series []Interval) {
 }
 
 func (c IntervalChart) RenderElement(series []Interval) svg.Element {
+	// c.checkDefault()
+	//
+	// for len(series) == 1 {
+	// 	series = series[0].Sub
+	// }
+	//
+	// var (
+	// 	cs     = c.getCanvas()
+	// 	area   = c.getArea(whitstrok.Option())
+	// 	height = c.GetAreaHeight() / float64(len(series))
+	// 	rx, ds = getGanttDomains(series)
+	// 	bar    = height / float64(getMaxGanttDepth(series)) * 0.6
+	// )
+	// rx = rx.extendBy(time.Hour * 4)
+	// cs.Append(c.GanttAxis.drawAxis(c.Chart, rx, ds))
+	// for i := range series {
+	// 	var (
+	// 		depth = series[i].Depth()
+	// 		zone  = height / float64(depth)
+	// 		grp   = svg.NewGroup(svg.WithTranslate(0, float64(i)*height))
+	// 	)
+	// 	c.drawSerie(&grp, series[i], rx, height, bar, zone, 0)
+	// 	area.Append(grp.AsElement())
+	// }
+	// cs.Append(area.AsElement())
+	// return cs.AsElement()
 	return nil
 }
 
-func (c IntervalChart) drawInterval(a appender, i Interval) {
-	
+func (c IntervalChart) drawSerie(a appender, serie Interval, rx timepair, height, bar, part, level float64) {
+	// dx := c.GetAreaWidth() / rx.Diff()
+	// for _, v := range serie.values {
+	// 	var (
+	// 		x0 = v.Starts.Sub(rx.Min).Seconds() * dx
+	// 		x1 = v.Ends.Sub(rx.Min).Seconds() * dx
+	// 		y0 = (height / 2) - (bar / 2)
+	// 	)
+	// 	if !v.isLeaf() || level > 0 {
+	// 		y0 = part * level
+	// 		y0 += (part / 2) - (bar / 2)
+	// 	}
+	// 	var (
+	// 		p = svg.NewPos(x0, y0)
+	// 		d = svg.NewDim(x1-x0, bar)
+	// 		r = svg.NewRect(p.Option(), d.Option(), serie.Fill.Option())
+	// 	)
+	// 	r.Title = fmt.Sprintf("%s (%s - %s)", v.Title, v.Starts.Format(time.RFC3339), v.Ends.Format(time.RFC3339))
+	// 	a.Append(r.AsElement())
+	//
+	// 	sr := GanttSerie{values: v.Sub}
+	// 	sr.Fill = serie.Fill
+	// 	c.drawSerie(a, sr, rx, height, bar, part, level+1)
+	// }
 }
 
 type CalendarChart struct {
