@@ -108,11 +108,11 @@ func main() {
 	i2.Sub = append(i2.Sub, i9, i10)
 	i6.Sub = append(i6.Sub, i11, i12, i13)
 	i7.Sub = append(i7.Sub, i14, i15)
-	c.Width = 960
-	c.Height = 480
+	c.Width = 1920
+	c.Height = 640
 	c.Padding = chart.Padding{
 		Left:   80,
-		Right:  60,
+		Right:  40,
 		Top:    20,
 		Bottom: 40,
 	}

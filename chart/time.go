@@ -156,7 +156,7 @@ func (c GanttChart) RenderElement(series []GanttSerie) svg.Element {
 
 func (c GanttChart) drawSerie(a appender, serie GanttSerie, rx timepair, height, bar, part, level float64) {
 	dx := c.GetAreaWidth() / rx.Diff()
-	for i, v := range serie.values {
+	for _, v := range serie.values {
 		var (
 			x0 = v.Starts.Sub(rx.Min).Seconds() * dx
 			x1 = v.Ends.Sub(rx.Min).Seconds() * dx
@@ -171,13 +171,32 @@ func (c GanttChart) drawSerie(a appender, serie GanttSerie, rx timepair, height,
 			d = svg.NewDim(x1-x0, bar)
 			r = svg.NewRect(p.Option(), d.Option(), serie.Fill.Option())
 		)
-		r.Title = fmt.Sprintf("%s (%s - %s)", serie.values[i].Title, v.Starts.Format(time.RFC3339), v.Ends.Format(time.RFC3339))
+		r.Title = fmt.Sprintf("%s (%s - %s)", v.Title, v.Starts.Format(time.RFC3339), v.Ends.Format(time.RFC3339))
 		a.Append(r.AsElement())
 
-		sx := GanttSerie{values: v.Sub}
-		sx.Fill = serie.Fill
-		c.drawSerie(a, sx, rx, height, bar, part, level+1)
+		sr := GanttSerie{values: v.Sub}
+		sr.Fill = serie.Fill
+		c.drawSerie(a, sr, rx, height, bar, part, level+1)
 	}
+}
+
+type IntervalChart struct {
+	Chart
+}
+
+func (c IntervalChart) Render(w io.Writer, series []Interval) {
+	ws := bufio.NewWriter(w)
+	defer ws.Flush()
+	cs := c.RenderElement(series)
+	cs.Render(ws)
+}
+
+func (c IntervalChart) RenderElement(series []Interval) svg.Element {
+	return nil
+}
+
+func (c IntervalChart) drawInterval(a appender, i Interval) {
+	
 }
 
 type CalendarChart struct {
