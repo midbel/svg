@@ -26,7 +26,7 @@ func main() {
 		i3 = chart.Interval{
 			Title:  "task-3",
 			Starts: time.Date(2021, 9, 1, 14, 0, 0, 0, time.UTC),
-			Ends:   time.Date(2021, 9, 6, 17, 0, 0, 0, time.UTC),
+			Ends:   time.Date(2021, 9, 10, 12, 0, 0, 0, time.UTC),
 		}
 		i4 = chart.Interval{
 			Title:  "task-4",

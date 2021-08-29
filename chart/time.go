@@ -137,6 +137,7 @@ func (c GanttChart) RenderElement(series []GanttSerie) svg.Element {
 		area   = c.getArea(whitstrok.Option())
 		height = c.GetAreaHeight() / float64(len(series))
 		rx, ds = getGanttDomains(series)
+		bar    = height / float64(getMaxGanttDepth(series)) * 0.6
 	)
 	rx = rx.extendBy(time.Hour * 4)
 	cs.Append(c.GanttAxis.drawAxis(c.Chart, rx, ds))
@@ -146,7 +147,7 @@ func (c GanttChart) RenderElement(series []GanttSerie) svg.Element {
 			zone  = height / float64(depth)
 			grp   = svg.NewGroup(svg.WithTranslate(0, float64(i)*height))
 		)
-		c.drawSerie(&grp, series[i], rx, height, zone/4, zone, 0)
+		c.drawSerie(&grp, series[i], rx, height, bar, zone, 0)
 		area.Append(grp.AsElement())
 	}
 	cs.Append(area.AsElement())
@@ -269,6 +270,17 @@ func (t timepair) extendBy(by time.Duration) timepair {
 func (t timepair) Diff() float64 {
 	diff := t.Max.Sub(t.Min)
 	return diff.Seconds()
+}
+
+func getMaxGanttDepth(series []GanttSerie) int {
+	var d int
+	for i := range series {
+		x := series[i].Depth()
+		if x > d {
+			d = x
+		}
+	}
+	return d
 }
 
 func getGanttDomains(series []GanttSerie) (timepair, []string) {
