@@ -28,7 +28,7 @@ func (i Interval) Depth() int {
 			d = x
 		}
 	}
-	return d
+	return d + 1
 }
 
 func (i Interval) isLeaf() bool {
@@ -134,36 +134,48 @@ func (c GanttChart) Render(w io.Writer, series []GanttSerie) {
 func (c GanttChart) RenderElement(series []GanttSerie) svg.Element {
 	var (
 		cs     = c.getCanvas()
-		area   = c.getArea()
+		area   = c.getArea(whitstrok.Option())
 		height = c.GetAreaHeight() / float64(len(series))
 		rx, ds = getGanttDomains(series)
 	)
 	rx = rx.extendBy(time.Hour * 4)
 	cs.Append(c.GanttAxis.drawAxis(c.Chart, rx, ds))
 	for i := range series {
-		grp := svg.NewGroup(svg.WithTranslate(0, float64(i)*height))
-		c.drawSerie(&grp, series[i], height, rx)
+		var (
+			depth = series[i].Depth()
+			zone  = height / float64(depth)
+			grp   = svg.NewGroup(svg.WithTranslate(0, float64(i)*height))
+		)
+		c.drawSerie(&grp, series[i], rx, height, zone/4, zone, 0)
 		area.Append(grp.AsElement())
 	}
 	cs.Append(area.AsElement())
 	return cs.AsElement()
 }
 
-func (c GanttChart) drawSerie(a appender, serie GanttSerie, height float64, rx timepair) {
-	var (
-		dx = c.GetAreaWidth() / rx.Diff()
-		// dy = height / float64(serie.Depth())
-	)
+func (c GanttChart) drawSerie(a appender, serie GanttSerie, rx timepair, height, bar, part, level float64) {
+	dx := c.GetAreaWidth() / rx.Diff()
 	for i, v := range serie.values {
 		var (
 			x0 = v.Starts.Sub(rx.Min).Seconds() * dx
 			x1 = v.Ends.Sub(rx.Min).Seconds() * dx
-			p  = svg.NewPos(x0, 0)
-			d  = svg.NewDim(x1-x0, 10)
-			r  = svg.NewRect(p.Option(), d.Option(), serie.Fill.Option())
+			y0 = (height / 2) - (bar / 2)
+		)
+		if !v.isLeaf() || level > 0 {
+			y0 = part * level
+			y0 += (part / 2) - (bar / 2)
+		}
+		var (
+			p = svg.NewPos(x0, y0)
+			d = svg.NewDim(x1-x0, bar)
+			r = svg.NewRect(p.Option(), d.Option(), serie.Fill.Option())
 		)
 		r.Title = fmt.Sprintf("%s (%s - %s)", serie.values[i].Title, v.Starts.Format(time.RFC3339), v.Ends.Format(time.RFC3339))
 		a.Append(r.AsElement())
+
+		sx := GanttSerie{values: v.Sub}
+		sx.Fill = serie.Fill
+		c.drawSerie(a, sx, rx, height, bar, part, level+1)
 	}
 }
 

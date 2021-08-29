@@ -539,7 +539,7 @@ func (a GanttAxis) drawAxisY(c Chart, domains []string) svg.Element {
 		if a.LabelY {
 			var (
 				font = svg.NewFont(12)
-				pos0 = svg.NewPos(-ticklen*2, off)
+				pos0 = svg.NewPos(-ticklen*2, off+3)
 				anc  = svg.WithAnchor("end")
 				text = svg.NewText(domains[i], pos0.Option(), font.Option(), anc)
 			)
