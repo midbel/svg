@@ -297,8 +297,8 @@ type TimeAxis struct {
 	DomainY bool
 }
 
-func NewTimeAxisWithTicks(x, y int) TimeAxis {
-	return NewTimeAxis(0, true, true)
+func NewTimeAxisWithTicks(x int) TimeAxis {
+	return NewTimeAxis(x, true, true)
 }
 
 func NewTimeAxis(ticks int, label, domain bool) TimeAxis {
@@ -421,6 +421,145 @@ func (a TimeAxis) drawAxisY(c Chart, rg pair) svg.Element {
 			)
 			grp.Append(getTick(pos1, pos2))
 		}
+		axis.Append(grp.AsElement())
+	}
+	return axis.AsElement()
+}
+
+type GanttAxis struct {
+	TicksX  int
+	InnerX  bool
+	OuterX  bool
+	LabelX  bool
+	DomainX bool
+
+	InnerY  bool
+	OuterY  bool
+	LabelY  bool
+	DomainY bool
+}
+
+func NewGanttAxisWithTicks(x int) GanttAxis {
+	return NewGanttAxis(x, true, true)
+}
+
+func NewGanttAxis(ticks int, label, domain bool) GanttAxis {
+	return GanttAxis{
+		TicksX:  ticks,
+		InnerX:  true,
+		OuterX:  false,
+		DomainX: domain,
+		LabelX:  label,
+		InnerY:  true,
+		OuterY:  false,
+		DomainY: domain,
+		LabelY:  label,
+	}
+}
+
+func (a GanttAxis) drawAxis(c Chart, rx timepair, domains []string) svg.Element {
+	grp := svg.NewGroup()
+	grp.Append(a.drawAxisX(c, rx))
+	grp.Append(a.drawAxisY(c, domains))
+	grp.Append(a.drawDomains(c))
+	return grp.AsElement()
+}
+
+func (a GanttAxis) drawDomains(c Chart) svg.Element {
+	grp := svg.NewGroup(c.translate())
+	if a.DomainX {
+		var (
+			pos1 = svg.NewPos(0, c.GetAreaHeight())
+			pos2 = svg.NewPos(c.GetAreaWidth(), c.GetAreaHeight())
+			line = svg.NewLine(pos1, pos2, axisstrok.Option(), svg.WithClass("domain"))
+		)
+		grp.Append(line.AsElement())
+	}
+	if a.DomainY {
+		var (
+			pos1 = svg.NewPos(0, 0)
+			pos2 = svg.NewPos(0, c.GetAreaHeight()+1)
+			line = svg.NewLine(pos1, pos2, axisstrok.Option(), svg.WithClass("domain"))
+		)
+		grp.Append(line.AsElement())
+	}
+	return grp.AsElement()
+}
+
+func (a GanttAxis) drawAxisX(c Chart, rg timepair) svg.Element {
+	var (
+		axis  = svg.NewGroup(c.getOptionsAxisX()...)
+		coeff = c.GetAreaWidth() / float64(a.TicksX)
+		step  = math.Ceil(rg.Diff() / float64(a.TicksX))
+	)
+	for j := 0; !rg.Min.After(rg.Max); j++ {
+		var (
+			grp = svg.NewGroup(svg.WithClass("tick"))
+			off = float64(j) * coeff
+		)
+		if a.LabelX {
+			var (
+				font = svg.NewFont(12)
+				pos0 = svg.NewPos(off-(coeff*0.15), textick+(textick/3))
+				text = svg.NewText(formatTime(rg.Min), pos0.Option(), font.Option())
+			)
+			grp.Append(text.AsElement())
+		}
+		if a.InnerX {
+			var (
+				pos1 = svg.NewPos(off, 0)
+				pos2 = svg.NewPos(off, ticklen)
+				line = svg.NewLine(pos1, pos2, axisstrok.Option())
+			)
+			grp.Append(line.AsElement())
+		}
+		if a.OuterX {
+			var (
+				pos1 = svg.NewPos(off, 0)
+				pos2 = svg.NewPos(off, -c.GetAreaHeight())
+			)
+			grp.Append(getTick(pos1, pos2))
+		}
+		axis.Append(grp.AsElement())
+		rg.Min = rg.Min.Add(time.Second * time.Duration(step))
+	}
+	return axis.AsElement()
+}
+
+func (a GanttAxis) drawAxisY(c Chart, domains []string) svg.Element {
+	var (
+		axis = svg.NewGroup(c.getOptionsAxisY()...)
+		step = c.GetAreaHeight() / float64(len(domains))
+	)
+	for i := 0; i < len(domains); i++ {
+		var (
+			grp = svg.NewGroup(svg.WithClass("tick"))
+			off = (float64(i) * step) + (step / 2)
+		)
+		if a.LabelY {
+			var (
+				font = svg.NewFont(12)
+				pos0 = svg.NewPos(-ticklen*2, off)
+				anc  = svg.WithAnchor("end")
+				text = svg.NewText(domains[i], pos0.Option(), font.Option(), anc)
+			)
+			grp.Append(text.AsElement())
+		}
+		if a.InnerY {
+			var (
+				pos1 = svg.NewPos(0, off)
+				pos2 = svg.NewPos(-ticklen, off)
+				line = svg.NewLine(pos1, pos2, axisstrok.Option())
+			)
+			grp.Append(line.AsElement())
+		}
+		// if a.OuterY {
+		// 	var (
+		// 		pos1 = svg.NewPos(0, off)
+		// 		pos2 = svg.NewPos(c.GetAreaWidth(), off)
+		// 	)
+		// 	grp.Append(getTick(pos1, pos2))
+		// }
 		axis.Append(grp.AsElement())
 	}
 	return axis.AsElement()

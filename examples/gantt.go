@@ -56,7 +56,15 @@ func main() {
 	)
 	c.Width = 960
 	c.Height = 480
-	c.Padding = chart.CreatePadding(20, 20)
+	c.Padding = chart.Padding{
+		Left:   80,
+		Right:  20,
+		Top:    20,
+		Bottom: 40,
+	}
+	c.GanttAxis = chart.NewGanttAxisWithTicks(10)
+	c.GanttAxis.OuterX = true
+	c.GanttAxis.OuterY = true
 	xs = append(xs, chart.NewGanttSerie("serie-1"))
 	xs[0].Fill = svg.NewFill("salmon")
 	xs[0].Append(i1)

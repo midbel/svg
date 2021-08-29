@@ -121,6 +121,7 @@ func (ir *TimeSerie) Len() int {
 
 type GanttChart struct {
 	Chart
+	GanttAxis
 }
 
 func (c GanttChart) Render(w io.Writer, series []GanttSerie) {
@@ -135,8 +136,10 @@ func (c GanttChart) RenderElement(series []GanttSerie) svg.Element {
 		cs     = c.getCanvas()
 		area   = c.getArea()
 		height = c.GetAreaHeight() / float64(len(series))
-		rx     = getGanttDomains(series)
+		rx, ds = getGanttDomains(series)
 	)
+	rx = rx.extendBy(time.Hour * 4)
+	cs.Append(c.GanttAxis.drawAxis(c.Chart, rx, ds))
 	for i := range series {
 		grp := svg.NewGroup(svg.WithTranslate(0, float64(i)*height))
 		c.drawSerie(&grp, series[i], height, rx)
@@ -245,14 +248,24 @@ type timepair struct {
 	Max time.Time
 }
 
+func (t timepair) extendBy(by time.Duration) timepair {
+	t.Min = t.Min.Add(-by)
+	t.Max = t.Max.Add(by)
+	return t
+}
+
 func (t timepair) Diff() float64 {
 	diff := t.Max.Sub(t.Min)
 	return diff.Seconds()
 }
 
-func getGanttDomains(series []GanttSerie) timepair {
-	var p timepair
+func getGanttDomains(series []GanttSerie) (timepair, []string) {
+	var (
+		p   timepair
+		str []string
+	)
 	for i := range series {
+		str = append(str, series[i].Title)
 		if i == 0 || p.Min.After(series[i].timepair.Min) {
 			p.Min = series[i].timepair.Min
 		}
@@ -260,7 +273,7 @@ func getGanttDomains(series []GanttSerie) timepair {
 			p.Max = series[i].timepair.Max
 		}
 	}
-	return p
+	return p, str
 }
 
 func getTimeDomains(series []TimeSerie) (timepair, pair) {
