@@ -112,7 +112,7 @@ func main() {
 	c.Height = 480
 	c.Padding = chart.Padding{
 		Left:   80,
-		Right:  30,
+		Right:  60,
 		Top:    20,
 		Bottom: 40,
 	}

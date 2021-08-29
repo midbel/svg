@@ -187,6 +187,10 @@ func getPathLine(color string) svg.Path {
 	return svg.NewPath(fill.Option(), strok.Option(), svg.WithClass("line"))
 }
 
+func formatDay(t time.Time) string {
+	return t.Format("2006-01-02")
+}
+
 func formatTime(t time.Time) string {
 	return t.Format("15:04:05")
 }

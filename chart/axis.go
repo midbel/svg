@@ -500,8 +500,8 @@ func (a GanttAxis) drawAxisX(c Chart, rg timepair) svg.Element {
 		if a.LabelX {
 			var (
 				font = svg.NewFont(12)
-				pos0 = svg.NewPos(off-(coeff*0.15), textick+(textick/3))
-				text = svg.NewText(formatTime(rg.Min), pos0.Option(), font.Option())
+				pos0 = svg.NewPos(off-(coeff*0.35), textick+(textick/3))
+				text = svg.NewText(formatDay(rg.Min), pos0.Option(), font.Option())
 			)
 			grp.Append(text.AsElement())
 		}
