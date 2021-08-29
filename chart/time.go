@@ -2,6 +2,7 @@ package chart
 
 import (
 	"bufio"
+	"fmt"
 	"io"
 	"math"
 	"time"
@@ -9,18 +10,81 @@ import (
 	"github.com/midbel/svg"
 )
 
-type timepoint struct {
-	X time.Time
-	Y float64
+type Interval struct {
+	Title  string     `json:"title"`
+	Starts time.Time  `json:"starts"`
+	Ends   time.Time  `json:"ends"`
+	Sub    []Interval `json:"children"`
+}
+
+func (i Interval) Depth() int {
+	if i.isLeaf() {
+		return 1
+	}
+	var d int
+	for j := range i.Sub {
+		x := i.Sub[j].Depth()
+		if x > d {
+			d = x
+		}
+	}
+	return d
+}
+
+func (i Interval) isLeaf() bool {
+	return len(i.Sub) == 0
+}
+
+type GanttSerie struct {
+	Title  string
+	values []Interval
+
+	timepair
+	svg.Fill
+}
+
+func NewGanttSerie(title string) GanttSerie {
+	return GanttSerie{
+		Title: title,
+	}
+}
+
+func (g *GanttSerie) Append(i Interval) {
+	if len(g.values) == 0 {
+		g.timepair.Min = i.Starts
+		g.timepair.Max = i.Ends
+	}
+	if g.timepair.Min.IsZero() || i.Starts.Before(g.timepair.Min) {
+		g.timepair.Min = i.Starts
+	}
+	if g.timepair.Max.IsZero() || i.Ends.After(g.timepair.Max) {
+		g.timepair.Max = i.Ends
+	}
+	g.values = append(g.values, i)
+}
+
+func (g *GanttSerie) Depth() int {
+	var d int
+	for i := range g.values {
+		x := g.values[i].Depth()
+		if x > d {
+			d = x
+		}
+	}
+	return d
+}
+
+func (g *GanttSerie) Len() int {
+	return len(g.values)
 }
 
 type TimeSerie struct {
-	Title  string
-	values []timepoint
+	Title string
 	svg.Stroke
 
-	px    timepair
-	py    pair
+	values []timepoint
+	px     timepair
+	py     pair
 }
 
 func NewTimeSerie(title string) TimeSerie {
@@ -59,27 +123,60 @@ type GanttChart struct {
 	Chart
 }
 
-type ContribChart struct {
-	Chart
-}
-
-func (c ContribChart) Render(w io.Writer, series []TimeSerie) {
+func (c GanttChart) Render(w io.Writer, series []GanttSerie) {
 	ws := bufio.NewWriter(w)
 	defer ws.Flush()
 	cs := c.RenderElement(series)
 	cs.Render(ws)
 }
 
-func (c ContribChart) RenderElement(series []TimeSerie) svg.Element {
-	c.checkDefault()
-
+func (c GanttChart) RenderElement(series []GanttSerie) svg.Element {
 	var (
-		dim  = svg.NewDim(c.Width, c.Height)
-		cs   = svg.NewSVG(dim.Option())
-		area = svg.NewGroup(svg.WithID("area"), c.translate())
+		cs     = c.getCanvas()
+		area   = c.getArea()
+		height = c.GetAreaHeight() / float64(len(series))
+		rx     = getGanttDomains(series)
 	)
+	for i := range series {
+		grp := svg.NewGroup(svg.WithTranslate(0, float64(i)*height))
+		c.drawSerie(&grp, series[i], height, rx)
+		area.Append(grp.AsElement())
+	}
 	cs.Append(area.AsElement())
 	return cs.AsElement()
+}
+
+func (c GanttChart) drawSerie(a appender, serie GanttSerie, height float64, rx timepair) {
+	var (
+		dx = c.GetAreaWidth() / rx.Diff()
+		// dy = height / float64(serie.Depth())
+	)
+	for i, v := range serie.values {
+		var (
+			x0 = v.Starts.Sub(rx.Min).Seconds() * dx
+			x1 = v.Ends.Sub(rx.Min).Seconds() * dx
+			p  = svg.NewPos(x0, 0)
+			d  = svg.NewDim(x1-x0, 10)
+			r  = svg.NewRect(p.Option(), d.Option(), serie.Fill.Option())
+		)
+		r.Title = fmt.Sprintf("%s (%s - %s)", serie.values[i].Title, v.Starts.Format(time.RFC3339), v.Ends.Format(time.RFC3339))
+		a.Append(r.AsElement())
+	}
+}
+
+type CalendarChart struct {
+	Chart
+}
+
+func (c CalendarChart) Render(w io.Writer, series []TimeSerie) {
+	ws := bufio.NewWriter(w)
+	defer ws.Flush()
+	cs := c.RenderElement(series)
+	cs.Render(ws)
+}
+
+func (c CalendarChart) RenderElement(series []TimeSerie) svg.Element {
+	return nil
 }
 
 type TimeChart struct {
@@ -99,8 +196,8 @@ func (c TimeChart) RenderElement(series []TimeSerie) svg.Element {
 	c.checkDefault()
 
 	var (
-		cs = c.getCanvas()
-		area = c.getArea()
+		cs     = c.getCanvas()
+		area   = c.getArea()
 		rx, ry = getTimeDomains(series)
 	)
 	ry = ry.extendBy(1.2)
@@ -138,6 +235,11 @@ func (c TimeChart) drawSerie(s TimeSerie, px timepair, py pair) svg.Element {
 	return pat.AsElement()
 }
 
+type timepoint struct {
+	X time.Time
+	Y float64
+}
+
 type timepair struct {
 	Min time.Time
 	Max time.Time
@@ -146,6 +248,19 @@ type timepair struct {
 func (t timepair) Diff() float64 {
 	diff := t.Max.Sub(t.Min)
 	return diff.Seconds()
+}
+
+func getGanttDomains(series []GanttSerie) timepair {
+	var p timepair
+	for i := range series {
+		if i == 0 || p.Min.After(series[i].timepair.Min) {
+			p.Min = series[i].timepair.Min
+		}
+		if i == 0 || p.Max.Before(series[i].timepair.Max) {
+			p.Max = series[i].timepair.Max
+		}
+	}
+	return p
 }
 
 func getTimeDomains(series []TimeSerie) (timepair, pair) {

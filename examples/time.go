@@ -28,7 +28,7 @@ func main() {
 
 func getSerie() chart.TimeSerie {
 	var (
-		serie chart.TimeSerie
+		serie = chart.NewTimeSerie("time serie")
 		now   = time.Now()
 		delta = time.Hour * 24
 	)
