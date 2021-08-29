@@ -41,11 +41,11 @@ func main() {
 		i6 = chart.Interval{
 			Title:  "task-6",
 			Starts: time.Date(2021, 9, 6, 8, 0, 0, 0, time.UTC),
-			Ends:   time.Date(2021, 9, 10, 12, 0, 0, 0, time.UTC),
+			Ends:   time.Date(2021, 9, 10, 20, 0, 0, 0, time.UTC),
 		}
 		i7 = chart.Interval{
 			Title:  "task-7",
-			Starts: time.Date(2021, 9, 3, 15, 0, 0, 0, time.UTC),
+			Starts: time.Date(2021, 9, 2, 10, 0, 0, 0, time.UTC),
 			Ends:   time.Date(2021, 9, 4, 17, 0, 0, 0, time.UTC),
 		}
 		i8 = chart.Interval{
@@ -80,7 +80,7 @@ func main() {
 		}
 		i14 = chart.Interval{
 			Title:  "task-7-1",
-			Starts: time.Date(2021, 9, 3, 15, 0, 0, 0, time.UTC),
+			Starts: time.Date(2021, 9, 2, 15, 0, 0, 0, time.UTC),
 			Ends:   time.Date(2021, 9, 3, 18, 0, 0, 0, time.UTC),
 		}
 		i15 = chart.Interval{
@@ -112,7 +112,7 @@ func main() {
 	c.Height = 480
 	c.Padding = chart.Padding{
 		Left:   80,
-		Right:  20,
+		Right:  30,
 		Top:    20,
 		Bottom: 40,
 	}

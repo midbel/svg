@@ -450,9 +450,9 @@ func NewGanttAxis(ticks int, label, domain bool) GanttAxis {
 		OuterX:  false,
 		DomainX: domain,
 		LabelX:  label,
-		InnerY:  true,
+		InnerY:  false,
 		OuterY:  false,
-		DomainY: domain,
+		DomainY: false,
 		LabelY:  label,
 	}
 }
