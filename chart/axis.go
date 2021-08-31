@@ -426,7 +426,7 @@ func (a TimeAxis) drawAxisY(c Chart, rg pair) svg.Element {
 	return axis.AsElement()
 }
 
-type GanttAxis struct {
+type IntervalAxis struct {
 	TicksX  int
 	InnerX  bool
 	OuterX  bool
@@ -439,12 +439,12 @@ type GanttAxis struct {
 	DomainY bool
 }
 
-func NewGanttAxisWithTicks(x int) GanttAxis {
-	return NewGanttAxis(x, true, true)
+func NewIntervalAxisWithTicks(x int) IntervalAxis {
+	return NewIntervalAxis(x, true, true)
 }
 
-func NewGanttAxis(ticks int, label, domain bool) GanttAxis {
-	return GanttAxis{
+func NewIntervalAxis(ticks int, label, domain bool) IntervalAxis {
+	return IntervalAxis{
 		TicksX:  ticks,
 		InnerX:  true,
 		OuterX:  false,
@@ -457,7 +457,7 @@ func NewGanttAxis(ticks int, label, domain bool) GanttAxis {
 	}
 }
 
-func (a GanttAxis) drawAxis(c Chart, rx timepair, domains []string) svg.Element {
+func (a IntervalAxis) drawAxis(c Chart, rx timepair, domains []string) svg.Element {
 	grp := svg.NewGroup()
 	grp.Append(a.drawAxisX(c, rx))
 	grp.Append(a.drawAxisY(c, domains))
@@ -465,7 +465,7 @@ func (a GanttAxis) drawAxis(c Chart, rx timepair, domains []string) svg.Element 
 	return grp.AsElement()
 }
 
-func (a GanttAxis) drawDomains(c Chart) svg.Element {
+func (a IntervalAxis) drawDomains(c Chart) svg.Element {
 	grp := svg.NewGroup(c.translate())
 	if a.DomainX {
 		var (
@@ -486,7 +486,7 @@ func (a GanttAxis) drawDomains(c Chart) svg.Element {
 	return grp.AsElement()
 }
 
-func (a GanttAxis) drawAxisX(c Chart, rg timepair) svg.Element {
+func (a IntervalAxis) drawAxisX(c Chart, rg timepair) svg.Element {
 	var (
 		axis  = svg.NewGroup(c.getOptionsAxisX()...)
 		coeff = c.GetAreaWidth() / float64(a.TicksX)
@@ -526,7 +526,7 @@ func (a GanttAxis) drawAxisX(c Chart, rg timepair) svg.Element {
 	return axis.AsElement()
 }
 
-func (a GanttAxis) drawAxisY(c Chart, domains []string) svg.Element {
+func (a IntervalAxis) drawAxisY(c Chart, domains []string) svg.Element {
 	var (
 		axis = svg.NewGroup(c.getOptionsAxisY()...)
 		step = c.GetAreaHeight() / float64(len(domains))
