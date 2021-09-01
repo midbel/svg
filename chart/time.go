@@ -19,6 +19,23 @@ type Interval struct {
 	svg.Fill
 }
 
+func (i Interval) Range() (time.Time, time.Time) {
+	if i.isLeaf() {
+		return i.Starts, i.Ends
+	}
+	starts, ends := i.Starts, i.Ends
+	for j := range i.Sub {
+		s, e := i.Sub[j].Range()
+		if s.Before(starts) {
+			starts = s
+		}
+		if e.After(ends) {
+			ends = e
+		}
+	}
+	return starts, ends
+}
+
 func (i Interval) Depth() int {
 	if i.isLeaf() {
 		return 1
@@ -39,49 +56,6 @@ func (i Interval) isLeaf() bool {
 
 func (i Interval) IsZero() bool {
 	return i.Starts.IsZero() && i.Ends.IsZero()
-}
-
-type GanttSerie struct {
-	Title  string
-	values []Interval
-
-	timepair
-	svg.Fill
-}
-
-func NewGanttSerie(title string) GanttSerie {
-	return GanttSerie{
-		Title: title,
-	}
-}
-
-func (g *GanttSerie) Append(i Interval) {
-	if len(g.values) == 0 {
-		g.timepair.Min = i.Starts
-		g.timepair.Max = i.Ends
-	}
-	if g.timepair.Min.IsZero() || i.Starts.Before(g.timepair.Min) {
-		g.timepair.Min = i.Starts
-	}
-	if g.timepair.Max.IsZero() || i.Ends.After(g.timepair.Max) {
-		g.timepair.Max = i.Ends
-	}
-	g.values = append(g.values, i)
-}
-
-func (g *GanttSerie) Depth() int {
-	var d int
-	for i := range g.values {
-		x := g.values[i].Depth()
-		if x > d {
-			d = x
-		}
-	}
-	return d
-}
-
-func (g *GanttSerie) Len() int {
-	return len(g.values)
 }
 
 type TimeSerie struct {
@@ -130,24 +104,59 @@ type GanttChart struct {
 	IntervalAxis
 }
 
-func (c GanttChart) Render(w io.Writer, series []GanttSerie) {
+func (c GanttChart) Render(w io.Writer, series []Interval) {
 	ws := bufio.NewWriter(w)
 	defer ws.Flush()
 	cs := c.RenderElement(series)
 	cs.Render(ws)
 }
 
-func (c GanttChart) RenderElement(series []GanttSerie) svg.Element {
+func (c GanttChart) RenderElement(series []Interval) svg.Element {
+	for len(series) == 1 {
+		series = series[0].Sub
+	}
 	var (
 		cs     = c.getCanvas()
 		area   = c.getArea(whitstrok.Option())
+		offset = c.GetAreaHeight() / float64(len(series))
+		rx, ds = getIntervalDomains(series)
+		bar    = offset / float64(getIntervalDepth(series)) * 0.6
 	)
+	rx = rx.extendBy(time.Hour)
+	cs.Append(c.drawAxis(c.Chart, rx, ds))
+	for i := range series {
+		var (
+			height = offset / float64(series[i].Depth())
+			grp    = svg.NewGroup(svg.WithTranslate(0, float64(i)*offset))
+		)
+		c.drawInterval(&grp, series[i], rx, bar, height, 0)
+		area.Append(grp.AsElement())
+	}
 	cs.Append(area.AsElement())
 	return cs.AsElement()
 }
 
-func (c GanttChart) drawSerie(a appender, serie GanttSerie, rx timepair, height, bar float64) {
-
+func (c GanttChart) drawInterval(a appender, serie Interval, rx timepair, bar, height, level float64) {
+	if serie.IsZero() {
+		return
+	}
+	var (
+		dx = c.GetAreaWidth() / rx.Diff()
+		x0 = serie.Starts.Sub(rx.Min).Seconds() * dx
+		x1 = serie.Ends.Sub(rx.Min).Seconds() * dx
+		p  = svg.NewPos(x0, (height*level)+(height/2)-(bar/2))
+		d  = svg.NewDim(x1-x0, bar)
+		r  = svg.NewRect(p.Option(), d.Option(), serie.Fill.Option())
+	)
+	r.Title = fmt.Sprintf("%s (%s - %s)", serie.Title, serie.Starts.Format(time.RFC3339), serie.Ends.Format(time.RFC3339))
+	a.Append(r.AsElement())
+	for i := range serie.Sub {
+		if serie.Sub[i].Fill.IsZero() {
+			serie.Sub[i].Fill = serie.Fill
+		}
+		c.drawInterval(a, serie.Sub[i], rx, bar, height, level)
+		level++
+	}
 }
 
 type IntervalChart struct {
@@ -188,7 +197,6 @@ func (c IntervalChart) RenderElement(series []Interval) svg.Element {
 	}
 	cs.Append(area.AsElement())
 	return cs.AsElement()
-	return nil
 }
 
 func (c IntervalChart) drawInterval(a appender, serie Interval, rx timepair, bar, height, level float64) {
@@ -203,10 +211,13 @@ func (c IntervalChart) drawInterval(a appender, serie Interval, rx timepair, bar
 		)
 		r.Title = fmt.Sprintf("%s (%s - %s)", serie.Title, serie.Starts.Format(time.RFC3339), serie.Ends.Format(time.RFC3339))
 		a.Append(r.AsElement())
+
+		level++
 	}
-	level++
 	for i := range serie.Sub {
-		serie.Sub[i].Fill = serie.Fill
+		if serie.Sub[i].Fill.IsZero() {
+			serie.Sub[i].Fill = serie.Fill
+		}
 		c.drawInterval(a, serie.Sub[i], rx, bar, height, level)
 	}
 }
@@ -303,17 +314,6 @@ func (t timepair) Diff() float64 {
 	return diff.Seconds()
 }
 
-func getMaxGanttDepth(series []GanttSerie) int {
-	var d int
-	for i := range series {
-		x := series[i].Depth()
-		if x > d {
-			d = x
-		}
-	}
-	return d
-}
-
 func getIntervalDepth(series []Interval) int {
 	var d int
 	for i := range series {
@@ -332,28 +332,12 @@ func getIntervalDomains(series []Interval) (timepair, []string) {
 	)
 	for i := range series {
 		str = append(str, series[i].Title)
-		if i == 0 || p.Min.After(series[i].Starts) {
-			p.Min = series[i].Starts
+		starts, ends := series[i].Range()
+		if i == 0 || starts.Before(p.Min) {
+			p.Min = starts
 		}
-		if i == 0 || p.Max.Before(series[i].Ends) {
-			p.Max = series[i].Ends
-		}
-	}
-	return p, str
-}
-
-func getGanttDomains(series []GanttSerie) (timepair, []string) {
-	var (
-		p   timepair
-		str []string
-	)
-	for i := range series {
-		str = append(str, series[i].Title)
-		if i == 0 || p.Min.After(series[i].timepair.Min) {
-			p.Min = series[i].timepair.Min
-		}
-		if i == 0 || p.Max.Before(series[i].timepair.Max) {
-			p.Max = series[i].timepair.Max
+		if i == 0 || ends.After(p.Max) {
+			p.Max = ends
 		}
 	}
 	return p, str
