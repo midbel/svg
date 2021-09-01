@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"math/rand"
 	"os"
 	"time"
@@ -16,9 +15,9 @@ func init() {
 }
 
 func main() {
-	var c chart.StackedBarChart
+	var c chart.BarChart
 	c.Width = 800
-	c.Height = 600
+	c.Height = 640
 	c.Padding = chart.CreatePadding(60, 20)
 	c.CategoryAxis = chart.NewCategoryAxis(10, true, true)
 	c.CategoryAxis.OuterY = true
@@ -28,41 +27,33 @@ func main() {
 		fill = append(fill, svg.NewFill(colors.RdYlBu4[i]))
 	}
 
-	var xs []chart.StackedBarSerie
-	for i := 0; i < 5; i++ {
-		sr := chart.NewStackedBarSerie(fmt.Sprintf("serie-%d", i))
-		for _, s := range getSeries(fill) {
-			sr.Append(s)
-		}
-		xs = append(xs, sr)
-	}
-	c.Render(os.Stdout, xs)
+	c.Render(os.Stdout, getSeries(fill))
 }
 
-func getSeries(fill []svg.Fill) []chart.BarSerie {
+func getSeries(fills []svg.Fill) []chart.BarSerie {
 	r1 := chart.NewBarSerie("rustine")
-	r1.Fill = append(r1.Fill, fill...)
+	r1.Fill = append(r1.Fill, fills...)
 	r1.Add("code", randValue())
 	r1.Add("bug", randValue())
 	r1.Add("ticket", randValue())
 	r1.Add("repo", randValue())
 
 	r2 := chart.NewBarSerie("midbel")
-	r2.Fill = append(r1.Fill, fill...)
+	r2.Fill = append(r1.Fill, fills...)
 	r2.Add("code", randValue())
 	r2.Add("bug", randValue())
 	r2.Add("ticket", randValue())
 	r2.Add("repo", randValue())
 
 	r3 := chart.NewBarSerie("hadock")
-	r3.Fill = append(r1.Fill, fill...)
+	r3.Fill = append(r1.Fill, fills...)
 	r3.Add("code", randValue())
 	r3.Add("bug", randValue())
 	r3.Add("ticket", randValue())
 	r3.Add("repo", randValue())
 
 	r4 := chart.NewBarSerie("assist")
-	r4.Fill = append(r1.Fill, fill...)
+	r4.Fill = append(r1.Fill, fills...)
 	r4.Add("code", randValue())
 	r4.Add("bug", randValue())
 	r4.Add("ticket", randValue())

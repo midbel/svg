@@ -17,49 +17,49 @@ func main() {
 			Title:  "task-1",
 			Starts: time.Date(2021, 9, 1, 10, 0, 0, 0, time.UTC),
 			Ends:   time.Date(2021, 9, 4, 17, 0, 0, 0, time.UTC),
-			Fill: svg.NewFill("olive"),
+			Fill:   svg.NewFill("olive"),
 		}
 		i2 = chart.Interval{
 			Title:  "task-2",
 			Starts: time.Date(2021, 9, 7, 10, 0, 0, 0, time.UTC),
 			Ends:   time.Date(2021, 9, 10, 17, 0, 0, 0, time.UTC),
-			Fill: svg.NewFill("orchid"),
+			Fill:   svg.NewFill("orchid"),
 		}
 		i3 = chart.Interval{
 			Title:  "task-3",
 			Starts: time.Date(2021, 9, 1, 14, 0, 0, 0, time.UTC),
 			Ends:   time.Date(2021, 9, 10, 12, 0, 0, 0, time.UTC),
-			Fill: svg.NewFill("salmon"),
+			Fill:   svg.NewFill("salmon"),
 		}
 		i4 = chart.Interval{
 			Title:  "task-4",
 			Starts: time.Date(2021, 9, 2, 14, 0, 0, 0, time.UTC),
 			Ends:   time.Date(2021, 9, 2, 17, 0, 0, 0, time.UTC),
-			Fill: svg.NewFill("steelblue"),
+			Fill:   svg.NewFill("steelblue"),
 		}
 		i5 = chart.Interval{
 			Title:  "task-5",
 			Starts: time.Date(2021, 9, 3, 10, 0, 0, 0, time.UTC),
 			Ends:   time.Date(2021, 9, 5, 17, 0, 0, 0, time.UTC),
-			Fill: svg.NewFill("steelblue"),
+			Fill:   svg.NewFill("steelblue"),
 		}
 		i6 = chart.Interval{
 			Title:  "task-6",
 			Starts: time.Date(2021, 9, 6, 8, 0, 0, 0, time.UTC),
 			Ends:   time.Date(2021, 9, 10, 20, 0, 0, 0, time.UTC),
-			Fill: svg.NewFill("steelblue"),
+			Fill:   svg.NewFill("steelblue"),
 		}
 		i7 = chart.Interval{
 			Title:  "task-7",
 			Starts: time.Date(2021, 9, 2, 10, 0, 0, 0, time.UTC),
 			Ends:   time.Date(2021, 9, 4, 17, 0, 0, 0, time.UTC),
-			Fill: svg.NewFill("olive"),
+			Fill:   svg.NewFill("olive"),
 		}
 		i8 = chart.Interval{
 			Title:  "task-8",
 			Starts: time.Date(2021, 9, 5, 10, 0, 0, 0, time.UTC),
 			Ends:   time.Date(2021, 9, 9, 17, 0, 0, 0, time.UTC),
-			Fill: svg.NewFill("olive"),
+			Fill:   svg.NewFill("olive"),
 		}
 	)
 	i1.Sub = append(i1.Sub, i8, i6)

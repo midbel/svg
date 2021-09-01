@@ -103,14 +103,14 @@ type PieChart struct {
 	InnerRadius int
 }
 
-func (c PieChart) Render(w io.Writer, serie Serie) {
+func (c PieChart) Render(w io.Writer, serie BarSerie) {
 	ws := bufio.NewWriter(w)
 	defer ws.Flush()
 	cs := c.RenderElement(serie)
 	cs.Render(ws)
 }
 
-func (c PieChart) RenderElement(serie Serie) svg.Element {
+func (c PieChart) RenderElement(serie BarSerie) svg.Element {
 	c.checkDefault()
 
 	var (
