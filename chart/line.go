@@ -47,9 +47,88 @@ type ScatterSerie struct {
 	Highlight bool
 }
 
+type AreaSerie struct {
+	Title string
+	svg.Stroke
+	svg.Fill
+
+	serie1 LineSerie
+	serie2 LineSerie
+}
+
+func NewAreaSerie(title string, s1, s2 LineSerie) AreaSerie {
+	return AreaSerie{
+		Title:  title,
+		serie1: s1,
+		serie2: s2,
+	}
+}
+
 func NewScatterSerie(title string) ScatterSerie {
 	s := xyserie{Title: title}
 	return ScatterSerie{xyserie: s, Size: DefaultSize}
+}
+
+type AreaChart struct {
+	Chart
+	LineAxis
+}
+
+func (c AreaChart) Render(w io.Writer, serie AreaSerie) {
+	ws := bufio.NewWriter(w)
+	defer ws.Flush()
+	cs := c.RenderElement(serie)
+	cs.Render(ws)
+}
+
+func (c AreaChart) RenderElement(serie AreaSerie) svg.Element {
+	c.checkDefault()
+
+	var (
+		cs     = c.getCanvas()
+		area   = c.getArea()
+		rx, ry = getLineDomains([]LineSerie{serie.serie1, serie.serie2}, 1)
+	)
+	cs.Append(c.drawAxis(c.Chart, rx, ry))
+	area.Append(c.drawSerie(serie, rx, ry))
+	cs.Append(area.AsElement())
+	return cs.AsElement()
+}
+
+func (c AreaChart) drawSerie(serie AreaSerie, rx, ry pair) svg.Element {
+	var (
+		dx  = c.GetAreaWidth() / rx.Diff()
+		dy  = c.GetAreaHeight() / ry.Diff()
+		off float64
+		pat = svg.NewPath(serie.Fill.Option(), serie.Stroke.Option())
+		pos svg.Pos
+	)
+	if ry.Min > 0 {
+		off = ry.Min * dy
+	}
+	pos.Y = off + c.GetAreaHeight() - (serie.serie1.values[0].Y * dy)
+	if ry.Min < 0 {
+		pos.Y -= math.Abs(ry.Min) * dy
+	}
+	pat.AbsMoveTo(pos)
+	for i := 1; i < serie.serie1.Len(); i++ {
+		pos.X = (serie.serie1.values[i].X - serie.serie1.values[0].X) * dx
+		pos.Y = off + c.GetAreaHeight() - (serie.serie1.values[i].Y * dy)
+		if ry.Min < 0 {
+			pos.Y -= math.Abs(ry.Min) * dy
+		}
+		pat.AbsLineTo(pos)
+	}
+	for i := serie.serie2.Len() - 1; i >= 0; i-- {
+		pos.X = (serie.serie2.values[i].X - serie.serie2.values[0].X) * dx
+		pos.Y = off + c.GetAreaHeight() - (serie.serie2.values[i].Y * dy)
+		if ry.Min < 0 {
+			pos.Y -= math.Abs(ry.Min) * dy
+		}
+		pat.AbsLineTo(pos)
+	}
+	pat.ClosePath()
+	return pat.AsElement()
 }
 
 type ScatterChart struct {
@@ -355,8 +434,6 @@ func (c LineChart) drawLinearSerie(s LineSerie, px, py pair) svg.Element {
 	}
 	pat.AbsMoveTo(pos)
 	for i := 1; i < s.Len(); i++ {
-		if i > 0 {
-		}
 		pos.X = (s.values[i].X - s.values[0].X) * wx
 		pos.Y = c.GetAreaHeight() - (s.values[i].Y * wy)
 		if py.Min < 0 {
@@ -447,15 +524,18 @@ func getScatterDomains(series []ScatterSerie, mul float64) (pair, pair) {
 }
 
 func getDomainsXY(series []xyserie, mul float64) (pair, pair) {
-	var x, y pair
-	for i := range series {
+	var (
+		x = series[0].px
+		y = series[0].py
+	)
+	for i := 1; i < len(series); i++ {
 		x.Min = getLesser(series[i].px.Min, x.Min)
 		x.Max = getGreater(series[i].px.Max, x.Max)
 		y.Min = getLesser(series[i].py.Min, y.Min)
 		y.Max = getGreater(series[i].py.Max, y.Max)
 	}
 	if mul <= 1 {
-		return x, y
+		mul = 1
 	}
 	return x.extendBy(mul), y.extendBy(mul)
 }
