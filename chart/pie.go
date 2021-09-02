@@ -121,9 +121,12 @@ func (c PieChart) RenderElement(serie BarSerie) svg.Element {
 		part   = fullcirc / sum
 		angle  float64
 	)
+	if len(serie.Fill) == 0 {
+		serie.Fill = DefaultColors
+	}
 	for i, v := range serie.values {
 		var (
-			fill = c.GetColor(serie.Title, i)
+			fill = serie.Fill[i%len(serie.Fill)]
 			pos1 = getPosFromAngle(angle*deg2rad, float64(c.OuterRadius))
 			pos2 = getPosFromAngle((angle+(v.Value*part))*deg2rad, float64(c.OuterRadius))
 			pos3 = getPosFromAngle((angle+(v.Value*part))*deg2rad, float64(c.OuterRadius-c.InnerRadius))

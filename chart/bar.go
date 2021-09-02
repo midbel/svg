@@ -169,6 +169,9 @@ func (c StackedBarChart) drawSerie(a appender, serie StackedBarSerie, rg pair, w
 			off = c.GetAreaHeight()
 			grp = svg.NewGroup(svg.WithTranslate(float64(j)*step, 0))
 		)
+		if len(s.Fill) == 0 {
+			s.Fill = DefaultColors
+		}
 		for i := range s.values {
 			var (
 				h = s.values[i].Value * dy

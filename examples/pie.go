@@ -6,9 +6,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/midbel/svg"
 	"github.com/midbel/svg/chart"
-	"github.com/midbel/svg/colors"
 )
 
 func init() {
@@ -18,13 +16,10 @@ func init() {
 func main() {
 	var (
 		c chart.PieChart
-		s chart.Serie
+		s chart.BarSerie
 	)
 	var w io.Writer = os.Stdout
 	c.Padding = chart.CreatePadding(20, 20)
-	c.GetColor = func(_ string, i int) svg.Fill {
-		return svg.NewFill(colors.YlGnBu3[i%len(colors.YlGnBu3)])
-	}
 	c.Width = 720
 	c.Height = 720
 	c.OuterRadius = 300

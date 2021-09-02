@@ -6,12 +6,22 @@ import (
 	"time"
 
 	"github.com/midbel/svg"
+	"github.com/midbel/svg/colors"
 )
 
 const (
 	DefaultWidth  = 800
 	DefaultHeight = 600
 )
+
+var DefaultColors []svg.Fill
+
+func init() {
+	DefaultColors = make([]svg.Fill, len(colors.Paired10))
+	for i := range colors.Paired10 {
+		DefaultColors[i] = svg.NewFill(colors.Paired10[i])
+	}
+}
 
 type appender interface {
 	Append(svg.Element)
