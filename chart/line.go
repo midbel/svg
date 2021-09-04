@@ -87,7 +87,7 @@ func (c AreaChart) RenderElement(serie AreaSerie) svg.Element {
 	var (
 		cs     = c.getCanvas()
 		area   = c.getArea()
-		rx, ry = getLineDomains([]LineSerie{serie.serie1, serie.serie2}, 1)
+		rx, ry = getLineDomains([]LineSerie{serie.serie1, serie.serie2}, 1.1)
 	)
 	cs.Append(c.drawAxis(c.Chart, rx, ry))
 	area.Append(c.drawSerie(serie, rx, ry))
@@ -106,13 +106,14 @@ func (c AreaChart) drawSerie(serie AreaSerie, rx, ry pair) svg.Element {
 	if ry.Min > 0 {
 		off = ry.Min * dy
 	}
+	pos.X = (serie.serie1.values[0].X - rx.Min) * dx
 	pos.Y = off + c.GetAreaHeight() - (serie.serie1.values[0].Y * dy)
 	if ry.Min < 0 {
 		pos.Y -= math.Abs(ry.Min) * dy
 	}
 	pat.AbsMoveTo(pos)
 	for i := 1; i < serie.serie1.Len(); i++ {
-		pos.X = (serie.serie1.values[i].X - serie.serie1.values[0].X) * dx
+		pos.X = (serie.serie1.values[i].X - rx.Min) * dx
 		pos.Y = off + c.GetAreaHeight() - (serie.serie1.values[i].Y * dy)
 		if ry.Min < 0 {
 			pos.Y -= math.Abs(ry.Min) * dy
@@ -120,7 +121,7 @@ func (c AreaChart) drawSerie(serie AreaSerie, rx, ry pair) svg.Element {
 		pat.AbsLineTo(pos)
 	}
 	for i := serie.serie2.Len() - 1; i >= 0; i-- {
-		pos.X = (serie.serie2.values[i].X - serie.serie2.values[0].X) * dx
+		pos.X = (serie.serie2.values[i].X - rx.Min) * dx
 		pos.Y = off + c.GetAreaHeight() - (serie.serie2.values[i].Y * dy)
 		if ry.Min < 0 {
 			pos.Y -= math.Abs(ry.Min) * dy
@@ -169,10 +170,7 @@ func (c ScatterChart) drawSerie(serie ScatterSerie, rx, ry pair) svg.Element {
 		pos  svg.Pos
 	)
 	for i := 0; i < serie.Len(); i++ {
-		pos.X = serie.values[i].X * dx
-		if rx.Min < 0 {
-			pos.X += math.Abs(rx.Min) * dx
-		}
+		pos.X = (serie.values[i].X - rx.Min) * dx
 		pos.Y = c.GetAreaHeight() - (serie.values[i].Y * dy)
 		if ry.Min < 0 {
 			pos.Y -= math.Abs(ry.Min) * dy
@@ -259,9 +257,9 @@ func (c LineChart) RenderElement(series []LineSerie) svg.Element {
 	var (
 		cs     = c.getCanvas()
 		area   = c.getArea()
-		rx, ry = getLineDomains(series, 0)
+		rx, ry = getLineDomains(series, 1)
 	)
-	ry = ry.extendBy(1.2)
+	ry = ry.extendBy(1.1)
 	cs.Append(c.drawAxis(c.Chart, rx, ry))
 	for i := range series {
 		var elem svg.Element
@@ -295,6 +293,7 @@ func (c LineChart) drawQuadraticSerie(s LineSerie, px, py pair) svg.Element {
 		old  svg.Pos
 		ctrl svg.Pos
 	)
+	pos.X = (s.values[0].X - px.Min) * wx
 	pos.Y = c.GetAreaHeight() - (s.values[0].Y * wy)
 	if py.Min < 0 {
 		pos.Y -= math.Abs(py.Min) * wy
@@ -302,7 +301,7 @@ func (c LineChart) drawQuadraticSerie(s LineSerie, px, py pair) svg.Element {
 	pat.AbsMoveTo(pos)
 	for i := 1; i < s.Len(); i++ {
 		old = pos
-		pos.X += (s.values[i].X - s.values[i-1].X) * wx
+		pos.X = (s.values[i].X - px.Min) * wx
 		pos.Y = c.GetAreaHeight() - (s.values[i].Y * wy)
 		if py.Min < 0 {
 			pos.Y -= math.Abs(py.Min) * wy
@@ -321,6 +320,7 @@ func (c LineChart) drawCubicSerie(s LineSerie, px, py pair) svg.Element {
 		pat = svg.NewPath(s.Stroke.Option(), nonefill.Option())
 		pos svg.Pos
 	)
+	pos.X = (s.values[0].X - px.Min) * wx
 	pos.Y = c.GetAreaHeight() - (s.values[0].Y * wy)
 	if py.Min < 0 {
 		pos.Y -= math.Abs(py.Min) * wy
@@ -335,7 +335,7 @@ func (c LineChart) drawCubicSerie(s LineSerie, px, py pair) svg.Element {
 		if py.Min < 0 {
 			pos.Y -= math.Abs(py.Min) * wy
 		}
-		pos.X += (s.values[i].X - s.values[i-1].X) * wx
+		pos.X = (s.values[i].X - px.Min) * wx
 		ctrl.X = old.X - (old.X-pos.X)*c.StretchX
 		ctrl.Y = pos.Y
 		pat.AbsCubicCurveSimple(pos, ctrl)
@@ -348,26 +348,27 @@ func (c LineChart) drawStepSerie(s LineSerie, px, py pair) svg.Element {
 		wx  = c.GetAreaWidth() / px.Diff()
 		wy  = c.GetAreaHeight() / py.Diff()
 		pat = svg.NewPath(s.Stroke.Option(), nonefill.Option())
-		y   = c.GetAreaHeight() - (s.values[0].Y * wy)
-		x   float64
+		pos svg.Pos
 	)
+	pos.X = (s.values[0].X - px.Min) * wx
+	pos.Y = c.GetAreaHeight() - (s.values[0].Y * wy)
 	if py.Min < 0 {
-		y -= math.Abs(py.Min) * wy
+		pos.Y -= math.Abs(py.Min) * wy
 	}
-	pat.AbsMoveTo(svg.NewPos(x, y))
+	pat.AbsMoveTo(pos)
 
 	for i := 1; i < s.Len(); i++ {
 		delta := (s.values[i].X - s.values[i-1].X) / 2
-		x += delta * wx
-		pat.AbsLineTo(svg.NewPos(x, y))
+		pos.X += delta * wx
+		pat.AbsLineTo(pos)
 
-		y = c.GetAreaHeight() - (s.values[i].Y * wy)
+		pos.Y = c.GetAreaHeight() - (s.values[i].Y * wy)
 		if py.Min < 0 {
-			y -= math.Abs(py.Min) * wy
+			pos.Y -= math.Abs(py.Min) * wy
 		}
-		pat.AbsLineTo(svg.NewPos(x, y))
-		x += delta * wx
-		pat.AbsLineTo(svg.NewPos(x, y))
+		pat.AbsLineTo(pos)
+		pos.X += delta * wx
+		pat.AbsLineTo(pos)
 	}
 	return pat.AsElement()
 }
@@ -377,21 +378,22 @@ func (c LineChart) drawStepBeforeSerie(s LineSerie, px, py pair) svg.Element {
 		wx  = c.GetAreaWidth() / px.Diff()
 		wy  = c.GetAreaHeight() / py.Diff()
 		pat = svg.NewPath(s.Stroke.Option(), nonefill.Option())
-		y   = c.GetAreaHeight() - (s.values[0].Y * wy)
-		x   float64
+		pos svg.Pos
 	)
+	pos.X = (s.values[0].X - px.Min) * wx
+	pos.Y = c.GetAreaHeight() - (s.values[0].Y * wy)
 	if py.Min < 0 {
-		y -= math.Abs(py.Min) * wy
+		pos.Y -= math.Abs(py.Min) * wy
 	}
-	pat.AbsMoveTo(svg.NewPos(x, y))
+	pat.AbsMoveTo(pos)
 	for i := 1; i < s.Len(); i++ {
-		y = c.GetAreaHeight() - (s.values[i].Y * wy)
+		pos.Y = c.GetAreaHeight() - (s.values[i].Y * wy)
 		if py.Min < 0 {
-			y -= math.Abs(py.Min) * wy
+			pos.Y -= math.Abs(py.Min) * wy
 		}
-		pat.AbsLineTo(svg.NewPos(x, y))
-		x += (s.values[i].X - s.values[i-1].X) * wx
-		pat.AbsLineTo(svg.NewPos(x, y))
+		pat.AbsLineTo(pos)
+		pos.X += (s.values[i].X - s.values[i-1].X) * wx
+		pat.AbsLineTo(pos)
 	}
 	return pat.AsElement()
 }
@@ -401,22 +403,23 @@ func (c LineChart) drawStepAfterSerie(s LineSerie, px, py pair) svg.Element {
 		wx  = c.GetAreaWidth() / px.Diff()
 		wy  = c.GetAreaHeight() / py.Diff()
 		pat = svg.NewPath(s.Stroke.Option(), nonefill.Option())
-		y   = c.GetAreaHeight() - (s.values[0].Y * wy)
-		x   float64
+		pos svg.Pos
 	)
+	pos.X = (s.values[0].X - px.Min) * wx
+	pos.Y = c.GetAreaHeight() - (s.values[0].Y * wy)
 	if py.Min < 0 {
-		y -= math.Abs(py.Min) * wy
+		pos.Y -= math.Abs(py.Min) * wy
 	}
-	pat.AbsMoveTo(svg.NewPos(x, y))
+	pat.AbsMoveTo(pos)
 	for i := 1; i < s.Len(); i++ {
-		x += (s.values[i].X - s.values[i-1].X) * wx
-		pat.AbsLineTo(svg.NewPos(x, y))
+		pos.X += (s.values[i].X - s.values[i-1].X) * wx
+		pat.AbsLineTo(pos)
 
-		y = c.GetAreaHeight() - (s.values[i].Y * wy)
+		pos.Y = c.GetAreaHeight() - (s.values[i].Y * wy)
 		if py.Min < 0 {
-			y -= math.Abs(py.Min) * wy
+			pos.Y -= math.Abs(py.Min) * wy
 		}
-		pat.AbsLineTo(svg.NewPos(x, y))
+		pat.AbsLineTo(pos)
 	}
 	return pat.AsElement()
 }
@@ -428,13 +431,14 @@ func (c LineChart) drawLinearSerie(s LineSerie, px, py pair) svg.Element {
 		pat = svg.NewPath(s.Stroke.Option(), nonefill.Option())
 		pos svg.Pos
 	)
+	pos.X = (s.values[0].X - px.Min) * wx
 	pos.Y = c.GetAreaHeight() - (s.values[0].Y * wy)
 	if py.Min < 0 {
 		pos.Y -= math.Abs(py.Min) * wy
 	}
 	pat.AbsMoveTo(pos)
 	for i := 1; i < s.Len(); i++ {
-		pos.X = (s.values[i].X - s.values[0].X) * wx
+		pos.X = (s.values[i].X - px.Min) * wx
 		pos.Y = c.GetAreaHeight() - (s.values[i].Y * wy)
 		if py.Min < 0 {
 			pos.Y -= math.Abs(py.Min) * wy
@@ -473,7 +477,9 @@ func (p pair) AbsMin() float64 {
 }
 
 func (p pair) extendBy(by float64) pair {
-	p.Min *= by
+	min := math.Abs(p.Min)
+	p.Min -= (min*by) - min
+	// p.Min *= by
 	p.Max *= by
 	return p
 }

@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"math/rand"
 	"os"
-	"time"
+	// "time"
 
 	"github.com/midbel/svg"
 	"github.com/midbel/svg/chart"
@@ -12,9 +12,9 @@ import (
 
 const limit = 200
 
-func init() {
-	rand.Seed(time.Now().Unix())
-}
+// func init() {
+// 	rand.Seed(time.Now().Unix())
+// }
 
 func main() {
 	var (
