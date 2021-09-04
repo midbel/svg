@@ -31,7 +31,7 @@ func main() {
 
 func getSerie(title string, limit int) chart.LineSerie {
 	s := chart.NewLineSerie(title)
-	for i := -100; i < 100; i += 1+rand.Intn(10) {
+	for i := -100; i < 100; i += 1 + rand.Intn(10) {
 		c := rand.Intn(10)
 		if c == 0 {
 			continue

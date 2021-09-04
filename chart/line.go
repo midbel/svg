@@ -478,7 +478,7 @@ func (p pair) AbsMin() float64 {
 
 func (p pair) extendBy(by float64) pair {
 	min := math.Abs(p.Min)
-	p.Min -= (min*by) - min
+	p.Min -= (min * by) - min
 	// p.Min *= by
 	p.Max *= by
 	return p
