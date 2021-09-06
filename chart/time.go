@@ -129,6 +129,7 @@ func (c GanttChart) RenderElement(series []Interval) svg.Element {
 			height = offset / float64(series[i].Depth())
 			grp    = svg.NewGroup(svg.WithTranslate(0, float64(i)*offset))
 		)
+		series[i].Fill = getFill(i, series[i].Fill, series[i].Fill)
 		c.drawInterval(&grp, series[i], rx, bar, height, 0)
 		area.Append(grp.AsElement())
 	}
@@ -192,6 +193,7 @@ func (c IntervalChart) RenderElement(series []Interval) svg.Element {
 			height = offset / float64(series[i].Depth())
 			grp    = svg.NewGroup(svg.WithTranslate(0, float64(i)*offset))
 		)
+		series[i].Fill = getFill(i, series[i].Fill, series[i].Fill)
 		c.drawInterval(&grp, series[i], rx, bar, height, 0)
 		area.Append(grp.AsElement())
 	}
