@@ -8,10 +8,10 @@ import (
 	"os"
 	"sort"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/midbel/svg"
+	"github.com/midbel/svg/colors"
 )
 
 func main() {
@@ -23,13 +23,11 @@ func main() {
 	} else {
 		graph()
 	}
-	// fmt.Println("---")
-	// example()
 }
 
 func example() {
-	list := NewList()
 	var (
+		list  = NewList()
 		zero  = MakeItem("0")
 		one   = MakeItem("1")
 		two   = MakeItem("2")
@@ -63,27 +61,27 @@ func example() {
 }
 
 func graph2() {
-	list := NewList()
 	var (
-		a = MakeItem("a")
-		b = MakeItem("b")
-		c = MakeItem("c")
-		d = MakeItem("d")
-		e = MakeItem("e")
-		f = MakeItem("f")
-		g = MakeItem("g")
-		h = MakeItem("h")
-		i = MakeItem("i")
+		list = NewList()
+		a    = MakeItem("a")
+		b    = MakeItem("b")
+		c    = MakeItem("c")
+		d    = MakeItem("d")
+		e    = MakeItem("e")
+		f    = MakeItem("f")
+		g    = MakeItem("g")
+		h    = MakeItem("h")
+		i    = MakeItem("i")
 	)
 
 	list.AddNode(a)
-	list.AddNode(b)
 	list.AddNode(c)
-	list.AddNode(e)
 	list.AddNode(f)
+	list.AddNode(b)
+	list.AddNode(e)
+	list.AddNode(i)
 	list.AddNode(g)
 	list.AddNode(h)
-	list.AddNode(i)
 
 	list.AddLinks(a, c, d)
 	list.AddLinks(b, c, d, e, f)
@@ -93,36 +91,38 @@ func graph2() {
 	list.AddLinks(f, g, i)
 	list.AddLinks(h, i)
 
-	canvas := list.Render(a)
-	ws := bufio.NewWriter(os.Stdout)
+	var (
+		cs = list.Render(a)
+		ws = bufio.NewWriter(os.Stdout)
+	)
 	defer ws.Flush()
-	canvas.Render(ws)
+	cs.Render(ws)
 }
 
 func graph() {
-	list := NewList()
 	var (
-		a = MakeItem("a")
-		b = MakeItem("b")
-		c = MakeItem("c")
-		d = MakeItem("d")
-		e = MakeItem("e")
-		f = MakeItem("f")
-		g = MakeItem("g")
-		h = MakeItem("h")
-		i = MakeItem("i")
-		j = MakeItem("j")
-		k = MakeItem("k")
-		l = MakeItem("l")
-		m = MakeItem("m")
-		n = MakeItem("n")
-		o = MakeItem("o")
-		u = MakeItem("u")
-		v = MakeItem("v")
-		w = MakeItem("w")
-		x = MakeItem("x")
-		y = MakeItem("y")
-		z = MakeItem("z")
+		list = NewList()
+		a    = MakeItem("a")
+		b    = MakeItem("b")
+		c    = MakeItem("c")
+		d    = MakeItem("d")
+		e    = MakeItem("e")
+		f    = MakeItem("f")
+		g    = MakeItem("g")
+		h    = MakeItem("h")
+		i    = MakeItem("i")
+		j    = MakeItem("j")
+		k    = MakeItem("k")
+		l    = MakeItem("l")
+		m    = MakeItem("m")
+		n    = MakeItem("n")
+		o    = MakeItem("o")
+		u    = MakeItem("u")
+		v    = MakeItem("v")
+		w    = MakeItem("w")
+		x    = MakeItem("x")
+		y    = MakeItem("y")
+		z    = MakeItem("z")
 	)
 	list.AddNode(a)
 	list.AddNode(b)
@@ -176,10 +176,12 @@ func graph() {
 	list.AddLinkWithWeight(y, z, 1)
 	list.AddLinkWithWeight(w, z, 1)
 
-	canvas := list.Render(a)
-	ws := bufio.NewWriter(os.Stdout)
+	var (
+		cs = list.Render(a)
+		ws = bufio.NewWriter(os.Stdout)
+	)
 	defer ws.Flush()
-	canvas.Render(ws)
+	cs.Render(ws)
 }
 
 func neighbors(list *List, all []*Item) {
@@ -206,6 +208,7 @@ func walk(list *List, it *Item) {
 
 type Item struct {
 	Label string
+	index int
 }
 
 func (i *Item) String() string {
@@ -229,7 +232,6 @@ func MakeItem(label string) *Item {
 }
 
 type List struct {
-	mu    sync.RWMutex
 	nodes []*Item
 	edges map[int][]cost
 }
@@ -280,12 +282,12 @@ func (i *List) Render(it *Item) svg.Element {
 			offx = (width / 2) - (fifty / 2)
 			offy = (height / 2) - (fourty / 2)
 		)
-		// fmt.Println(width, height, len(gs), offx, offy)
 		for y, g := range gs {
 			j, _ := i.indexOf(g)
 			a := Area{
 				Curr:  j,
 				Label: g.Label,
+				Index: g.index,
 				Dim:   svg.NewDim(fifty, fourty),
 				Pos:   svg.NewPos(float64((x*width)+offx), float64((y*height)+offy)),
 			}
@@ -295,10 +297,13 @@ func (i *List) Render(it *Item) svg.Element {
 	rel := svg.NewGroup(svg.WithID("edges"))
 	for _, f := range areas {
 		for _, v := range i.edges[f.Curr] {
-			t := searchAreas(areas, v.index)
-			x := float64(fifty / 2)
-			y := float64(fourty / 2)
-			i := svg.NewLine(f.Pos.Adjust(x, y), t.Pos.Adjust(x, y))
+			var (
+				t = searchAreas(areas, v.index)
+				x = float64(fifty / 2)
+				y = float64(fourty / 2)
+				s = svg.NewStroke("darkgray", 1)
+				i = svg.NewLine(f.Pos.Adjust(x, y), t.Pos.Adjust(x, y), s.Option())
+			)
 			rel.Append(i.AsElement())
 		}
 	}
@@ -311,34 +316,12 @@ func (i *List) Render(it *Item) svg.Element {
 			svg.NewFill(randomColor()).Option(),
 		}
 		r := svg.NewRect(options...)
-		r.Title = p.Label
+		r.Title = fmt.Sprintf("%s: %d", p.Label, p.Index)
 		nod.Append(r.AsElement())
 	}
 	elm.Append(rel.AsElement())
 	elm.Append(nod.AsElement())
 	return elm.AsElement()
-}
-
-func randomColor() string {
-	return svg.Colors[rand.Intn(len(svg.Colors))]
-}
-
-type Area struct {
-	Label string
-	Curr  int
-	svg.Pos
-	svg.Dim
-}
-
-func searchAreas(areas []Area, n int) Area {
-	var a Area
-	for _, i := range areas {
-		if i.Curr == n {
-			a = i
-			break
-		}
-	}
-	return a
 }
 
 func (i *List) groups(it *Item) [][]*Item {
@@ -375,6 +358,9 @@ func (i *List) groups(it *Item) [][]*Item {
 		if len(children) > 0 {
 			list = append(list, children)
 		}
+		// sort.Slice(other, func(i, j int) bool {
+		// 	return other[i].index < other[j].index
+		// })
 		group = append(group, other)
 	}
 	return group
@@ -428,9 +414,6 @@ func (i *List) ShortestPath(from, to *Item) []*Item {
 }
 
 func (i *List) Walk(it *Item) []Set {
-	i.mu.RLock()
-	defer i.mu.RUnlock()
-
 	var (
 		is   [][]*Item
 		sets []Set
@@ -444,23 +427,15 @@ func (i *List) Walk(it *Item) []Set {
 }
 
 func (i *List) BFS(it *Item, visit VisitFunc) {
-	i.mu.RLock()
-	defer i.mu.RUnlock()
 	i.visitBFS(it, visit)
 }
 
 func (i *List) DFS(it *Item, visit VisitFunc) {
-	i.mu.RLock()
-	defer i.mu.RUnlock()
-
 	seen := make(map[int]struct{})
 	i.visitDFS(it, seen, visit)
 }
 
 func (i *List) Neighbors(it *Item) []*Item {
-	i.mu.RLock()
-	defer i.mu.RUnlock()
-
 	j, ok := i.indexOf(it)
 	if !ok {
 		return nil
@@ -473,18 +448,15 @@ func (i *List) Neighbors(it *Item) []*Item {
 }
 
 func (i *List) AddNode(it *Item) {
-	i.mu.Lock()
-	defer i.mu.Unlock()
 	j, ok := i.indexOf(it)
 	if ok {
 		return
 	}
+	it.index = len(i.nodes)
 	i.nodes = append(i.nodes[:j], append([]*Item{it}, i.nodes[j:]...)...)
 }
 
 func (i *List) DelNode(it *Item) {
-	i.mu.Lock()
-	defer i.mu.Unlock()
 	j, ok := i.indexOf(it)
 	if !ok {
 		return
@@ -494,14 +466,10 @@ func (i *List) DelNode(it *Item) {
 }
 
 func (i *List) Order() int {
-	i.mu.RLock()
-	defer i.mu.RUnlock()
 	return len(i.nodes)
 }
 
 func (i *List) Exists(from, to *Item) bool {
-	i.mu.RLock()
-	defer i.mu.RUnlock()
 	var (
 		x  int
 		y  int
@@ -523,8 +491,6 @@ func (i *List) Exists(from, to *Item) bool {
 }
 
 func (i *List) AddLinkWithWeight(from, to *Item, weight int) {
-	i.mu.Lock()
-	defer i.mu.Unlock()
 	var (
 		x  int
 		y  int
@@ -563,8 +529,6 @@ func (i *List) AddLinks(from *Item, to ...*Item) {
 }
 
 func (i *List) DelLink(from, to *Item) {
-	i.mu.Lock()
-	defer i.mu.Unlock()
 	var (
 		x  int
 		y  int
@@ -703,25 +667,25 @@ func makeCost(index, weight, rank int) cost {
 	}
 }
 
-type edge struct {
-	From int
-	To   int
+func randomColor() string {
+	return colors.Paired10[rand.Intn(len(colors.Paired10))]
 }
 
-func makeEdge(x, y int) edge {
-	return edge{
-		From: x,
-		To:   y,
-	}
+type Area struct {
+	Label string
+	Curr  int
+	Index int
+	svg.Pos
+	svg.Dim
 }
 
-type edgeset map[edge]struct{}
-
-func (e edgeset) Seen(f, t int) bool {
-	g := makeEdge(f, t)
-	_, ok := e[g]
-	if !ok {
-		e[g] = struct{}{}
+func searchAreas(areas []Area, n int) Area {
+	var a Area
+	for _, i := range areas {
+		if i.Curr == n {
+			a = i
+			break
+		}
 	}
-	return ok
+	return a
 }

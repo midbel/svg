@@ -44,7 +44,8 @@ func (c SunburstChart) RenderElement(series []Hierarchy) svg.Element {
 	)
 	for i := range series {
 		grp := svg.NewGroup()
-		c.drawSerie(&grp, series[i], c.GetColor(series[i].Label, i), angle, part, float64(height), 0)
+		series[i].Fill = getFill(i, series[i].Fill, series[i].Fill)
+		c.drawSerie(&grp, series[i], angle, part, float64(height), 0)
 		area.Append(grp.AsElement())
 		angle += series[i].GetValue() * part
 	}
@@ -52,7 +53,7 @@ func (c SunburstChart) RenderElement(series []Hierarchy) svg.Element {
 	return cs.AsElement()
 }
 
-func (c SunburstChart) drawSerie(grp appender, serie Hierarchy, fill svg.Fill, angle, part, height, depth float64) {
+func (c SunburstChart) drawSerie(grp appender, serie Hierarchy, angle, part, height, depth float64) {
 	var (
 		inner = height
 		outer = c.distanceFromCenter() + (height * depth) + inner
@@ -60,7 +61,7 @@ func (c SunburstChart) drawSerie(grp appender, serie Hierarchy, fill svg.Fill, a
 		pos2  = getPosFromAngle((angle+(serie.GetValue()*part))*deg2rad, outer)
 		pos3  = getPosFromAngle((angle+(serie.GetValue()*part))*deg2rad, outer-inner)
 		pos4  = getPosFromAngle(angle*deg2rad, outer-inner)
-		pat   = svg.NewPath(svg.WithID(serie.Label), fill.Option())
+		pat   = svg.NewPath(svg.WithID(serie.Label), serie.Fill.Option())
 		swap  bool
 	)
 	if tmp := serie.GetValue() * part; tmp > halfcirc {
@@ -78,7 +79,8 @@ func (c SunburstChart) drawSerie(grp appender, serie Hierarchy, fill svg.Fill, a
 
 	subpart := (serie.GetValue() * part) / serie.Sum()
 	for i := range serie.Sub {
-		c.drawSerie(grp, serie.Sub[i], fill, angle, subpart, height, depth+1)
+		serie.Sub[i].Fill = getFill(i, serie.Sub[i].Fill, serie.Fill)
+		c.drawSerie(grp, serie.Sub[i], angle, subpart, height, depth+1)
 		angle += serie.Sub[i].GetValue() * subpart
 	}
 }

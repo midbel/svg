@@ -36,9 +36,6 @@ type Chart struct {
 	Border     svg.Stroke
 	Background svg.Fill
 	Area       svg.Fill
-
-	GetColor  func(string, int) svg.Fill
-	GetStroke func(string, int) svg.Stroke
 }
 
 func (c *Chart) GetAreaWidth() float64 {
@@ -96,21 +93,6 @@ func (c *Chart) checkDefault() {
 	if c.Height == 0 {
 		c.Height = DefaultHeight
 	}
-
-	if c.GetColor == nil {
-		c.GetColor = defaultFill
-	}
-	if c.GetStroke == nil {
-		c.GetStroke = defaultStroke
-	}
-}
-
-func defaultFill(_ string, _ int) svg.Fill {
-	return svg.NewFill("steelblue")
-}
-
-func defaultStroke(_ string, _ int) svg.Stroke {
-	return svg.NewStroke("black", 1)
 }
 
 func (c *Chart) getOptionsAxisX() []svg.Option {
@@ -167,18 +149,22 @@ func (p Padding) IsZero() bool {
 	return p.Top == 0 && p.Bottom == 0 && p.Right == 0 && p.Left == 0
 }
 
+func getFill(i int, fill, other svg.Fill) svg.Fill {
+	if !fill.IsZero() {
+		return fill
+	}
+	if !other.IsZero() {
+		return other
+	}
+	return DefaultColors[i%len(DefaultColors)]
+}
+
 var (
-	tickstrok = svg.NewStroke("lightgrey", 1)
-	axisstrok = svg.NewStroke("black", 1)
+	tickstrok = svg.NewStroke("darkgray", 1)
+	axisstrok = svg.NewStroke("darkgray", 1)
 	whitstrok = svg.NewStroke("white", 1)
-	linestrok = svg.NewStroke("steelblue", 1)
 	nonefill  = svg.NewFill("none")
 )
-
-func getRect(options ...svg.Option) svg.Rect {
-	options = append(options)
-	return svg.NewRect(options...)
-}
 
 func getLesser(v1, v2 float64) float64 {
 	return math.Min(v1, v2)
