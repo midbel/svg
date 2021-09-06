@@ -321,7 +321,6 @@ func (c TreemapChart) squarify(a appender, series []Hierarchy, width, height flo
 		)
 		series[i].Fill = getFill(i, series[i].Fill, series[i].Fill)
 		for j = i + 1; j < len(series); j++ {
-
 			curr = series[j].GetValue()
 			sum += curr
 			min = math.Min(min, curr)
@@ -332,7 +331,7 @@ func (c TreemapChart) squarify(a appender, series []Hierarchy, width, height flo
 				break
 			}
 			last = ratio
-			series[j].Fill = getFill(j, series[j].Fill, series[j].Fill)
+			series[j].Fill = getFill(j, series[j].Fill, series[i].Fill)
 		}
 		var w, h float64
 		if surface := area * (sum / full); width < height {
