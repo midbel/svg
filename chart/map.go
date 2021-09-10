@@ -306,7 +306,7 @@ func (c TreemapChart) squarify(a appender, series []Hierarchy, width, height flo
 		total  = getSum(series)
 		full   = total
 		ox, oy float64
-		i      int
+		i, n   int
 	)
 	for i < len(series) {
 		var (
@@ -319,7 +319,8 @@ func (c TreemapChart) squarify(a appender, series []Hierarchy, width, height flo
 			last  = getAspectRatio(alpha, min, max, sum)
 			j     int
 		)
-		series[i].Fill = getFill(i, series[i].Fill, series[i].Fill)
+		n++
+		series[i].Fill = getFill(n, series[i].Fill, series[i].Fill)
 		for j = i + 1; j < len(series); j++ {
 			curr = series[j].GetValue()
 			sum += curr
@@ -375,6 +376,9 @@ func (c TreemapChart) layout(a appender, series []Hierarchy, width, height, sum 
 		if !ok {
 			grp := svg.NewGroup(svg.WithTranslate(ox, oy), svg.WithID(s.Label), svg.WithClass("row"))
 			a.Append(grp.AsElement())
+			for j := range s.Sub {
+				s.Sub[j].Fill = getFill(j, s.Sub[j].Fill, series[i].Fill)
+			}
 			c.squarify(&grp, s.Sub, w, h, level)
 		} else {
 			var (
