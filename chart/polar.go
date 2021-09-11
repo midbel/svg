@@ -2,6 +2,7 @@ package chart
 
 import (
 	"bufio"
+	"fmt"
 	"io"
 
 	"github.com/midbel/svg"
@@ -37,7 +38,7 @@ func (s *PolarSerie) Len() int {
 
 type PolarChart struct {
 	Chart
-	Ticks int
+	Ticks  int
 	Radius float64
 	Zone   float64
 }
@@ -53,50 +54,48 @@ func (c PolarChart) Render(w io.Writer, serie PolarSerie) {
 func (c PolarChart) RenderElement(serie PolarSerie) svg.Element {
 	c.checkDefault()
 	var (
-		cs     = c.getCanvas()
-		area   = c.getArea()
+		cs   = c.getCanvas()
+		area = c.getArea()
 	)
-	c.drawInnerCircles(&area)
+	c.drawInnerCircles(&area, serie.Len())
 
 	serie.Fill = getFill(0, serie.Fill, serie.Fill)
-	var (
-		cx, cy = c.GetAreaCenter()
-		dx  = c.Radius / serie.pair.Diff()
-		lg  = serie.Len()
-		pat = svg.NewPath(serie.Fill.Stroke().Option())
-	)
 	if serie.Radius <= 0 {
 		serie.Radius = 5
 	}
+	var (
+		dx    = c.Radius / serie.pair.Diff()
+		ticks = serie.Len()
+		pat   = svg.NewPath(serie.Fill.Stroke().Option())
+		grp   = svg.NewGroup(svg.WithTranslate(c.GetAreaCenter()))
+	)
 
-	for i := 0; i < lg; i++ {
+	for i := 0; i < ticks; i++ {
+		ang := float64(i) * (fullcirc / float64(ticks))
 		var (
-			g   = svg.NewGroup(svg.WithTranslate(cx, cy))
-			a   = float64(i) * (halfcirc / float64(lg))
 			p   = (serie.values[i] - serie.pair.Min) * dx
 			r   = svg.WithRadius(serie.Radius)
-			pos = getPosFromAngle(a, p)
+			pos = getPosFromAngle(ang*deg2rad, p)
 			pt  = svg.NewCircle(r, serie.Fill.Option(), pos.Option())
 		)
+		pt.Title = fmt.Sprintf("%f", serie.values[i])
 		if i == 0 {
 			pat.AbsMoveTo(pos)
 		} else {
 			pat.AbsLineTo(pos)
 		}
-		g.Append(pt.AsElement())
-		area.Append(g.AsElement())
+		grp.Append(pt.AsElement())
 	}
 	pat.ClosePath()
 
-	g := svg.NewGroup(svg.WithTranslate(cx, cy))
-	g.Append(pat.AsElement())
-	area.Append(g.AsElement())
+	grp.Append(pat.AsElement())
+	area.Append(grp.AsElement())
 
 	cs.Append(area.AsElement())
 	return cs.AsElement()
 }
 
-func (c *PolarChart) drawInnerCircles(a appender) {
+func (c *PolarChart) drawInnerCircles(a appender, ticks int) {
 	var (
 		space  = c.Radius / c.Zone
 		cx, cy = c.GetAreaCenter()
@@ -109,10 +108,11 @@ func (c *PolarChart) drawInnerCircles(a appender) {
 		)
 		a.Append(z.AsElement())
 	}
-	for i := 0; i < c.Ticks; i++ {
+	ticks /= 2
+	for i := 0; i < ticks; i++ {
 		var (
-			g = svg.NewGroup(svg.WithTranslate(cx, cy))
-			ang   = float64(i) * (halfcirc / float64(c.Ticks))
+			g    = svg.NewGroup(svg.WithTranslate(cx, cy))
+			ang  = float64(i) * (halfcirc / float64(ticks))
 			pos1 = getPosFromAngle(ang*deg2rad, c.Radius)
 			pos2 = getPosFromAngle((ang+halfcirc)*deg2rad, c.Radius)
 			line = svg.NewLine(pos1, pos2, axisstrok.Option())

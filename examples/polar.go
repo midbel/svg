@@ -17,8 +17,8 @@ func main() {
 		// s4 = getSerie()
 	)
 	c.Padding = chart.CreatePadding(20, 20)
-	c.Width = 800
-	c.Height = 800
+	c.Width = 480
+	c.Height = 480
 	c.Zone = 5
 
 	c.Render(os.Stdout, s1)
