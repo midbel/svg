@@ -342,8 +342,7 @@ type Rect struct {
 
 func NewRect(options ...Option) Rect {
 	var r Rect
-	// r.Stroke = DefaultStroke
-	// r.Fill = TransparentFill
+	r.Fill = NewFill("none")
 	for _, o := range options {
 		o(&r)
 	}
@@ -453,6 +452,7 @@ type Circle struct {
 
 func NewCircle(options ...Option) Circle {
 	var c Circle
+	c.Fill = NewFill("none")
 	for _, o := range options {
 		o(&c)
 	}
@@ -639,6 +639,7 @@ type Path struct {
 
 func NewPath(options ...Option) Path {
 	var p Path
+	p.Fill = NewFill("none")
 	for _, o := range options {
 		o(&p)
 	}

@@ -264,6 +264,10 @@ func NewStroke(fill string, width int) Stroke {
 	}
 }
 
+func (s Stroke) Fill() Fill {
+	return NewFill(s.Color)
+}
+
 func (s Stroke) Option() Option {
 	return WithStroke(s)
 }
@@ -314,6 +318,10 @@ func NewFill(color string) Fill {
 		color = "none"
 	}
 	return Fill{Color: color, Opacity: 100}
+}
+
+func (f Fill) Stroke() Stroke {
+	return NewStroke(f.Color, 1)
 }
 
 func (f Fill) Option() Option {

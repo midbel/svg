@@ -203,3 +203,13 @@ const threshold = 1e-9
 func almostZero(val float64) bool {
 	return math.Abs(val-0) <= threshold
 }
+
+const deg2rad = math.Pi / halfcirc
+
+func getPosFromAngle(angle, radius float64) svg.Pos {
+	var (
+		x1 = float64(radius) * math.Cos(angle)
+		y1 = float64(radius) * math.Sin(angle)
+	)
+	return svg.NewPos(x1, y1)
+}

@@ -12,7 +12,6 @@ import (
 const (
 	fullcirc = 360.0
 	halfcirc = 180.0
-	deg2rad  = math.Pi / halfcirc
 )
 
 type SunburstChart struct {
@@ -163,12 +162,4 @@ func (c *PieChart) checkDefault() {
 	if c.InnerRadius == 0 {
 		c.InnerRadius = c.OuterRadius
 	}
-}
-
-func getPosFromAngle(angle, radius float64) svg.Pos {
-	var (
-		x1 = float64(radius) * math.Cos(angle)
-		y1 = float64(radius) * math.Sin(angle)
-	)
-	return svg.NewPos(x1, y1)
 }
