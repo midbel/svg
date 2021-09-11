@@ -628,6 +628,66 @@ func (p *PolyLine) Attributes() []string {
 	return []string{a}
 }
 
+type Marker struct {
+	node
+}
+
+func (m *Marker) Render(w Writer) {
+
+}
+
+func (m *Marker) AsElement() Element {
+	return m
+}
+
+type Symbol struct {
+	node
+}
+
+func (s *Symbol) Render(w Writer) {
+
+}
+
+func (s *Symbol) AsElement() Element {
+	return s
+}
+
+type Switch struct {
+	node
+}
+
+func (s *Switch) Render(w Writer) {
+
+}
+
+func (s *Switch) AsElement() Element {
+	return s
+}
+
+type Style struct {
+	node
+}
+
+func (s *Style) Render(w Writer) {
+
+}
+
+func (s *Style) AsElement() Element {
+	return s
+}
+
+type Script struct {
+	node
+}
+
+func (s *Script) Render(w Writer) {
+
+}
+
+func (s *Script) AsElement() Element {
+	return s
+}
+
 type Path struct {
 	node
 	commands []command

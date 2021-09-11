@@ -64,8 +64,9 @@ func (c PolarChart) RenderElement(serie PolarSerie) svg.Element {
 		serie.Radius = 5
 	}
 	var (
-		dx    = c.Radius / serie.pair.Diff()
 		ticks = serie.Len()
+		rx    = serie.pair.extendBy(1.1)
+		dx    = c.Radius / rx.Diff()
 		pat   = svg.NewPath(serie.Fill.Stroke().Option())
 		grp   = svg.NewGroup(svg.WithTranslate(c.GetAreaCenter()))
 	)
