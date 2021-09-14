@@ -11,17 +11,20 @@ import (
 
 func main() {
 	var c chart.TimeChart
-	c.Width = 800
-	c.Height = 600
+	c.Width = 1200
+	c.Height = 800
 	c.Padding = chart.Padding{
-		Left:   60,
-		Right:  30,
+		Left:   80,
+		Right:  60,
 		Bottom: 40,
 		Top:    20,
 	}
-	c.TimeAxis = chart.NewTimeAxis(10, true, true)
+	c.TimeAxis = chart.NewTimeAxis(7, true, true)
 	c.TimeAxis.OuterX = true
 	c.TimeAxis.OuterY = true
+	c.TimeAxis.FormatTime = func(t time.Time, _ int) string {
+		return t.Format("2006-01-02 15:04")
+	}
 	sr1 := getSerie()
 	c.Render(os.Stdout, []chart.TimeSerie{sr1})
 }

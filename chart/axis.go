@@ -75,8 +75,9 @@ func (a CategoryAxis) drawAxisX(c Chart, domains []string) svg.Element {
 		if a.LabelX {
 			var (
 				font = svg.NewFont(12)
-				pos0 = svg.NewPos(off+(step/3), textick)
-				text = svg.NewText(domains[i], pos0.Option(), font.Option())
+				pos0 = svg.NewPos(off+(step/2), textick)
+				anc  = svg.WithAnchor("middle")
+				text = svg.NewText(domains[i], pos0.Option(), font.Option(), anc)
 			)
 			grp.Append(text.AsElement())
 		}
@@ -116,7 +117,7 @@ func (a CategoryAxis) drawAxisY(c Chart, rg pair) svg.Element {
 				pos  = svg.NewPos(0, ypos+(ticklen/2))
 				anc  = svg.WithAnchor("end")
 				font = svg.NewFont(12)
-				text = svg.NewText(formatFloat(i), anc, pos.Option(), font.Option())
+				text = svg.NewText(formatFloat(i, j), anc, pos.Option(), font.Option())
 			)
 			text.Shift = svg.NewPos(-ticklen*2, 0)
 			grp.Append(text.AsElement())
@@ -148,11 +149,15 @@ type LineAxis struct {
 	LabelX  bool
 	DomainX bool
 
+	FormatFloatX func(float64, int) string
+
 	TicksY  int
 	OuterY  bool
 	InnerY  bool
 	LabelY  bool
 	DomainY bool
+
+	FormatFloatY func(float64, int) string
 }
 
 func NewLineAxisWithTicks(c int) LineAxis {
@@ -204,6 +209,9 @@ func (a LineAxis) drawDomains(c Chart) svg.Element {
 }
 
 func (a LineAxis) drawAxisX(c Chart, rg pair) svg.Element {
+	if a.FormatFloatX == nil {
+		a.FormatFloatX = formatFloat
+	}
 	var (
 		axis  = svg.NewGroup(c.getOptionsAxisX()...)
 		coeff = c.GetAreaWidth() / float64(a.TicksX)
@@ -214,11 +222,12 @@ func (a LineAxis) drawAxisX(c Chart, rg pair) svg.Element {
 			grp = svg.NewGroup(svg.WithClass("tick"))
 			off = float64(j) * coeff
 		)
-		if a.LabelX {
+		if str := a.FormatFloatX(i, j); a.LabelX && str != "" {
 			var (
-				pos0 = svg.NewPos(off-(coeff*0.2), textick+(textick/3))
+				pos0 = svg.NewPos(off, textick+(textick/3))
 				font = svg.NewFont(12)
-				text = svg.NewText(formatFloat(i), pos0.Option(), font.Option())
+				anc  = svg.WithAnchor("middle")
+				text = svg.NewText(str, pos0.Option(), font.Option(), anc)
 			)
 			grp.Append(text.AsElement())
 		}
@@ -243,6 +252,9 @@ func (a LineAxis) drawAxisX(c Chart, rg pair) svg.Element {
 }
 
 func (a LineAxis) drawAxisY(c Chart, rg pair) svg.Element {
+	if a.FormatFloatY == nil {
+		a.FormatFloatY = formatFloat
+	}
 	var (
 		axis  = svg.NewGroup(c.getOptionsAxisY()...)
 		coeff = c.GetAreaHeight() / float64(a.TicksY)
@@ -253,12 +265,12 @@ func (a LineAxis) drawAxisY(c Chart, rg pair) svg.Element {
 			grp  = svg.NewGroup(svg.WithClass("tick"))
 			ypos = c.GetAreaHeight() - (float64(j) * coeff)
 		)
-		if a.LabelY {
+		if str := a.FormatFloatY(i, j); a.LabelY && str != "" {
 			var (
 				pos  = svg.NewPos(0, ypos+(ticklen/2))
 				anc  = svg.WithAnchor("end")
 				font = svg.NewFont(12)
-				text = svg.NewText(formatFloat(i), anc, pos.Option(), font.Option())
+				text = svg.NewText(str, anc, pos.Option(), font.Option())
 			)
 			text.Shift = svg.NewPos(-ticklen*2, 0)
 			grp.Append(text.AsElement())
@@ -284,17 +296,19 @@ func (a LineAxis) drawAxisY(c Chart, rg pair) svg.Element {
 }
 
 type TimeAxis struct {
-	TicksX  int
-	InnerX  bool
-	OuterX  bool
-	LabelX  bool
-	DomainX bool
+	TicksX     int
+	InnerX     bool
+	OuterX     bool
+	LabelX     bool
+	DomainX    bool
+	FormatTime func(time.Time, int) string
 
-	TicksY  int
-	InnerY  bool
-	OuterY  bool
-	LabelY  bool
-	DomainY bool
+	TicksY      int
+	InnerY      bool
+	OuterY      bool
+	LabelY      bool
+	DomainY     bool
+	FormatFloat func(float64, int) string
 }
 
 func NewTimeAxisWithTicks(x int) TimeAxis {
@@ -346,21 +360,27 @@ func (a TimeAxis) drawDomains(c Chart) svg.Element {
 }
 
 func (a TimeAxis) drawAxisX(c Chart, rg timepair) svg.Element {
+	if a.FormatTime == nil {
+		a.FormatTime = formatTime
+	}
 	var (
 		axis  = svg.NewGroup(c.getOptionsAxisX()...)
 		coeff = c.GetAreaWidth() / float64(a.TicksX)
 		step  = math.Ceil(rg.Diff() / float64(a.TicksX))
 	)
+
+	rg.Max = rg.Max.Add(time.Second * time.Duration(step))
 	for j := 0; !rg.Min.After(rg.Max); j++ {
 		var (
 			grp = svg.NewGroup(svg.WithClass("tick"))
 			off = float64(j) * coeff
 		)
-		if a.LabelX {
+		if str := a.FormatTime(rg.Min, j); a.LabelX && str != "" {
 			var (
 				font = svg.NewFont(12)
-				pos0 = svg.NewPos(off-(coeff*0.15), textick+(textick/3))
-				text = svg.NewText(formatTime(rg.Min), pos0.Option(), font.Option())
+				anc  = svg.WithAnchor("middle")
+				pos0 = svg.NewPos(off, textick+(textick/3))
+				text = svg.NewText(str, pos0.Option(), font.Option(), anc)
 			)
 			grp.Append(text.AsElement())
 		}
@@ -386,6 +406,9 @@ func (a TimeAxis) drawAxisX(c Chart, rg timepair) svg.Element {
 }
 
 func (a TimeAxis) drawAxisY(c Chart, rg pair) svg.Element {
+	if a.FormatFloat == nil {
+		a.FormatFloat = formatFloat
+	}
 	var (
 		axis  = svg.NewGroup(c.getOptionsAxisY()...)
 		coeff = c.GetAreaHeight() / float64(a.TicksY)
@@ -401,7 +424,7 @@ func (a TimeAxis) drawAxisY(c Chart, rg pair) svg.Element {
 				pos  = svg.NewPos(0, ypos+(ticklen/2))
 				anc  = svg.WithAnchor("end")
 				font = svg.NewFont(12)
-				text = svg.NewText(formatFloat(i), anc, pos.Option(), font.Option())
+				text = svg.NewText(a.FormatFloat(i, j), anc, pos.Option(), font.Option())
 			)
 			text.Shift = svg.NewPos(-ticklen*2, 0)
 			grp.Append(text.AsElement())
@@ -432,6 +455,8 @@ type IntervalAxis struct {
 	OuterX  bool
 	LabelX  bool
 	DomainX bool
+
+	FormatTime func(time.Time, int) string
 
 	InnerY  bool
 	OuterY  bool
@@ -487,6 +512,9 @@ func (a IntervalAxis) drawDomains(c Chart) svg.Element {
 }
 
 func (a IntervalAxis) drawAxisX(c Chart, rg timepair) svg.Element {
+	if a.FormatTime == nil {
+		a.FormatTime = formatTime
+	}
 	var (
 		axis  = svg.NewGroup(c.getOptionsAxisX()...)
 		coeff = c.GetAreaWidth() / float64(a.TicksX)
@@ -497,11 +525,12 @@ func (a IntervalAxis) drawAxisX(c Chart, rg timepair) svg.Element {
 			grp = svg.NewGroup(svg.WithClass("tick"))
 			off = float64(j) * coeff
 		)
-		if a.LabelX {
+		if str := a.FormatTime(rg.Min, j); a.LabelX && str != "" {
 			var (
 				font = svg.NewFont(12)
-				pos0 = svg.NewPos(off-(coeff*0.35), textick+(textick/3))
-				text = svg.NewText(formatDay(rg.Min), pos0.Option(), font.Option())
+				pos0 = svg.NewPos(off, textick+(textick/3))
+				anc  = svg.WithAnchor("middle")
+				text = svg.NewText(str, pos0.Option(), font.Option(), anc)
 			)
 			grp.Append(text.AsElement())
 		}

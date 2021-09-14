@@ -187,11 +187,11 @@ func formatDay(t time.Time) string {
 	return t.Format("2006-01-02")
 }
 
-func formatTime(t time.Time) string {
+func formatTime(t time.Time, _ int) string {
 	return t.Format("15:04:05")
 }
 
-func formatFloat(val float64) string {
+func formatFloat(val float64, _ int) string {
 	if almostZero(val) {
 		return "0.00"
 	}

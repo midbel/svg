@@ -119,13 +119,16 @@ func main() {
 	c.Height = 640
 	c.Padding = chart.Padding{
 		Left:   80,
-		Right:  40,
+		Right:  60,
 		Top:    20,
 		Bottom: 40,
 	}
 	c.IntervalAxis = chart.NewIntervalAxisWithTicks(10)
 	c.IntervalAxis.OuterX = true
 	c.IntervalAxis.OuterY = true
+	c.IntervalAxis.FormatTime = func(t time.Time, _ int) string {
+		return t.Format("2006-01-02 15:04")
+	}
 	xs := []chart.Interval{
 		i1,
 		i2,

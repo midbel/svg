@@ -7,14 +7,6 @@ type Stop struct {
 	Offset  float64
 }
 
-func (s *Stop) Render(w Writer) {
-
-}
-
-func (s *Stop) AsElement() Element {
-	return s
-}
-
 type Linear struct {
 	node
 	List
@@ -25,7 +17,7 @@ type Linear struct {
 }
 
 func (i *Linear) Render(w Writer) {
-	c.render(w, "linearGradient", c.List)
+	i.render(w, "linearGradient", i.List)
 }
 
 func (i *Linear) AsElement() Element {
@@ -45,7 +37,7 @@ type Radial struct {
 }
 
 func (r *Radial) Render(w Writer) {
-	c.render(w, "radialGradient", c.List)
+	r.render(w, "radialGradient", r.List)
 }
 
 func (r *Radial) AsElement() Element {
