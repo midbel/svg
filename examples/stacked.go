@@ -19,7 +19,8 @@ func main() {
 	var c chart.StackedBarChart
 	c.Width = 800
 	c.Height = 600
-	c.Padding = chart.CreatePadding(60, 20)
+	c.Title = "stacked bar chart demo"
+	c.Padding = chart.CreatePadding(60, 40)
 	c.CategoryAxis = chart.NewCategoryAxis(10, true, true)
 	c.CategoryAxis.OuterY = true
 

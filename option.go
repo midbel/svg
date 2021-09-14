@@ -154,6 +154,19 @@ func WithAnchor(anchor string) Option {
 	}
 }
 
+func WithDominantBaseline(baseline string) Option {
+	return func(e Element) error {
+		switch e := e.(type) {
+		case *Text:
+			e.Baseline = baseline
+		case *TextPath:
+			e.Baseline = baseline
+		default:
+		}
+		return nil
+	}
+}
+
 func WithFill(fill Fill) Option {
 	return func(e Element) error {
 		switch e := e.(type) {

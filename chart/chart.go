@@ -23,15 +23,48 @@ func init() {
 	}
 }
 
-type appender interface {
+type Appender interface {
 	Append(svg.Element)
+}
+
+type Axis interface {
+	Draw(Appender)
+}
+
+type Position uint8
+
+const (
+	Top Position = 1 << iota
+	Left
+	Bottom
+	Right
+)
+
+type Orientation uint8
+
+const (
+	Horizontal Orientation = 1 << iota
+	Vertical
+)
+
+type Legend struct {
+	Show bool
+	Orientation
+	Position
 }
 
 type Chart struct {
 	Title  string
 	Width  float64
 	Height float64
+	Legend
 	Padding
+	Axis struct {
+		Top    Axis
+		Left   Axis
+		Bottom Axis
+		Right  Axis
+	}
 
 	Border     svg.Stroke
 	Background svg.Fill
@@ -60,11 +93,34 @@ func (c *Chart) getArea(options ...svg.Option) svg.Group {
 	return svg.NewGroup(append(os, options...)...)
 }
 
+func (c *Chart) drawTitle() svg.Element {
+	if c.Title == "" {
+		return nil
+	}
+	y := 16.0
+	if c.Padding.Top > 0 {
+		y = c.Padding.Top / 2
+	}
+	var (
+		pos  = svg.NewPos(c.Width/2, y)
+		font = svg.NewFont(16)
+		anc  = svg.WithAnchor("middle")
+		base = svg.WithDominantBaseline("middle")
+		text = svg.NewText(c.Title, pos.Option(), font.Option(), anc, base)
+	)
+	return text.AsElement()
+}
+
+func (c *Chart) drawLegend() svg.Element {
+	return nil
+}
+
 func (c *Chart) getCanvas() svg.SVG {
 	var (
 		dim = svg.NewDim(c.Width, c.Height)
 		cs  = svg.NewSVG(dim.Option())
 		bg  = svg.NewGroup(svg.WithClass("bg-chart"))
+		ok  bool
 	)
 
 	if !c.Background.IsZero() && !c.Padding.IsZero() {
@@ -73,6 +129,7 @@ func (c *Chart) getCanvas() svg.SVG {
 			r = svg.NewRect(d.Option(), c.Border.Option(), c.Background.Option())
 		)
 		bg.Append(r.AsElement())
+		ok = true
 	}
 	if !c.Area.IsZero() {
 		var (
@@ -81,8 +138,11 @@ func (c *Chart) getCanvas() svg.SVG {
 			r = svg.NewRect(p.Option(), d.Option(), c.Area.Option())
 		)
 		bg.Append(r.AsElement())
+		ok = true
 	}
-	cs.Append(bg.AsElement())
+	if ok {
+		cs.Append(bg.AsElement())
+	}
 	return cs
 }
 

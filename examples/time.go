@@ -13,11 +13,12 @@ func main() {
 	var c chart.TimeChart
 	c.Width = 1200
 	c.Height = 800
+	c.Title = "time chart demo"
 	c.Padding = chart.Padding{
 		Left:   80,
 		Right:  60,
 		Bottom: 40,
-		Top:    20,
+		Top:    40,
 	}
 	c.TimeAxis = chart.NewTimeAxis(7, true, true)
 	c.TimeAxis.OuterX = true

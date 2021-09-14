@@ -116,10 +116,12 @@ func (c TreemapChart) renderElement(series []Hierarchy) svg.Element {
 	default:
 	}
 	cs.Append(area.AsElement())
+	cs.Append(c.drawTitle())
+	cs.Append(c.drawLegend())
 	return cs.AsElement()
 }
 
-func (c TreemapChart) drawAlternate(a appender, series []Hierarchy) {
+func (c TreemapChart) drawAlternate(a Appender, series []Hierarchy) {
 	var (
 		part = c.GetAreaWidth() / getSum(series)
 		off  float64
@@ -140,7 +142,7 @@ func (c TreemapChart) drawAlternate(a appender, series []Hierarchy) {
 	}
 }
 
-func (c TreemapChart) alternateHorizontal(a appender, serie Hierarchy, width, height float64) {
+func (c TreemapChart) alternateHorizontal(a Appender, serie Hierarchy, width, height float64) {
 	var (
 		sum   = serie.Sum()
 		wpart = width / sum
@@ -169,7 +171,7 @@ func (c TreemapChart) alternateHorizontal(a appender, serie Hierarchy, width, he
 	}
 }
 
-func (c TreemapChart) alternateVertical(a appender, serie Hierarchy, width, height float64) {
+func (c TreemapChart) alternateVertical(a Appender, serie Hierarchy, width, height float64) {
 	var (
 		sum   = serie.Sum()
 		hpart = height / sum
@@ -198,7 +200,7 @@ func (c TreemapChart) alternateVertical(a appender, serie Hierarchy, width, heig
 	}
 }
 
-func (c TreemapChart) drawHorizontal(a appender, series []Hierarchy, part float64) {
+func (c TreemapChart) drawHorizontal(a Appender, series []Hierarchy, part float64) {
 	var off float64
 	for i := range series {
 		series[i].Fill = getFill(i, series[i].Fill, series[i].Fill)
@@ -219,7 +221,7 @@ func (c TreemapChart) drawHorizontal(a appender, series []Hierarchy, part float6
 	}
 }
 
-func (c TreemapChart) drawVertical(a appender, series []Hierarchy, part float64) {
+func (c TreemapChart) drawVertical(a Appender, series []Hierarchy, part float64) {
 	var off float64
 	for i := range series {
 		series[i].Fill = getFill(i, series[i].Fill, series[i].Fill)
@@ -240,11 +242,11 @@ func (c TreemapChart) drawVertical(a appender, series []Hierarchy, part float64)
 	}
 }
 
-func (c TreemapChart) drawBinary(a appender, series []Hierarchy) {
+func (c TreemapChart) drawBinary(a Appender, series []Hierarchy) {
 
 }
 
-func (c TreemapChart) drawDefault(a appender, series []Hierarchy, width, height float64) {
+func (c TreemapChart) drawDefault(a Appender, series []Hierarchy, width, height float64) {
 	sort.Slice(series, func(i, j int) bool {
 		return series[i].GetValue() > series[j].GetValue()
 	})
@@ -291,13 +293,13 @@ func (c TreemapChart) drawDefault(a appender, series []Hierarchy, width, height 
 	}
 }
 
-func (c TreemapChart) drawSquarify(a appender, series []Hierarchy, width, height float64) {
+func (c TreemapChart) drawSquarify(a Appender, series []Hierarchy, width, height float64) {
 	c.squarify(a, series, width, height, 0)
 }
 
 const phi = 1.618
 
-func (c TreemapChart) squarify(a appender, series []Hierarchy, width, height float64, level int) {
+func (c TreemapChart) squarify(a Appender, series []Hierarchy, width, height float64, level int) {
 	sort.Slice(series, func(i, j int) bool {
 		return series[i].GetValue() > series[j].GetValue()
 	})
@@ -357,7 +359,7 @@ func (c TreemapChart) squarify(a appender, series []Hierarchy, width, height flo
 	}
 }
 
-func (c TreemapChart) layout(a appender, series []Hierarchy, width, height, sum float64, level int) {
+func (c TreemapChart) layout(a Appender, series []Hierarchy, width, height, sum float64, level int) {
 	var ox, oy float64
 	for i := range series {
 		var (

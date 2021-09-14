@@ -49,10 +49,12 @@ func (c SunburstChart) RenderElement(series []Hierarchy) svg.Element {
 		angle += series[i].GetValue() * part
 	}
 	cs.Append(area.AsElement())
+	cs.Append(c.drawTitle())
+	cs.Append(c.drawLegend())
 	return cs.AsElement()
 }
 
-func (c SunburstChart) drawSerie(grp appender, serie Hierarchy, angle, part, height, depth float64) {
+func (c SunburstChart) drawSerie(a Appender, serie Hierarchy, angle, part, height, depth float64) {
 	var (
 		inner = height
 		outer = c.distanceFromCenter() + (height * depth) + inner
@@ -74,12 +76,12 @@ func (c SunburstChart) drawSerie(grp appender, serie Hierarchy, angle, part, hei
 	}
 	pat.AbsLineTo(pos1)
 	pat.Title = fmt.Sprintf("%s - %f", serie.Label, serie.GetValue())
-	grp.Append(pat.AsElement())
+	a.Append(pat.AsElement())
 
 	subpart := (serie.GetValue() * part) / serie.Sum()
 	for i := range serie.Sub {
 		serie.Sub[i].Fill = getFill(i, serie.Sub[i].Fill, serie.Fill)
-		c.drawSerie(grp, serie.Sub[i], angle, subpart, height, depth+1)
+		c.drawSerie(a, serie.Sub[i], angle, subpart, height, depth+1)
 		angle += serie.Sub[i].GetValue() * subpart
 	}
 }
@@ -151,6 +153,8 @@ func (c PieChart) RenderElement(serie BarSerie) svg.Element {
 		angle += v.Value * part
 	}
 	cs.Append(area.AsElement())
+	cs.Append(c.drawTitle())
+	cs.Append(c.drawLegend())
 	return cs.AsElement()
 }
 

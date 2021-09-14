@@ -93,10 +93,12 @@ func (c PolarChart) RenderElement(serie PolarSerie) svg.Element {
 	area.Append(grp.AsElement())
 
 	cs.Append(area.AsElement())
+	cs.Append(c.drawTitle())
+	cs.Append(c.drawLegend())
 	return cs.AsElement()
 }
 
-func (c *PolarChart) drawInnerCircles(a appender, ticks int) {
+func (c *PolarChart) drawInnerCircles(a Appender, ticks int) {
 	var (
 		space  = c.Radius / c.Zone
 		cx, cy = c.GetAreaCenter()

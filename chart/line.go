@@ -93,6 +93,8 @@ func (c AreaChart) RenderElement(serie AreaSerie) svg.Element {
 	cs.Append(c.drawAxis(c.Chart, rx, ry))
 	area.Append(c.drawSerie(serie, rx, ry))
 	cs.Append(area.AsElement())
+	cs.Append(c.drawTitle())
+	cs.Append(c.drawLegend())
 	return cs.AsElement()
 }
 
@@ -159,6 +161,8 @@ func (c ScatterChart) RenderElement(series []ScatterSerie) svg.Element {
 	}
 
 	cs.Append(area.AsElement())
+	cs.Append(c.drawTitle())
+	cs.Append(c.drawLegend())
 	return cs.AsElement()
 }
 
@@ -284,6 +288,8 @@ func (c LineChart) RenderElement(series []LineSerie) svg.Element {
 		area.Append(elem)
 	}
 	cs.Append(area.AsElement())
+	cs.Append(c.drawTitle())
+	cs.Append(c.drawLegend())
 	return cs.AsElement()
 }
 

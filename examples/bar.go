@@ -16,9 +16,10 @@ func init() {
 
 func main() {
 	var c chart.BarChart
+	c.Title = "bar chart demo"
 	c.Width = 800
 	c.Height = 640
-	c.Padding = chart.CreatePadding(60, 20)
+	c.Padding = chart.CreatePadding(60, 40)
 	c.CategoryAxis = chart.NewCategoryAxis(10, true, true)
 	c.CategoryAxis.OuterY = true
 

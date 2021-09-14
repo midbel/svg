@@ -182,13 +182,14 @@ type TextPath struct {
 	node
 	Literal string
 
-	Path    string
-	Adjust  string
-	Method  string
-	Side    string
-	Spacing string
-	Offset  float64
-	Length  float64
+	Path     string
+	Adjust   string
+	Method   string
+	Side     string
+	Spacing  string
+	Baseline string
+	Offset   float64
+	Length   float64
 	Fill
 	Stroke
 	Transform
@@ -234,6 +235,9 @@ func (t *TextPath) Attributes() []string {
 	}
 	if t.Spacing != "" {
 		attrs = append(attrs, appendString("spacing", t.Spacing))
+	}
+	if t.Baseline != "" {
+		attrs = append(attrs, appendString("dominant-baseline", t.Baseline))
 	}
 	if t.Length != 0 {
 		attrs = append(attrs, appendFloat("textLength", t.Length))
@@ -477,10 +481,11 @@ type Text struct {
 	node
 	List
 
-	Shift  Pos
-	Anchor string
-	Adjust string
-	Length float64
+	Shift    Pos
+	Anchor   string
+	Adjust   string
+	Baseline string
+	Length   float64
 	Fill
 	Pos
 	Font
@@ -514,6 +519,9 @@ func (t *Text) Attributes() []string {
 	}
 	if t.Adjust != "" {
 		attrs = append(attrs, appendString("lengthAdjust", t.Adjust))
+	}
+	if t.Baseline != "" {
+		attrs = append(attrs, appendString("dominant-baseline", t.Baseline))
 	}
 	if t.Length != 0 {
 		attrs = append(attrs, appendFloat("textLength", t.Length))

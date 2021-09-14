@@ -134,10 +134,12 @@ func (c GanttChart) RenderElement(series []Interval) svg.Element {
 		area.Append(grp.AsElement())
 	}
 	cs.Append(area.AsElement())
+	cs.Append(c.drawTitle())
+	cs.Append(c.drawLegend())
 	return cs.AsElement()
 }
 
-func (c GanttChart) drawInterval(a appender, serie Interval, rx timepair, bar, height, level float64) {
+func (c GanttChart) drawInterval(a Appender, serie Interval, rx timepair, bar, height, level float64) {
 	if serie.IsZero() {
 		return
 	}
@@ -198,10 +200,12 @@ func (c IntervalChart) RenderElement(series []Interval) svg.Element {
 		area.Append(grp.AsElement())
 	}
 	cs.Append(area.AsElement())
+	cs.Append(c.drawTitle())
+	cs.Append(c.drawLegend())
 	return cs.AsElement()
 }
 
-func (c IntervalChart) drawInterval(a appender, serie Interval, rx timepair, bar, height, level float64) {
+func (c IntervalChart) drawInterval(a Appender, serie Interval, rx timepair, bar, height, level float64) {
 	if !serie.IsZero() {
 		var (
 			dx = c.GetAreaWidth() / rx.Diff()
@@ -267,6 +271,8 @@ func (c TimeChart) RenderElement(series []TimeSerie) svg.Element {
 		area.Append(elem)
 	}
 	cs.Append(area.AsElement())
+	cs.Append(c.drawTitle())
+	cs.Append(c.drawLegend())
 	return cs.AsElement()
 }
 

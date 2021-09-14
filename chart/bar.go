@@ -99,10 +99,12 @@ func (c BarChart) RenderElement(series []BarSerie) svg.Element {
 		area.Append(grp.AsElement())
 	}
 	cs.Append(area.AsElement())
+	cs.Append(c.drawTitle())
+	cs.Append(c.drawLegend())
 	return cs.AsElement()
 }
 
-func (c BarChart) drawSerie(a appender, serie BarSerie, rg pair, width float64) {
+func (c BarChart) drawSerie(a Appender, serie BarSerie, rg pair, width float64) {
 	var (
 		step = width / float64(serie.Len())
 		bar  = step * 0.7
@@ -155,10 +157,12 @@ func (c StackedBarChart) RenderElement(series []StackedBarSerie) svg.Element {
 		c.drawSerie(&grp, series[i], rg, width)
 	}
 	cs.Append(area.AsElement())
+	cs.Append(c.drawTitle())
+	cs.Append(c.drawLegend())
 	return cs.AsElement()
 }
 
-func (c StackedBarChart) drawSerie(a appender, serie StackedBarSerie, rg pair, width float64) {
+func (c StackedBarChart) drawSerie(a Appender, serie StackedBarSerie, rg pair, width float64) {
 	var (
 		step = width / float64(serie.Len())
 		bar  = step * 0.7
