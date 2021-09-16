@@ -532,6 +532,10 @@ type pair struct {
 	Max float64
 }
 
+func (p pair) AxisRange() AxisOption {
+	return WithNumberRange(p.Min, p.Max)
+}
+
 func (p pair) Diff() float64 {
 	return p.Max - p.Min
 }

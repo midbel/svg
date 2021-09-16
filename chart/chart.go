@@ -28,7 +28,7 @@ type Appender interface {
 }
 
 type Axis interface {
-	Draw(Appender, float64, ...svg.Option)
+	Draw(Appender, float64, float64, ...svg.Option)
 	update(options ...AxisOption)
 }
 
@@ -44,6 +44,27 @@ const (
 	Right
 	TopRight
 )
+
+func (p Position) IsHorizontal() bool {
+	return p == Top || p == Bottom
+}
+
+func (p Position) IsVertical() bool {
+	return p == Left || p == Right
+}
+
+func (p Position) adjust(pos svg.Pos) svg.Pos {
+	switch p {
+	case Top:
+		pos.Y = -pos.Y
+	case Bottom:
+	case Left:
+	case Right:
+		pos.X = -pos.X
+	default:
+	}
+	return pos
+}
 
 type Orientation uint8
 
@@ -120,39 +141,42 @@ func (c *Chart) drawLegend() svg.Element {
 	return nil
 }
 
-func (c *Chart) drawAxis(options ...AxisOption) svg.Element {
+func (c *Chart) drawAxis(rx, ry AxisOption, options ...AxisOption) svg.Element {
 	if c.Axis.Top == nil && c.Axis.Bottom == nil && c.Axis.Left == nil && c.Axis.Right == nil {
 		return nil
 	}
-	ap := svg.NewGroup(svg.WithClass("axis"), svg.WithTranslate(c.Padding.Left, c.Padding.Right))
+	ap := svg.NewGroup(svg.WithClass("axis"), svg.WithTranslate(c.Padding.Left, c.Padding.Top))
 	if c.Axis.Top != nil {
 		grp := svg.NewGroup()
 		ap.Append(grp.AsElement())
 
+		options = append(options, rx, withOrientation(Horizontal), withPosition(Top))
 		c.Axis.Top.update(options...)
-		c.Axis.Top.Draw(&grp, c.GetAreaWidth())
+		c.Axis.Top.Draw(&grp, c.GetAreaWidth(), c.GetAreaHeight())
 	}
 	if c.Axis.Left != nil {
 		grp := svg.NewGroup()
 		ap.Append(grp.AsElement())
 
+		options = append(options, ry, withOrientation(Horizontal), withPosition(Left))
 		c.Axis.Left.update(options...)
-		c.Axis.Left.Draw(&grp, c.GetAreaHeight())
+		c.Axis.Left.Draw(&grp, c.GetAreaHeight(), c.GetAreaWidth())
 	}
 	if c.Axis.Bottom != nil {
 		grp := svg.NewGroup(svg.WithTranslate(0, c.GetAreaHeight()))
 		ap.Append(grp.AsElement())
 
-		options = append(options, withOrientation(Horizontal), withPosition(Top))
+		options = append(options, rx, withOrientation(Horizontal), withPosition(Bottom))
 		c.Axis.Bottom.update(options...)
-		c.Axis.Bottom.Draw(&grp, c.GetAreaWidth())
+		c.Axis.Bottom.Draw(&grp, c.GetAreaWidth(), c.GetAreaHeight())
 	}
 	if c.Axis.Right != nil {
-		grp := svg.NewGroup(svg.WithTranslate(0, c.GetAreaWidth()))
+		grp := svg.NewGroup(svg.WithTranslate(c.GetAreaWidth(), 0))
 		ap.Append(grp.AsElement())
 
+		options = append(options, ry, withOrientation(Horizontal), withPosition(Right))
 		c.Axis.Right.update(options...)
-		c.Axis.Right.Draw(&grp, c.GetAreaHeight())
+		c.Axis.Right.Draw(&grp, c.GetAreaHeight(), c.GetAreaWidth())
 	}
 	return ap.AsElement()
 }
@@ -290,7 +314,8 @@ func formatDay(t time.Time) string {
 }
 
 func formatTime(t time.Time, _ int) string {
-	return t.Format("15:04:05")
+	// return t.Format("15:04:05")
+	return t.Format("2006-01-02 15:04")
 }
 
 func formatFloat(val float64, _ int) string {

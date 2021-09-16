@@ -113,13 +113,48 @@ func (a baseAxis) drawDomain(ap Appender, size float64) {
 		pos2 svg.Pos
 		line svg.Line
 	)
-	if a.Orientation == Horizontal {
+	if a.IsHorizontal() {
 		pos2.X, pos2.Y = size, 0
 	} else {
 		pos2.X, pos2.Y = 0, size
 	}
 	line = svg.NewLine(pos1, pos2, axisstrok.Option(), svg.WithClass("domain"))
 	ap.Append(line.AsElement())
+}
+
+func (a baseAxis) getTickLabel(str string, off float64) svg.Element {
+	var (
+		font    = svg.NewFont(12)
+		shift   float64
+		pos     svg.Pos
+		options []svg.Option
+	)
+	switch a.Position {
+	case Top, Bottom:
+		pos.X, pos.Y = off, textick
+		pos = a.Position.adjust(pos)
+		options = append(options, svg.WithAnchor("middle"))
+	case Left:
+		pos.X, pos.Y = 0, off+(ticklen/2)
+		shift = -ticklen * 2
+		options = append(options, svg.WithAnchor("end"))
+	case Right:
+		pos.X, pos.Y = 0, off+(ticklen/2)
+		shift = ticklen * 2
+		options = append(options, svg.WithAnchor("start"))
+	default:
+	}
+	options = append(options, pos.Option())
+	options = append(options, font.Option())
+	text := svg.NewText(str, options...)
+	if shift != 0 {
+		text.Shift = svg.NewPos(shift, 0)
+	}
+	return text.AsElement()
+}
+
+func (a baseAxis) skip() bool {
+	return a.WithTicks == 0 || (!a.WithInner && !a.WithOuter && !a.WithLabel)
 }
 
 type labelAxis struct {
@@ -136,7 +171,7 @@ func CreateLabelAxis(options ...AxisOption) Axis {
 	return &a
 }
 
-func (a *labelAxis) Draw(ap Appender, size float64, options ...svg.Option) {
+func (a *labelAxis) Draw(ap Appender, size, rsize float64, options ...svg.Option) {
 	a.drawDomain(ap, size)
 	grp := svg.NewGroup(options...)
 	ap.Append(grp.AsElement())
@@ -158,40 +193,52 @@ func CreateTimeAxis(options ...AxisOption) Axis {
 	var a timeAxis
 	a.WithDomain = true
 	a.WithInner = true
+	a.WithOuter = true
 	a.WithLabel = true
 	a.update(options...)
 	return &a
 }
 
-func (a *timeAxis) Draw(ap Appender, size float64, options ...svg.Option) {
+func (a *timeAxis) Draw(ap Appender, size, rsize float64, options ...svg.Option) {
 	a.drawDomain(ap, size)
-	if a.WithTicks == 0 {
+	if a.skip() {
 		return
 	}
-	a.drawTicks(ap, size)
+	a.drawTicks(ap, size, rsize)
 }
 
-func (a *timeAxis) drawTicks(ap Appender, size float64) {
+func (a *timeAxis) drawTicks(ap Appender, size, rsize float64) {
 	var (
-		coeff = size / float64(a.WithTicks)
-		diff  = a.ends.Sub(a.starts).Seconds()
-		step  = math.Ceil(diff / float64(a.WithTicks))
-		delta = time.Duration(step) * time.Second
-		ends  = a.ends.Add(delta)
+		coeff  = size / float64(a.WithTicks)
+		half   = coeff / 2
+		diff   = a.ends.Sub(a.starts).Seconds()
+		step   = math.Ceil(diff / float64(a.WithTicks))
+		delta  = time.Duration(step) * time.Second
+		ends   = a.ends
 		starts = a.starts
 	)
-	for	j := 0; !starts.After(ends); j++ {
+	for j := 0; starts.Before(ends); j++ {
 		var (
 			grp = svg.NewGroup(svg.WithClass("tick"))
 			off = float64(j) * coeff
 		)
 		if a.WithInner {
 			var (
-				pos1 = svg.NewPos(off, 0)
-				pos2 = svg.NewPos(off, ticklen)
+				pos1 = svg.NewPos(off+half, 0)
+				pos2 = a.Position.adjust(svg.NewPos(off+half, ticklen))
 				line = svg.NewLine(pos1, pos2, axisstrok.Option())
 			)
 			grp.Append(line.AsElement())
+		}
+		if a.WithLabel {
+			grp.Append(a.getTickLabel(formatTime(starts.Add(delta/2), j), off+half))
+		}
+		if a.WithOuter {
+			var (
+				pos1 = svg.NewPos(off+half, 0)
+				pos2 = a.Position.adjust(svg.NewPos(off+half, -rsize))
+			)
+			grp.Append(getTick(pos1, pos2))
 		}
 		ap.Append(grp.AsElement())
 		starts = starts.Add(delta)
@@ -214,15 +261,54 @@ func CreateNumberAxis(options ...AxisOption) Axis {
 	var a numberAxis
 	a.WithDomain = true
 	a.WithInner = true
+	a.WithOuter = true
 	a.WithLabel = true
 	a.update(options...)
 	return &a
 }
 
-func (a *numberAxis) Draw(ap Appender, size float64, options ...svg.Option) {
+func (a *numberAxis) Draw(ap Appender, size, rsize float64, options ...svg.Option) {
 	a.drawDomain(ap, size)
-	grp := svg.NewGroup(options...)
-	ap.Append(grp.AsElement())
+	if a.skip() {
+		return
+	}
+	a.drawTicks(ap, size, rsize)
+}
+
+func (a *numberAxis) drawTicks(ap Appender, size, rsize float64) {
+	var (
+		coeff  = size / float64(a.WithTicks)
+		half   = coeff / 2
+		step   = math.Abs(a.ends-a.starts) / float64(a.WithTicks)
+		starts = a.starts
+		ends   = a.ends - (step / 2)
+	)
+	for j := 0; starts < ends; j++ {
+		var (
+			grp = svg.NewGroup(svg.WithClass("tick"))
+			off = size - (float64(j) * coeff) - half
+		)
+		if a.WithInner {
+			var (
+				pos1 = a.Position.adjust(svg.NewPos(-ticklen, off))
+				pos2 = svg.NewPos(0, off)
+				line = svg.NewLine(pos1, pos2, axisstrok.Option())
+			)
+			grp.Append(line.AsElement())
+		}
+		if a.WithLabel {
+			grp.Append(a.getTickLabel(formatFloat(starts+(step/2), j), off))
+		}
+		if a.WithOuter {
+			var (
+				pos1 = svg.NewPos(0, off)
+				pos2 = a.Position.adjust(svg.NewPos(rsize, off))
+			)
+			grp.Append(getTick(pos1, pos2))
+		}
+		ap.Append(grp.AsElement())
+		starts += step
+	}
 }
 
 func (a *numberAxis) update(options ...AxisOption) {
@@ -563,114 +649,15 @@ func (a TimeAxis) drawAxis(c Chart, rx timepair, ry pair) svg.Element {
 }
 
 func (a TimeAxis) drawDomains(c Chart) svg.Element {
-	grp := svg.NewGroup(c.translate())
-	if a.DomainX {
-		var (
-			pos1 = svg.NewPos(0, c.GetAreaHeight())
-			pos2 = svg.NewPos(c.GetAreaWidth(), c.GetAreaHeight())
-			line = svg.NewLine(pos1, pos2, axisstrok.Option(), svg.WithClass("domain"))
-		)
-		grp.Append(line.AsElement())
-	}
-	if a.DomainY {
-		var (
-			pos1 = svg.NewPos(0, 0)
-			pos2 = svg.NewPos(0, c.GetAreaHeight()+1)
-			line = svg.NewLine(pos1, pos2, axisstrok.Option(), svg.WithClass("domain"))
-		)
-		grp.Append(line.AsElement())
-	}
-	return grp.AsElement()
+	return nil
 }
 
 func (a TimeAxis) drawAxisX(c Chart, rg timepair) svg.Element {
-	if a.FormatTime == nil {
-		a.FormatTime = formatTime
-	}
-	var (
-		axis  = svg.NewGroup(c.getOptionsAxisX()...)
-		coeff = c.GetAreaWidth() / float64(a.TicksX)
-		step  = math.Ceil(rg.Diff() / float64(a.TicksX))
-	)
-
-	rg.Max = rg.Max.Add(time.Second * time.Duration(step))
-	for j := 0; !rg.Min.After(rg.Max); j++ {
-		var (
-			grp = svg.NewGroup(svg.WithClass("tick"))
-			off = float64(j) * coeff
-		)
-		if str := a.FormatTime(rg.Min, j); a.LabelX && str != "" {
-			var (
-				font = svg.NewFont(12)
-				anc  = svg.WithAnchor("middle")
-				pos0 = svg.NewPos(off, textick+(textick/3))
-				text = svg.NewText(str, pos0.Option(), font.Option(), anc)
-			)
-			grp.Append(text.AsElement())
-		}
-		if a.InnerX {
-			var (
-				pos1 = svg.NewPos(off, 0)
-				pos2 = svg.NewPos(off, ticklen)
-				line = svg.NewLine(pos1, pos2, axisstrok.Option())
-			)
-			grp.Append(line.AsElement())
-		}
-		if a.OuterX {
-			var (
-				pos1 = svg.NewPos(off, 0)
-				pos2 = svg.NewPos(off, -c.GetAreaHeight())
-			)
-			grp.Append(getTick(pos1, pos2))
-		}
-		axis.Append(grp.AsElement())
-		rg.Min = rg.Min.Add(time.Second * time.Duration(step))
-	}
-	return axis.AsElement()
+	return nil
 }
 
 func (a TimeAxis) drawAxisY(c Chart, rg pair) svg.Element {
-	if a.FormatFloat == nil {
-		a.FormatFloat = formatFloat
-	}
-	var (
-		axis  = svg.NewGroup(c.getOptionsAxisY()...)
-		coeff = c.GetAreaHeight() / float64(a.TicksY)
-		step  = rg.Diff() / float64(a.TicksY)
-	)
-	for i, j := rg.Min, 0; i < rg.Max+step; i, j = i+step, j+1 {
-		var (
-			grp  = svg.NewGroup(svg.WithClass("tick"))
-			ypos = c.GetAreaHeight() - (float64(j) * coeff)
-		)
-		if a.LabelY {
-			var (
-				pos  = svg.NewPos(0, ypos+(ticklen/2))
-				anc  = svg.WithAnchor("end")
-				font = svg.NewFont(12)
-				text = svg.NewText(a.FormatFloat(i, j), anc, pos.Option(), font.Option())
-			)
-			text.Shift = svg.NewPos(-ticklen*2, 0)
-			grp.Append(text.AsElement())
-		}
-		if a.InnerY {
-			var (
-				pos1 = svg.NewPos(-ticklen, ypos)
-				pos2 = svg.NewPos(0, ypos)
-				line = svg.NewLine(pos1, pos2, axisstrok.Option())
-			)
-			grp.Append(line.AsElement())
-		}
-		if a.OuterY {
-			var (
-				pos1 = svg.NewPos(0, ypos)
-				pos2 = svg.NewPos(c.GetAreaWidth(), ypos)
-			)
-			grp.Append(getTick(pos1, pos2))
-		}
-		axis.Append(grp.AsElement())
-	}
-	return axis.AsElement()
+	return nil
 }
 
 type IntervalAxis struct {

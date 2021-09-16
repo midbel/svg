@@ -245,7 +245,6 @@ func (c CalendarChart) RenderElement(series []TimeSerie) svg.Element {
 
 type TimeChart struct {
 	Chart
-	TimeAxis
 }
 
 func (c TimeChart) Render(w io.Writer, series []TimeSerie) {
@@ -264,9 +263,8 @@ func (c TimeChart) RenderElement(series []TimeSerie) svg.Element {
 		area   = c.getArea()
 		rx, ry = getTimeDomains(series)
 	)
-	ry = ry.extendBy(1.2)
-	cs.Append(c.TimeAxis.drawAxis(c.Chart, rx, ry))
-	// cs.Append(c.Chart.drawAxis())
+	ry = ry.extendBy(1.1)
+	cs.Append(c.Chart.drawAxis(rx.AxisRange(), ry.AxisRange()))
 	for i := range series {
 		elem := c.drawSerie(series[i], rx, ry)
 		area.Append(elem)
@@ -310,6 +308,10 @@ type timepoint struct {
 type timepair struct {
 	Min time.Time
 	Max time.Time
+}
+
+func (t timepair) AxisRange() AxisOption {
+	return WithTimeRange(t.Min, t.Max)
 }
 
 func (t timepair) extendBy(by time.Duration) timepair {
