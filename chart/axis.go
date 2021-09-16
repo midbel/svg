@@ -2,10 +2,234 @@ package chart
 
 import (
 	"math"
+	"strconv"
 	"time"
 
 	"github.com/midbel/svg"
 )
+
+type AxisOption func(Axis)
+
+func WithTimeRange(starts, ends time.Time) AxisOption {
+	return func(a Axis) {
+		switch a := a.(type) {
+		case *timeAxis:
+			a.starts, a.ends = starts, ends
+		case *numberAxis:
+			a.starts, a.ends = float64(starts.Unix()), float64(ends.Unix())
+		case *labelAxis:
+			a.labels = append(a.labels, starts.Format(time.RFC3339))
+			a.labels = append(a.labels, ends.Format(time.RFC3339))
+		default:
+		}
+	}
+}
+
+func WithNumberRange(starts, ends float64) AxisOption {
+	return func(a Axis) {
+		switch a := a.(type) {
+		case *timeAxis:
+			a.starts, a.ends = time.Unix(int64(starts), 0), time.Unix(int64(ends), 0)
+		case *numberAxis:
+			a.starts, a.ends = starts, ends
+		case *labelAxis:
+			a.labels = append(a.labels, strconv.FormatFloat(starts, 'f', -1, 64))
+			a.labels = append(a.labels, strconv.FormatFloat(ends, 'f', -1, 64))
+		default:
+		}
+	}
+}
+
+func WithLabels(labels ...string) AxisOption {
+	return func(a Axis) {
+		if a, ok := a.(*labelAxis); ok {
+			a.labels = append(a.labels[:0], labels...)
+		}
+	}
+}
+
+func WithTicks(n int) AxisOption {
+	return func(a Axis) {
+		switch a := a.(type) {
+		case *timeAxis:
+			a.WithTicks = n
+		case *numberAxis:
+			a.WithTicks = n
+		case *labelAxis:
+			a.WithTicks = n
+		default:
+		}
+	}
+}
+
+func withOrientation(o Orientation) AxisOption {
+	return func(a Axis) {
+		switch a := a.(type) {
+		case *timeAxis:
+			a.Orientation = o
+		case *numberAxis:
+			a.Orientation = o
+		case *labelAxis:
+			a.Orientation = o
+		default:
+		}
+	}
+}
+
+func withPosition(p Position) AxisOption {
+	return func(a Axis) {
+		switch a := a.(type) {
+		case *timeAxis:
+			a.Position = p
+		case *numberAxis:
+			a.Position = p
+		case *labelAxis:
+			a.Position = p
+		default:
+		}
+	}
+}
+
+type baseAxis struct {
+	WithInner  bool
+	WithOuter  bool
+	WithLabel  bool
+	WithDomain bool
+	WithTicks  int
+	Orientation
+	Position
+
+	svg.Font
+	svg.Fill
+	svg.Stroke
+}
+
+func (a baseAxis) drawDomain(ap Appender, size float64) {
+	if !a.WithDomain {
+		return
+	}
+	var (
+		pos1 = svg.NewPos(0, 0)
+		pos2 svg.Pos
+		line svg.Line
+	)
+	if a.Orientation == Horizontal {
+		pos2.X, pos2.Y = size, 0
+	} else {
+		pos2.X, pos2.Y = 0, size
+	}
+	line = svg.NewLine(pos1, pos2, axisstrok.Option(), svg.WithClass("domain"))
+	ap.Append(line.AsElement())
+}
+
+type labelAxis struct {
+	baseAxis
+	labels []string
+}
+
+func CreateLabelAxis(options ...AxisOption) Axis {
+	var a labelAxis
+	a.WithDomain = true
+	a.WithInner = true
+	a.WithLabel = true
+	a.update(options...)
+	return &a
+}
+
+func (a *labelAxis) Draw(ap Appender, size float64, options ...svg.Option) {
+	a.drawDomain(ap, size)
+	grp := svg.NewGroup(options...)
+	ap.Append(grp.AsElement())
+}
+
+func (a *labelAxis) update(options ...AxisOption) {
+	for _, o := range options {
+		o(a)
+	}
+}
+
+type timeAxis struct {
+	baseAxis
+	starts time.Time
+	ends   time.Time
+}
+
+func CreateTimeAxis(options ...AxisOption) Axis {
+	var a timeAxis
+	a.WithDomain = true
+	a.WithInner = true
+	a.WithLabel = true
+	a.update(options...)
+	return &a
+}
+
+func (a *timeAxis) Draw(ap Appender, size float64, options ...svg.Option) {
+	a.drawDomain(ap, size)
+	if a.WithTicks == 0 {
+		return
+	}
+	a.drawTicks(ap, size)
+}
+
+func (a *timeAxis) drawTicks(ap Appender, size float64) {
+	var (
+		coeff = size / float64(a.WithTicks)
+		diff  = a.ends.Sub(a.starts).Seconds()
+		step  = math.Ceil(diff / float64(a.WithTicks))
+		delta = time.Duration(step) * time.Second
+		ends  = a.ends.Add(delta)
+		starts = a.starts
+	)
+	for	j := 0; !starts.After(ends); j++ {
+		var (
+			grp = svg.NewGroup(svg.WithClass("tick"))
+			off = float64(j) * coeff
+		)
+		if a.WithInner {
+			var (
+				pos1 = svg.NewPos(off, 0)
+				pos2 = svg.NewPos(off, ticklen)
+				line = svg.NewLine(pos1, pos2, axisstrok.Option())
+			)
+			grp.Append(line.AsElement())
+		}
+		ap.Append(grp.AsElement())
+		starts = starts.Add(delta)
+	}
+}
+
+func (a *timeAxis) update(options ...AxisOption) {
+	for _, o := range options {
+		o(a)
+	}
+}
+
+type numberAxis struct {
+	baseAxis
+	starts float64
+	ends   float64
+}
+
+func CreateNumberAxis(options ...AxisOption) Axis {
+	var a numberAxis
+	a.WithDomain = true
+	a.WithInner = true
+	a.WithLabel = true
+	a.update(options...)
+	return &a
+}
+
+func (a *numberAxis) Draw(ap Appender, size float64, options ...svg.Option) {
+	a.drawDomain(ap, size)
+	grp := svg.NewGroup(options...)
+	ap.Append(grp.AsElement())
+}
+
+func (a *numberAxis) update(options ...AxisOption) {
+	for _, o := range options {
+		o(a)
+	}
+}
 
 type CategoryAxis struct {
 	InnerX  bool

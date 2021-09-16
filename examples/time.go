@@ -14,6 +14,8 @@ func main() {
 	c.Width = 1200
 	c.Height = 800
 	c.Title = "time chart demo"
+	c.Axis.Bottom = chart.CreateTimeAxis(chart.WithTicks(10))
+	c.Axis.Left = chart.CreateNumberAxis(chart.WithTicks(6))
 	c.Padding = chart.Padding{
 		Left:   80,
 		Right:  60,

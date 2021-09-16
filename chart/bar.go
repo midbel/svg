@@ -88,7 +88,7 @@ func (c BarChart) RenderElement(series []BarSerie) svg.Element {
 		offset = c.GetAreaWidth() / float64(len(series))
 	)
 	rg.Max *= 1.05
-	cs.Append(c.drawAxis(c.Chart, rg, ds))
+	cs.Append(c.CategoryAxis.drawAxis(c.Chart, rg, ds))
 	for i := range series {
 		var (
 			width = offset * 0.8
@@ -146,7 +146,7 @@ func (c StackedBarChart) RenderElement(series []StackedBarSerie) svg.Element {
 		offset = c.GetAreaWidth() / float64(len(series))
 	)
 	rg.Max *= 1.05
-	cs.Append(c.drawAxis(c.Chart, rg, ds))
+	cs.Append(c.CategoryAxis.drawAxis(c.Chart, rg, ds))
 	for i := range series {
 		var (
 			width = offset * 0.8

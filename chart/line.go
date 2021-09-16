@@ -90,7 +90,7 @@ func (c AreaChart) RenderElement(serie AreaSerie) svg.Element {
 		area   = c.getArea()
 		rx, ry = getLineDomains([]LineSerie{serie.serie1, serie.serie2}, 1.1)
 	)
-	cs.Append(c.drawAxis(c.Chart, rx, ry))
+	cs.Append(c.LineAxis.drawAxis(c.Chart, rx, ry))
 	area.Append(c.drawSerie(serie, rx, ry))
 	cs.Append(area.AsElement())
 	cs.Append(c.drawTitle())
@@ -154,7 +154,7 @@ func (c ScatterChart) RenderElement(series []ScatterSerie) svg.Element {
 		area   = c.getArea()
 		rx, ry = getScatterDomains(series, 1.15)
 	)
-	cs.Append(c.drawAxis(c.Chart, rx, ry))
+	cs.Append(c.LineAxis.drawAxis(c.Chart, rx, ry))
 	for i := range series {
 		grp := c.drawSerie(series[i], rx, ry)
 		area.Append(grp)
@@ -267,7 +267,7 @@ func (c LineChart) RenderElement(series []LineSerie) svg.Element {
 		rx, ry = getLineDomains(series, 1)
 	)
 	ry = ry.extendBy(1.1)
-	cs.Append(c.drawAxis(c.Chart, rx, ry))
+	cs.Append(c.LineAxis.drawAxis(c.Chart, rx, ry))
 	for i := range series {
 		var elem svg.Element
 		switch series[i].Curve {

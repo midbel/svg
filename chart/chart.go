@@ -28,16 +28,21 @@ type Appender interface {
 }
 
 type Axis interface {
-	Draw(Appender)
+	Draw(Appender, float64, ...svg.Option)
+	update(options ...AxisOption)
 }
 
 type Position uint8
 
 const (
 	Top Position = 1 << iota
+	TopLeft
 	Left
+	BottomLeft
 	Bottom
+	BottomRight
 	Right
+	TopRight
 )
 
 type Orientation uint8
@@ -113,6 +118,43 @@ func (c *Chart) drawTitle() svg.Element {
 
 func (c *Chart) drawLegend() svg.Element {
 	return nil
+}
+
+func (c *Chart) drawAxis(options ...AxisOption) svg.Element {
+	if c.Axis.Top == nil && c.Axis.Bottom == nil && c.Axis.Left == nil && c.Axis.Right == nil {
+		return nil
+	}
+	ap := svg.NewGroup(svg.WithClass("axis"), svg.WithTranslate(c.Padding.Left, c.Padding.Right))
+	if c.Axis.Top != nil {
+		grp := svg.NewGroup()
+		ap.Append(grp.AsElement())
+
+		c.Axis.Top.update(options...)
+		c.Axis.Top.Draw(&grp, c.GetAreaWidth())
+	}
+	if c.Axis.Left != nil {
+		grp := svg.NewGroup()
+		ap.Append(grp.AsElement())
+
+		c.Axis.Left.update(options...)
+		c.Axis.Left.Draw(&grp, c.GetAreaHeight())
+	}
+	if c.Axis.Bottom != nil {
+		grp := svg.NewGroup(svg.WithTranslate(0, c.GetAreaHeight()))
+		ap.Append(grp.AsElement())
+
+		options = append(options, withOrientation(Horizontal), withPosition(Top))
+		c.Axis.Bottom.update(options...)
+		c.Axis.Bottom.Draw(&grp, c.GetAreaWidth())
+	}
+	if c.Axis.Right != nil {
+		grp := svg.NewGroup(svg.WithTranslate(0, c.GetAreaWidth()))
+		ap.Append(grp.AsElement())
+
+		c.Axis.Right.update(options...)
+		c.Axis.Right.Draw(&grp, c.GetAreaHeight())
+	}
+	return ap.AsElement()
 }
 
 func (c *Chart) getCanvas() svg.SVG {

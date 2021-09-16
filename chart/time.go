@@ -123,7 +123,7 @@ func (c GanttChart) RenderElement(series []Interval) svg.Element {
 		bar    = offset / float64(getIntervalDepth(series)) * 0.6
 	)
 	rx = rx.extendBy(time.Hour)
-	cs.Append(c.drawAxis(c.Chart, rx, ds))
+	cs.Append(c.IntervalAxis.drawAxis(c.Chart, rx, ds))
 	for i := range series {
 		var (
 			height = offset / float64(series[i].Depth())
@@ -189,7 +189,7 @@ func (c IntervalChart) RenderElement(series []Interval) svg.Element {
 		bar    = offset / float64(getIntervalDepth(series)) * 0.6
 	)
 	rx = rx.extendBy(time.Hour)
-	cs.Append(c.drawAxis(c.Chart, rx, ds))
+	cs.Append(c.IntervalAxis.drawAxis(c.Chart, rx, ds))
 	for i := range series {
 		var (
 			height = offset / float64(series[i].Depth())
@@ -265,7 +265,8 @@ func (c TimeChart) RenderElement(series []TimeSerie) svg.Element {
 		rx, ry = getTimeDomains(series)
 	)
 	ry = ry.extendBy(1.2)
-	cs.Append(c.drawAxis(c.Chart, rx, ry))
+	cs.Append(c.TimeAxis.drawAxis(c.Chart, rx, ry))
+	// cs.Append(c.Chart.drawAxis())
 	for i := range series {
 		elem := c.drawSerie(series[i], rx, ry)
 		area.Append(elem)
