@@ -66,16 +66,8 @@ func (p Position) adjust(pos svg.Pos) svg.Pos {
 	return pos
 }
 
-type Orientation uint8
-
-const (
-	Horizontal Orientation = 1 << iota
-	Vertical
-)
-
 type Legend struct {
 	Show bool
-	Orientation
 	Position
 }
 
@@ -150,7 +142,7 @@ func (c *Chart) drawAxis(rx, ry AxisOption, options ...AxisOption) svg.Element {
 		grp := svg.NewGroup()
 		ap.Append(grp.AsElement())
 
-		options = append(options, rx, withOrientation(Horizontal), withPosition(Top))
+		options = append(options, rx, withPosition(Top))
 		c.Axis.Top.update(options...)
 		c.Axis.Top.Draw(&grp, c.GetAreaWidth(), c.GetAreaHeight())
 	}
@@ -158,7 +150,7 @@ func (c *Chart) drawAxis(rx, ry AxisOption, options ...AxisOption) svg.Element {
 		grp := svg.NewGroup()
 		ap.Append(grp.AsElement())
 
-		options = append(options, ry, withOrientation(Horizontal), withPosition(Left))
+		options = append(options, ry, withPosition(Left))
 		c.Axis.Left.update(options...)
 		c.Axis.Left.Draw(&grp, c.GetAreaHeight(), c.GetAreaWidth())
 	}
@@ -166,7 +158,7 @@ func (c *Chart) drawAxis(rx, ry AxisOption, options ...AxisOption) svg.Element {
 		grp := svg.NewGroup(svg.WithTranslate(0, c.GetAreaHeight()))
 		ap.Append(grp.AsElement())
 
-		options = append(options, rx, withOrientation(Horizontal), withPosition(Bottom))
+		options = append(options, rx, withPosition(Bottom))
 		c.Axis.Bottom.update(options...)
 		c.Axis.Bottom.Draw(&grp, c.GetAreaWidth(), c.GetAreaHeight())
 	}
@@ -174,7 +166,7 @@ func (c *Chart) drawAxis(rx, ry AxisOption, options ...AxisOption) svg.Element {
 		grp := svg.NewGroup(svg.WithTranslate(c.GetAreaWidth(), 0))
 		ap.Append(grp.AsElement())
 
-		options = append(options, ry, withOrientation(Horizontal), withPosition(Right))
+		options = append(options, ry, withPosition(Right))
 		c.Axis.Right.update(options...)
 		c.Axis.Right.Draw(&grp, c.GetAreaHeight(), c.GetAreaWidth())
 	}

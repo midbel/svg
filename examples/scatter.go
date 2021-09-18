@@ -18,7 +18,8 @@ func main() {
 	}
 	c.Width = 800
 	c.Height = 600
-	c.LineAxis = chart.NewLineAxis(10, true, true)
+	c.Axis.Left = chart.CreateNumberAxis(chart.WithTicks(5))
+	c.Axis.Bottom = chart.CreateNumberAxis(chart.WithTicks(5))
 
 	sr1 := chart.NewScatterSerie("triangle")
 	sr1.Shape = chart.ShapeTriangle

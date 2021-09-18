@@ -20,8 +20,8 @@ func main() {
 	c.Width = 800
 	c.Height = 640
 	c.Padding = chart.CreatePadding(60, 40)
-	c.CategoryAxis = chart.NewCategoryAxis(10, true, true)
-	c.CategoryAxis.OuterY = true
+	c.Axis.Bottom = chart.CreateLabelAxis()
+	c.Axis.Left = chart.CreateNumberAxis(chart.WithTicks(10))
 
 	var fill []svg.Fill
 	for i := range colors.RdYlBu4 {

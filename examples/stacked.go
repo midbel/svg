@@ -21,8 +21,8 @@ func main() {
 	c.Height = 600
 	c.Title = "stacked bar chart demo"
 	c.Padding = chart.CreatePadding(60, 40)
-	c.CategoryAxis = chart.NewCategoryAxis(10, true, true)
-	c.CategoryAxis.OuterY = true
+	c.Axis.Bottom = chart.CreateLabelAxis()
+	c.Axis.Left = chart.CreateNumberAxis(chart.WithTicks(10))
 
 	var fill []svg.Fill
 	for i := range colors.RdYlBu4 {

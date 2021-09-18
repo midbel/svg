@@ -101,7 +101,6 @@ func (ir *TimeSerie) Len() int {
 
 type GanttChart struct {
 	Chart
-	IntervalAxis
 }
 
 func (c GanttChart) Render(w io.Writer, series []Interval) {
@@ -123,7 +122,9 @@ func (c GanttChart) RenderElement(series []Interval) svg.Element {
 		bar    = offset / float64(getIntervalDepth(series)) * 0.6
 	)
 	rx = rx.extendBy(time.Hour)
-	cs.Append(c.IntervalAxis.drawAxis(c.Chart, rx, ds))
+
+	cs.Append(c.Chart.drawAxis(rx.AxisRange(), WithLabels(ds...)))
+
 	for i := range series {
 		var (
 			height = offset / float64(series[i].Depth())
@@ -164,7 +165,6 @@ func (c GanttChart) drawInterval(a Appender, serie Interval, rx timepair, bar, h
 
 type IntervalChart struct {
 	Chart
-	IntervalAxis
 }
 
 func (c IntervalChart) Render(w io.Writer, series []Interval) {
@@ -189,7 +189,9 @@ func (c IntervalChart) RenderElement(series []Interval) svg.Element {
 		bar    = offset / float64(getIntervalDepth(series)) * 0.6
 	)
 	rx = rx.extendBy(time.Hour)
-	cs.Append(c.IntervalAxis.drawAxis(c.Chart, rx, ds))
+
+	cs.Append(c.Chart.drawAxis(rx.AxisRange(), WithLabels(ds...)))
+
 	for i := range series {
 		var (
 			height = offset / float64(series[i].Depth())

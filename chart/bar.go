@@ -69,7 +69,6 @@ func (sr *StackedBarSerie) Len() int {
 
 type BarChart struct {
 	Chart
-	CategoryAxis
 }
 
 func (c BarChart) Render(w io.Writer, series []BarSerie) {
@@ -88,7 +87,7 @@ func (c BarChart) RenderElement(series []BarSerie) svg.Element {
 		offset = c.GetAreaWidth() / float64(len(series))
 	)
 	rg.Max *= 1.05
-	cs.Append(c.CategoryAxis.drawAxis(c.Chart, rg, ds))
+	cs.Append(c.Chart.drawAxis(WithLabels(ds...), rg.AxisRange()))
 	for i := range series {
 		var (
 			width = offset * 0.8
@@ -126,7 +125,6 @@ func (c BarChart) drawSerie(a Appender, serie BarSerie, rg pair, width float64) 
 
 type StackedBarChart struct {
 	Chart
-	CategoryAxis
 }
 
 func (c StackedBarChart) Render(w io.Writer, series []StackedBarSerie) {
@@ -146,7 +144,7 @@ func (c StackedBarChart) RenderElement(series []StackedBarSerie) svg.Element {
 		offset = c.GetAreaWidth() / float64(len(series))
 	)
 	rg.Max *= 1.05
-	cs.Append(c.CategoryAxis.drawAxis(c.Chart, rg, ds))
+	cs.Append(c.Chart.drawAxis(WithLabels(ds...), rg.AxisRange()))
 	for i := range series {
 		var (
 			width = offset * 0.8

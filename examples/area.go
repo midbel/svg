@@ -19,8 +19,8 @@ func main() {
 	c.Height = 640
 	c.Padding = chart.CreatePadding(60, 40)
 	c.Title = "area chart demo"
-	c.LineAxis = chart.NewLineAxis(10, true, true)
-	c.LineAxis.OuterX = false
+	c.Axis.Bottom = chart.CreateNumberAxis(chart.WithTicks(10))
+	c.Axis.Left = chart.CreateNumberAxis(chart.WithTicks(10))
 
 	a := chart.NewAreaSerie("serie", getSerie("1", 20), getSerie("2", 40))
 	a.Fill = svg.NewFill("steelblue")

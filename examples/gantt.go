@@ -72,12 +72,8 @@ func main() {
 		Top:    20,
 		Bottom: 40,
 	}
-	c.IntervalAxis = chart.NewIntervalAxisWithTicks(10)
-	c.IntervalAxis.OuterX = true
-	c.IntervalAxis.OuterY = true
-	c.IntervalAxis.FormatTime = func(t time.Time, _ int) string {
-		return t.Format("2006-01-02")
-	}
+	c.Axis.Left = chart.CreateLabelAxis()
+	c.Axis.Bottom = chart.CreateTimeAxis(chart.WithTicks(10))
 	xs := []chart.Interval{i1, i3, i4, i7}
 	sort.Slice(xs, func(i, j int) bool {
 		return xs[i].Starts.Before(xs[j].Starts)

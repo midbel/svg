@@ -72,7 +72,6 @@ func NewScatterSerie(title string) ScatterSerie {
 
 type AreaChart struct {
 	Chart
-	LineAxis
 }
 
 func (c AreaChart) Render(w io.Writer, serie AreaSerie) {
@@ -90,7 +89,9 @@ func (c AreaChart) RenderElement(serie AreaSerie) svg.Element {
 		area   = c.getArea()
 		rx, ry = getLineDomains([]LineSerie{serie.serie1, serie.serie2}, 1.1)
 	)
-	cs.Append(c.LineAxis.drawAxis(c.Chart, rx, ry))
+
+	cs.Append(c.Chart.drawAxis(rx.AxisRange(), ry.AxisRange()))
+
 	area.Append(c.drawSerie(serie, rx, ry))
 	cs.Append(area.AsElement())
 	cs.Append(c.drawTitle())
@@ -137,7 +138,6 @@ func (c AreaChart) drawSerie(serie AreaSerie, rx, ry pair) svg.Element {
 
 type ScatterChart struct {
 	Chart
-	LineAxis
 }
 
 func (c ScatterChart) Render(w io.Writer, series []ScatterSerie) {
@@ -154,7 +154,7 @@ func (c ScatterChart) RenderElement(series []ScatterSerie) svg.Element {
 		area   = c.getArea()
 		rx, ry = getScatterDomains(series, 1.15)
 	)
-	cs.Append(c.LineAxis.drawAxis(c.Chart, rx, ry))
+	cs.Append(c.Chart.drawAxis(rx.AxisRange(), ry.AxisRange()))
 	for i := range series {
 		grp := c.drawSerie(series[i], rx, ry)
 		area.Append(grp)
@@ -243,7 +243,6 @@ func (c *ScatterChart) highlightSerie(serie ScatterSerie, rx, ry pair) svg.Eleme
 
 type LineChart struct {
 	Chart
-	LineAxis
 
 	Point    bool
 	StretchX float64
@@ -267,7 +266,7 @@ func (c LineChart) RenderElement(series []LineSerie) svg.Element {
 		rx, ry = getLineDomains(series, 1)
 	)
 	ry = ry.extendBy(1.1)
-	cs.Append(c.LineAxis.drawAxis(c.Chart, rx, ry))
+	cs.Append(c.Chart.drawAxis(rx.AxisRange(), ry.AxisRange()))
 	for i := range series {
 		var elem svg.Element
 		switch series[i].Curve {
