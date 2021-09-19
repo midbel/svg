@@ -273,6 +273,7 @@ type timeAxis struct {
 	baseAxis
 	starts time.Time
 	ends   time.Time
+	domains []time.Time
 }
 
 func CreateTimeAxis(options ...AxisOption) Axis {
@@ -299,24 +300,36 @@ func (a *timeAxis) drawTicks(ap Appender, size, rsize float64) {
 	var (
 		coeff  = size / float64(a.WithTicks)
 		half   = coeff / 2
-		diff   = a.ends.Sub(a.starts).Seconds()
-		step   = math.Ceil(diff / float64(a.WithTicks))
-		delta  = time.Duration(step) * time.Second
-		ends   = a.ends
-		starts = a.starts
 	)
-	for j := 0; starts.Before(ends); j++ {
+	for j, w := range a.getDomains() {
 		var (
 			grp = svg.NewGroup(svg.WithClass("tick"))
 			off = (float64(j) * coeff) + half
 		)
 		grp.Append(a.getInnerTick(off))
-		grp.Append(a.getTickLabel(starts.Add(delta/2), off))
+		grp.Append(a.getTickLabel(w, off))
 		grp.Append(a.getOuterTick(off, rsize))
 		ap.Append(grp.AsElement())
+	}
+}
 
+func (a *timeAxis) getDomains() []time.Time {
+	if len(a.domains) > 0 {
+		return a.domains
+	}
+	var (
+		starts = a.starts
+		ends   = a.ends
+		diff   = ends.Sub(starts).Seconds()
+		step   = math.Ceil(diff / float64(a.WithTicks))
+		delta  = time.Duration(step) * time.Second
+		domains []time.Time
+	)
+	for starts.Before(ends) {
+		domains = append(domains, starts.Add(delta/2))
 		starts = starts.Add(delta)
 	}
+	return domains
 }
 
 func (a *timeAxis) update(options ...AxisOption) {
@@ -329,6 +342,7 @@ type numberAxis struct {
 	baseAxis
 	starts float64
 	ends   float64
+	domains []float64
 }
 
 func CreateNumberAxis(options ...AxisOption) Axis {
@@ -355,22 +369,34 @@ func (a *numberAxis) drawTicks(ap Appender, size, rsize float64) {
 	var (
 		coeff  = size / float64(a.WithTicks)
 		half   = coeff / 2
-		step   = math.Abs(a.ends-a.starts) / float64(a.WithTicks)
-		starts = a.starts
-		ends   = a.ends - (step / 2)
 	)
-	for j := 0; starts < ends; j++ {
+	for j, v := range a.getDomains() {
 		var (
 			grp = svg.NewGroup(svg.WithClass("tick"))
 			off = size - (float64(j) * coeff) - half
 		)
 		grp.Append(a.getInnerTick(off))
-		grp.Append(a.getTickLabel(starts+(step/2), off))
+		grp.Append(a.getTickLabel(v, off))
 		grp.Append(a.getOuterTick(off, rsize))
 		ap.Append(grp.AsElement())
+	}
+}
 
+func (a *numberAxis) getDomains() []float64 {
+	if len(a.domains) > 0 {
+		return a.domains
+	}
+	var (
+		domains []float64
+		step   = math.Abs(a.ends-a.starts) / float64(a.WithTicks)
+		starts = a.starts
+		ends   = a.ends - (step / 2)
+	)
+	for starts < ends {
+		domains = append(domains, starts+(step/2))
 		starts += step
 	}
+	return domains
 }
 
 func (a *numberAxis) update(options ...AxisOption) {
