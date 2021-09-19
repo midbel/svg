@@ -1,6 +1,7 @@
 package chart
 
 import (
+	"fmt"
 	"math"
 	"strconv"
 	"time"
@@ -9,6 +10,25 @@ import (
 )
 
 type AxisOption func(Axis)
+
+type FormatterFunc func(interface{}, Position) string
+
+func WithFormatter(fn FormatterFunc) AxisOption {
+	return func(a Axis) {
+		if fn == nil {
+			return
+		}
+		switch a := a.(type) {
+		case *labelAxis:
+			a.Formatter = fn
+		case *numberAxis:
+			a.Formatter = fn
+		case *timeAxis:
+			a.Formatter = fn
+		default:
+		}
+	}
+}
 
 func WithTimeRange(starts, ends time.Time) AxisOption {
 	return func(a Axis) {
@@ -76,12 +96,19 @@ func withPosition(p Position) AxisOption {
 	}
 }
 
+const (
+	ticklen = 7
+	textick = 18
+	numtick = 5
+)
+
 type baseAxis struct {
 	WithInner  bool
 	WithOuter  bool
 	WithLabel  bool
 	WithDomain bool
 	WithTicks  int
+	Formatter  FormatterFunc
 	Position
 
 	svg.Font
@@ -141,8 +168,12 @@ func (a baseAxis) getOuterTick(off, rsize float64) svg.Element {
 	return line.AsElement()
 }
 
-func (a baseAxis) getTickLabel(str string, off float64) svg.Element {
+func (a baseAxis) getTickLabel(v interface{}, off float64) svg.Element {
 	if !a.WithLabel {
+		return nil
+	}
+	str := a.Formatter(v, a.Position)
+	if str == "" {
 		return nil
 	}
 	var (
@@ -200,9 +231,11 @@ type labelAxis struct {
 
 func CreateLabelAxis(options ...AxisOption) Axis {
 	var a labelAxis
+	a.Formatter = formatString
 	a.WithDomain = true
 	a.WithInner = true
 	a.WithLabel = true
+	a.WithTicks = numtick
 	a.update(options...)
 	return &a
 }
@@ -244,10 +277,12 @@ type timeAxis struct {
 
 func CreateTimeAxis(options ...AxisOption) Axis {
 	var a timeAxis
+	a.Formatter = formatTime
 	a.WithDomain = true
 	a.WithInner = true
 	a.WithOuter = true
 	a.WithLabel = true
+	a.WithTicks = numtick
 	a.update(options...)
 	return &a
 }
@@ -276,7 +311,7 @@ func (a *timeAxis) drawTicks(ap Appender, size, rsize float64) {
 			off = (float64(j) * coeff) + half
 		)
 		grp.Append(a.getInnerTick(off))
-		grp.Append(a.getTickLabel(formatTime(starts.Add(delta/2), j), off))
+		grp.Append(a.getTickLabel(starts.Add(delta/2), off))
 		grp.Append(a.getOuterTick(off, rsize))
 		ap.Append(grp.AsElement())
 
@@ -298,10 +333,12 @@ type numberAxis struct {
 
 func CreateNumberAxis(options ...AxisOption) Axis {
 	var a numberAxis
+	a.Formatter = formatFloat
 	a.WithDomain = true
 	a.WithInner = true
 	a.WithOuter = true
 	a.WithLabel = true
+	a.WithTicks = numtick
 	a.update(options...)
 	return &a
 }
@@ -328,7 +365,7 @@ func (a *numberAxis) drawTicks(ap Appender, size, rsize float64) {
 			off = size - (float64(j) * coeff) - half
 		)
 		grp.Append(a.getInnerTick(off))
-		grp.Append(a.getTickLabel(formatFloat(starts+(step/2), j), off))
+		grp.Append(a.getTickLabel(starts+(step/2), off))
 		grp.Append(a.getOuterTick(off, rsize))
 		ap.Append(grp.AsElement())
 
@@ -342,7 +379,36 @@ func (a *numberAxis) update(options ...AxisOption) {
 	}
 }
 
-const (
-	ticklen = 7
-	textick = 18
-)
+func formatTime(v interface{}, _ Position) string {
+	t, ok := v.(time.Time)
+	if !ok {
+		return fmt.Sprintf("%v", v)
+	}
+	// return t.Format("15:04:05")
+	return t.Format("2006-01-02 15:04")
+}
+
+func formatFloat(v interface{}, _ Position) string {
+	f, ok := v.(float64)
+	if !ok {
+		return fmt.Sprintf("%v", v)
+	}
+	if almostZero(f) {
+		return "0.00"
+	}
+	return strconv.FormatFloat(f, 'f', 2, 64)
+}
+
+func formatString(v interface{}, _ Position) string {
+	s, ok := v.(string)
+	if !ok {
+		return fmt.Sprintf("%v", v)
+	}
+	return s
+}
+
+const threshold = 1e-9
+
+func almostZero(val float64) bool {
+	return math.Abs(val-0) <= threshold
+}

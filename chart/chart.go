@@ -2,8 +2,6 @@ package chart
 
 import (
 	"math"
-	"strconv"
-	"time"
 
 	"github.com/midbel/svg"
 	"github.com/midbel/svg/colors"
@@ -299,28 +297,6 @@ func getPathLine(color string) svg.Path {
 	)
 	fill.Opacity = 0
 	return svg.NewPath(fill.Option(), strok.Option(), svg.WithClass("line"))
-}
-
-func formatDay(t time.Time) string {
-	return t.Format("2006-01-02")
-}
-
-func formatTime(t time.Time, _ int) string {
-	// return t.Format("15:04:05")
-	return t.Format("2006-01-02 15:04")
-}
-
-func formatFloat(val float64, _ int) string {
-	if almostZero(val) {
-		return "0.00"
-	}
-	return strconv.FormatFloat(val, 'f', 2, 64)
-}
-
-const threshold = 1e-9
-
-func almostZero(val float64) bool {
-	return math.Abs(val-0) <= threshold
 }
 
 const deg2rad = math.Pi / halfcirc
