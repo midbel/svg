@@ -34,7 +34,6 @@ type ScatterSerie struct {
 	svg.Stroke
 	Size      float64
 	Shape     ShapeType
-	Highlight bool
 }
 
 type AreaSerie struct {
@@ -193,41 +192,7 @@ func (c ScatterChart) drawSerie(serie ScatterSerie, rx, ry pair) svg.Element {
 		}
 		grp.Append(elem)
 	}
-	if serie.Highlight {
-		grp.Append(c.highlightSerie(serie, rx, ry))
-	}
 	return grp.AsElement()
-}
-
-func (c *ScatterChart) highlightSerie(serie ScatterSerie, rx, ry pair) svg.Element {
-	var (
-		dx = c.GetAreaWidth() / rx.Diff()
-		dy = c.GetAreaHeight() / ry.Diff()
-		x0 = serie.px.Min * dx
-		y0 = c.GetAreaHeight() - (serie.py.Max * dy)
-		x1 = serie.px.Max * dx
-		y1 = c.GetAreaHeight() - (serie.py.Min * dy)
-	)
-	if rx.Min < 0 {
-		x0 += math.Abs(rx.Min) * dx
-		x1 += math.Abs(rx.Min) * dx
-	}
-	if ry.Min < 0 {
-		y1 -= math.Abs(ry.Min) * dy
-		y0 -= math.Abs(ry.Min) * dy
-	}
-	x0 -= serie.Size
-	x1 += serie.Size
-	y0 -= serie.Size
-	y1 += serie.Size * 2
-	var (
-		pos   = svg.NewPos(x0, y0)
-		dim   = svg.NewDim(x1-x0, y1-y0)
-		fill  = svg.NewFill("transparent").Option()
-		strok = serie.Stroke.Option()
-		rect  = svg.NewRect(pos.Option(), dim.Option(), strok, fill)
-	)
-	return rect.AsElement()
 }
 
 type LineChart struct {
