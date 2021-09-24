@@ -257,10 +257,10 @@ type Stroke struct {
 	Color   string
 }
 
-func NewStroke(fill string, width int) Stroke {
+func NewStroke(fill string, width float64) Stroke {
 	return Stroke{
 		Color: fill,
-		Width: float64(width),
+		Width: width,
 	}
 }
 
