@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"math/rand"
 	"os"
-	// "time"
 
 	"github.com/midbel/svg"
 	"github.com/midbel/svg/chart"
@@ -12,18 +11,14 @@ import (
 
 const limit = 200
 
-// func init() {
-// 	rand.Seed(time.Now().Unix())
-// }
-
 func main() {
 	var (
-		c1 = getChart(chart.CurveLinear, "salmon")
-		c2 = getChart(chart.CurveCubic, "olive")
-		c3 = getChart(chart.CurveStepBefore, "steelblue")
-		c4 = getChart(chart.CurveStepAfter, "orchid")
-		c5 = getChart(chart.CurveQuadratic, "orange")
-		c6 = getChart(chart.CurveStep, "teal")
+		c1 = getChart(chart.LinearCurve(), "salmon", true)
+		c2 = getChart(chart.CubicCurve(0.5), "olive", true)
+		c3 = getChart(chart.StepBeforeCurve(), "steelblue", false)
+		c4 = getChart(chart.StepAfterCurve(), "orchid", true)
+		c5 = getChart(chart.QuadraticCurve(0.5), "orange", false)
+		c6 = getChart(chart.StepCurve(), "teal", true)
 	)
 	area := svg.NewSVG(svg.WithDimension(1920, 960))
 	gp1 := svg.NewGroup(svg.WithTranslate(0, 0))
@@ -50,9 +45,9 @@ func main() {
 	area.Render(w)
 }
 
-func getSerie(curve chart.CurveStyle, color string) chart.LineSerie {
+func getSerie(curve chart.Curver, color string) chart.LineSerie {
 	sr := chart.NewLineSerie(color)
-	sr.Curve = curve
+	sr.Curver = curve
 	sr.Stroke = svg.NewStroke(color, 2)
 	for i := -100; i < 100; i++ {
 		c := rand.Intn(10)
@@ -65,14 +60,16 @@ func getSerie(curve chart.CurveStyle, color string) chart.LineSerie {
 	return sr
 }
 
-func getChart(curve chart.CurveStyle, color string) svg.Element {
+func getChart(curve chart.Curver, color string, fill bool) svg.Element {
 	var (
 		c chart.LineChart
 		s = getSerie(curve, color)
 		f = svg.NewFill(color)
 	)
 	f.Opacity = 0.6
-	s.Fill = f
+	if fill {
+		s.Fill = f
+	}
 	c.Padding = chart.Padding{
 		Top:    10,
 		Left:   60,

@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-	"math"
 	"time"
 
 	"github.com/midbel/svg"
@@ -61,6 +60,8 @@ func (i Interval) IsZero() bool {
 type TimeSerie struct {
 	Title string
 	svg.Stroke
+	svg.Fill
+	Curver
 
 	values []timepoint
 	px     timepair
@@ -71,6 +72,23 @@ func NewTimeSerie(title string) TimeSerie {
 	return TimeSerie{
 		Title: title,
 	}
+}
+
+func (ir *TimeSerie) At(i int) Point {
+	var p Point
+	if i >= 0 && i < len(ir.values) {
+		p.X = float64(ir.values[i].X.Unix())
+		p.Y = ir.values[i].Y
+	}
+	return p
+}
+
+func (ir *TimeSerie) GetStroke() svg.Stroke {
+	return ir.Stroke
+}
+
+func (ir *TimeSerie) GetFill() svg.Fill {
+	return ir.Fill
 }
 
 func (ir *TimeSerie) Add(x time.Time, y float64) {
@@ -268,38 +286,16 @@ func (c TimeChart) RenderElement(series []TimeSerie) svg.Element {
 	ry = ry.extendBy(1.1)
 	cs.Append(c.Chart.drawAxis(rx.AxisRange(), ry.AxisRange()))
 	for i := range series {
-		elem := c.drawSerie(series[i], rx, ry)
+		if series[i].Curver == nil {
+			series[i].Curver = LinearCurve()
+		}
+		elem := series[i].Draw(c.Chart, &series[i], rx, ry)
 		area.Append(elem)
 	}
 	cs.Append(area.AsElement())
 	cs.Append(c.drawTitle())
 	cs.Append(c.drawLegend())
 	return cs.AsElement()
-}
-
-func (c TimeChart) drawSerie(s TimeSerie, px timepair, py pair) svg.Element {
-	var (
-		wx  = c.GetAreaWidth() / px.Diff()
-		wy  = c.GetAreaHeight() / py.Diff()
-		pat = svg.NewPath(s.Stroke.Option(), nonefill.Option())
-		pos svg.Pos
-	)
-	pos.Y = c.GetAreaHeight() - (s.values[0].Y * wy)
-	if py.Min < 0 {
-		pos.Y -= math.Abs(py.Min) * wy
-	}
-	pat.AbsMoveTo(pos)
-	for i := 1; i < s.Len(); i++ {
-		if i > 0 {
-		}
-		pos.X = (s.values[i].X.Sub(s.values[0].X).Seconds()) * wx
-		pos.Y = c.GetAreaHeight() - (s.values[i].Y * wy)
-		if py.Min < 0 {
-			pos.Y -= math.Abs(py.Min) * wy
-		}
-		pat.AbsLineTo(pos)
-	}
-	return pat.AsElement()
 }
 
 type timepoint struct {
@@ -325,6 +321,14 @@ func (t timepair) extendBy(by time.Duration) timepair {
 func (t timepair) Diff() float64 {
 	diff := t.Max.Sub(t.Min)
 	return diff.Seconds()
+}
+
+func (t timepair) First() float64 {
+	return float64(t.Min.Unix())
+}
+
+func (t timepair) Last() float64 {
+	return float64(t.Max.Unix())
 }
 
 func getIntervalDepth(series []Interval) int {

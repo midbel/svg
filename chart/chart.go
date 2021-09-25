@@ -30,6 +30,24 @@ type Axis interface {
 	update(options ...AxisOption)
 }
 
+type Pair interface {
+	Diff() float64
+	First() float64
+	Last() float64
+}
+
+type XYSerie interface {
+	Len() int
+	At(int) Point
+	GetStroke() svg.Stroke
+	GetFill() svg.Fill
+}
+
+type Point struct {
+	X float64
+	Y float64
+}
+
 type Position uint8
 
 const (

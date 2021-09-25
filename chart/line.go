@@ -16,9 +16,9 @@ const (
 type LineSerie struct {
 	xyserie
 
+	Curver
 	svg.Stroke
 	svg.Fill
-	Curve CurveStyle
 	Shape ShapeType
 }
 
@@ -27,13 +27,21 @@ func NewLineSerie(title string) LineSerie {
 	return LineSerie{xyserie: s}
 }
 
+func (is *LineSerie) GetStroke() svg.Stroke {
+	return is.Stroke
+}
+
+func (is *LineSerie) GetFill() svg.Fill {
+	return is.Fill
+}
+
 type ScatterSerie struct {
 	xyserie
 
 	svg.Fill
 	svg.Stroke
-	Size      float64
-	Shape     ShapeType
+	Size  float64
+	Shape ShapeType
 }
 
 type AreaSerie struct {
@@ -87,7 +95,7 @@ func (c AreaChart) RenderElement(serie AreaSerie) svg.Element {
 	return cs.AsElement()
 }
 
-func (c AreaChart) drawSerie(serie AreaSerie, rx, ry pair) svg.Element {
+func (c AreaChart) drawSerie(serie AreaSerie, rx, ry Pair) svg.Element {
 	var (
 		dx  = c.GetAreaWidth() / rx.Diff()
 		dy  = c.GetAreaHeight() / ry.Diff()
@@ -95,28 +103,28 @@ func (c AreaChart) drawSerie(serie AreaSerie, rx, ry pair) svg.Element {
 		pat = svg.NewPath(serie.Fill.Option(), serie.Stroke.Option())
 		pos svg.Pos
 	)
-	if ry.Min > 0 {
-		off = ry.Min * dy
+	if ry.First() > 0 {
+		off = ry.First() * dy
 	}
-	pos.X = (serie.serie1.values[0].X - rx.Min) * dx
+	pos.X = (serie.serie1.values[0].X - rx.First()) * dx
 	pos.Y = off + c.GetAreaHeight() - (serie.serie1.values[0].Y * dy)
-	if ry.Min < 0 {
-		pos.Y -= math.Abs(ry.Min) * dy
+	if ry.First() < 0 {
+		pos.Y -= math.Abs(ry.First()) * dy
 	}
 	pat.AbsMoveTo(pos)
 	for i := 1; i < serie.serie1.Len(); i++ {
-		pos.X = (serie.serie1.values[i].X - rx.Min) * dx
+		pos.X = (serie.serie1.values[i].X - rx.First()) * dx
 		pos.Y = off + c.GetAreaHeight() - (serie.serie1.values[i].Y * dy)
-		if ry.Min < 0 {
-			pos.Y -= math.Abs(ry.Min) * dy
+		if ry.First() < 0 {
+			pos.Y -= math.Abs(ry.First()) * dy
 		}
 		pat.AbsLineTo(pos)
 	}
 	for i := serie.serie2.Len() - 1; i >= 0; i-- {
-		pos.X = (serie.serie2.values[i].X - rx.Min) * dx
+		pos.X = (serie.serie2.values[i].X - rx.First()) * dx
 		pos.Y = off + c.GetAreaHeight() - (serie.serie2.values[i].Y * dy)
-		if ry.Min < 0 {
-			pos.Y -= math.Abs(ry.Min) * dy
+		if ry.First() < 0 {
+			pos.Y -= math.Abs(ry.First()) * dy
 		}
 		pat.AbsLineTo(pos)
 	}
@@ -154,7 +162,7 @@ func (c ScatterChart) RenderElement(series []ScatterSerie) svg.Element {
 	return cs.AsElement()
 }
 
-func (c ScatterChart) drawSerie(serie ScatterSerie, rx, ry pair) svg.Element {
+func (c ScatterChart) drawSerie(serie ScatterSerie, rx, ry Pair) svg.Element {
 	var (
 		fill = serie.Fill.Option()
 		grp  = svg.NewGroup(fill)
@@ -163,10 +171,10 @@ func (c ScatterChart) drawSerie(serie ScatterSerie, rx, ry pair) svg.Element {
 		pos  svg.Pos
 	)
 	for i := 0; i < serie.Len(); i++ {
-		pos.X = (serie.values[i].X - rx.Min) * dx
+		pos.X = (serie.values[i].X - rx.First()) * dx
 		pos.Y = c.GetAreaHeight() - (serie.values[i].Y * dy)
-		if ry.Min < 0 {
-			pos.Y -= math.Abs(ry.Min) * dy
+		if ry.First() < 0 {
+			pos.Y -= math.Abs(ry.First()) * dy
 		}
 		var elem svg.Element
 		switch xy, radius := pos.Option(), serie.Size; serie.Shape {
@@ -222,11 +230,11 @@ func (c LineChart) RenderElement(series []LineSerie) svg.Element {
 	ry = ry.extendBy(1.1)
 	cs.Append(c.Chart.drawAxis(rx.AxisRange(), ry.AxisRange()))
 	for i := range series {
-		draw := series[i].Curve.Curve(c.GetAreaWidth(), c.GetAreaHeight())
-		if draw == nil {
-			continue
+		if series[i].Curver == nil {
+			series[i].Curver = LinearCurve()
 		}
-		draw.Draw(&area, series[i], rx, ry)
+		elem := series[i].Curver.Draw(c.Chart, &series[i], rx, ry)
+		area.Append(elem)
 	}
 	cs.Append(area.AsElement())
 	cs.Append(c.drawTitle())
@@ -240,11 +248,6 @@ func (c *LineChart) checkDefault() {
 	c.StretchY = defaultStretch
 }
 
-type valuepoint struct {
-	X float64
-	Y float64
-}
-
 type pair struct {
 	Min float64
 	Max float64
@@ -254,31 +257,43 @@ func (p pair) AxisRange() AxisOption {
 	return WithNumberRange(p.Min, p.Max)
 }
 
+func (p pair) First() float64 {
+	return p.Min
+}
+
+func (p pair) Last() float64 {
+	return p.Max
+}
+
 func (p pair) Diff() float64 {
 	return p.Max - p.Min
 }
 
-func (p pair) AbsMax() float64 {
-	return math.Max(math.Abs(p.Min), math.Abs(p.Max))
-}
-
-func (p pair) AbsMin() float64 {
-	return math.Min(math.Abs(p.Min), math.Abs(p.Max))
-}
-
 func (p pair) extendBy(by float64) pair {
-	min := math.Abs(p.Min)
-	p.Min -= (min * by) - min
-	// p.Min *= by
+	p.Min -= (math.Abs(p.Min) * by) - math.Abs(p.Min)
 	p.Max *= by
 	return p
 }
 
+type xypoint struct {
+	X float64
+	Y float64
+}
+
 type xyserie struct {
 	Title  string
-	values []valuepoint
+	values []xypoint
 	px     pair
 	py     pair
+}
+
+func (xy *xyserie) At(i int) Point {
+	var p Point
+	if i >= 0 && i < len(xy.values) {
+		p.X = xy.values[i].X
+		p.Y = xy.values[i].Y
+	}
+	return p
 }
 
 func (xy *xyserie) Add(x, y float64) {
@@ -292,7 +307,7 @@ func (xy *xyserie) Add(x, y float64) {
 	xy.px.Max = getGreater(xy.px.Max, x)
 	xy.py.Min = getLesser(xy.py.Min, y)
 	xy.py.Max = getGreater(xy.py.Max, y)
-	vp := valuepoint{
+	vp := xypoint{
 		X: x,
 		Y: y,
 	}

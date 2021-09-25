@@ -271,8 +271,8 @@ func (a *labelAxis) update(options ...AxisOption) {
 
 type timeAxis struct {
 	baseAxis
-	starts time.Time
-	ends   time.Time
+	starts  time.Time
+	ends    time.Time
 	domains []time.Time
 }
 
@@ -298,8 +298,8 @@ func (a *timeAxis) Draw(ap Appender, size, rsize float64, options ...svg.Option)
 
 func (a *timeAxis) drawTicks(ap Appender, size, rsize float64) {
 	var (
-		coeff  = size / float64(a.WithTicks)
-		half   = coeff / 2
+		coeff = size / float64(a.WithTicks)
+		half  = coeff / 2
 	)
 	for j, w := range a.getDomains() {
 		var (
@@ -318,11 +318,11 @@ func (a *timeAxis) getDomains() []time.Time {
 		return a.domains
 	}
 	var (
-		starts = a.starts
-		ends   = a.ends
-		diff   = ends.Sub(starts).Seconds()
-		step   = math.Ceil(diff / float64(a.WithTicks))
-		delta  = time.Duration(step) * time.Second
+		starts  = a.starts
+		ends    = a.ends
+		diff    = ends.Sub(starts).Seconds()
+		step    = math.Ceil(diff / float64(a.WithTicks))
+		delta   = time.Duration(step) * time.Second
 		domains []time.Time
 	)
 	for starts.Before(ends) {
@@ -340,8 +340,8 @@ func (a *timeAxis) update(options ...AxisOption) {
 
 type numberAxis struct {
 	baseAxis
-	starts float64
-	ends   float64
+	starts  float64
+	ends    float64
 	domains []float64
 }
 
@@ -367,8 +367,8 @@ func (a *numberAxis) Draw(ap Appender, size, rsize float64, options ...svg.Optio
 
 func (a *numberAxis) drawTicks(ap Appender, size, rsize float64) {
 	var (
-		coeff  = size / float64(a.WithTicks)
-		half   = coeff / 2
+		coeff = size / float64(a.WithTicks)
+		half  = coeff / 2
 	)
 	for j, v := range a.getDomains() {
 		var (
@@ -388,9 +388,9 @@ func (a *numberAxis) getDomains() []float64 {
 	}
 	var (
 		domains []float64
-		step   = math.Abs(a.ends-a.starts) / float64(a.WithTicks)
-		starts = a.starts
-		ends   = a.ends - (step / 2)
+		step    = math.Abs(a.ends-a.starts) / float64(a.WithTicks)
+		starts  = a.starts
+		ends    = a.ends - (step / 2)
 	)
 	for starts < ends {
 		domains = append(domains, starts+(step/2))
