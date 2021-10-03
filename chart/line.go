@@ -236,16 +236,23 @@ func (c LineChart) RenderElement(series []LineSerie) svg.Element {
 	ry = ry.extendBy(1.1)
 	cs.Append(c.drawDefaultAxis())
 	for i := range series {
+		var (
+			cdx = rx
+			cdy = ry
+		)
 		if series[i].Curver == nil {
 			series[i].Curver = LinearCurve()
 		}
 		if series[i].XAxis != nil {
-			series[i].XAxis.update(series[i].px.Domain())
+			cdx = series[i].px
+			series[i].XAxis.update(cdx.Domain())
 		}
 		if series[i].YAxis != nil {
-			series[i].YAxis.update(series[i].py.Domain())
+			cdy = series[i].py
+			cdy = cdy.extendBy(1.1)
+			series[i].YAxis.update(cdy.Domain())
 		}
-		elem := series[i].Curver.Draw(c.Chart, &series[i], rx, ry)
+		elem := series[i].Curver.Draw(c.Chart, &series[i], cdx, cdy)
 		area.Append(elem)
 	}
 	cs.Append(area.AsElement())

@@ -52,10 +52,17 @@ func main() {
 func multiserie() svg.Element {
 	sr1 := getSerie(chart.LinearCurve(), "red")
 	sr1.Title = "blue"
-	sr1.YAxis = chart.CreateNumberAxis(chart.WithTicks(7), chart.WithPosition(chart.Left))
+	sr1.YAxis = chart.CreateNumberAxis(
+		chart.WithTicks(7),
+		chart.WithPosition(chart.Left),
+		chart.WithNumberRange(-100, 100),
+	)
 	sr2 := getSerie(chart.LinearCurve(), "blue")
 	sr2.Title = "blue"
-	sr2.YAxis = chart.CreateNumberAxis(chart.WithTicks(7), chart.WithPosition(chart.Right))
+	sr2.YAxis = chart.CreateNumberAxis(
+		chart.WithTicks(7),
+		chart.WithPosition(chart.Right),
+	)
 
 	var c chart.LineChart
 	c.Title = "red/blue chart"
