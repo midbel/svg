@@ -294,8 +294,6 @@ func getFill(i int, fill, other svg.Fill) svg.Fill {
 }
 
 var (
-	tickstrok = svg.NewStroke("darkgray", 0.5)
-	axisstrok = svg.NewStroke("darkgray", 0.5)
 	whitstrok = svg.NewStroke("white", 0.5)
 	nonefill  = svg.NewFill("none")
 )

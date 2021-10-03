@@ -9,6 +9,11 @@ import (
 	"github.com/midbel/svg"
 )
 
+var (
+	tickstrok = svg.NewStroke("darkgray", 0.5)
+	axisstrok = svg.NewStroke("darkgray", 0.5)
+)
+
 type AxisOption func(Axis)
 
 type FormatterFunc func(interface{}, Position) string
@@ -103,6 +108,7 @@ const (
 )
 
 type baseAxis struct {
+	WithTitle  bool
 	WithInner  bool
 	WithOuter  bool
 	WithLabel  bool
@@ -211,7 +217,6 @@ func (a baseAxis) skip() bool {
 }
 
 func (a baseAxis) adjustPosition(pos svg.Pos) svg.Pos {
-	// return a.Position.adjust(pos)
 	switch a.Position {
 	case Top:
 		pos.Y = -pos.Y

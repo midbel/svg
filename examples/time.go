@@ -15,9 +15,7 @@ func main() {
 	c.Height = 800
 	// c.Title = "time chart demo"
 	c.Axis.Bottom = chart.CreateTimeAxis(chart.WithTicks(10))
-	// c.Axis.Top = chart.CreateTimeAxis(chart.WithTicks(10))
 	c.Axis.Left = chart.CreateNumberAxis(chart.WithTicks(12))
-	// c.Axis.Right = chart.CreateNumberAxis(chart.WithTicks(4))
 	c.Padding = chart.Padding{
 		Left:   80,
 		Right:  60,
@@ -34,7 +32,10 @@ func getSerie() chart.TimeSerie {
 		now   = time.Now()
 		delta = time.Hour * 24
 	)
+	serie.Curver = chart.CubicCurve(0.5)
 	serie.Stroke = svg.NewStroke("olive", 1)
+	serie.Fill = svg.NewFill("olive")
+	serie.Fill.Opacity = 0.25
 	for i := 0; i < 100; i++ {
 		c := rand.Intn(5)
 		if c == 0 {
