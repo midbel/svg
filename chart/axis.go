@@ -389,13 +389,15 @@ func (a *numberAxis) Draw(ap Appender, size, rsize float64, options ...svg.Optio
 
 func (a *numberAxis) drawTicks(ap Appender, size, rsize float64) {
 	var (
-		coeff = size / float64(a.WithTicks)
-		half  = coeff / 2
+		coeff   = size / float64(a.WithTicks)
+		half    = coeff / 2
+		domains = a.getDomains()
+		num     = len(domains) - 1
 	)
-	for j, v := range a.getDomains() {
+	for j, v := range domains {
 		var (
 			grp = svg.NewGroup(svg.WithClass("tick"))
-			off = size - (float64(j) * coeff) - half
+			off = size - (float64(num-j) * coeff) - half
 		)
 		grp.Append(a.getInnerTick(off))
 		grp.Append(a.getTickLabel(v, off))

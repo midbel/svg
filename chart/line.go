@@ -49,7 +49,7 @@ func NewScatterSerie(title string) ScatterSerie {
 	c := xyserie{Common: makeCommon(title)}
 	return ScatterSerie{
 		xyserie: c,
-		Size: DefaultSize,
+		Size:    DefaultSize,
 	}
 }
 
@@ -209,10 +209,6 @@ func (c ScatterChart) drawSerie(serie ScatterSerie, rx, ry Range) svg.Element {
 
 type LineChart struct {
 	Chart
-
-	Point    bool
-	StretchX float64
-	StretchY float64
 }
 
 func (c LineChart) Render(w io.Writer, series []LineSerie) {
@@ -231,6 +227,12 @@ func (c LineChart) RenderElement(series []LineSerie) svg.Element {
 		area   = c.getArea()
 		rx, ry = getLineDomains(series, 1)
 	)
+	if c.XAxis != nil {
+		c.XAxis.update(rx.Domain())
+	}
+	if c.YAxis != nil {
+		c.YAxis.update(ry.Domain())
+	}
 	ry = ry.extendBy(1.1)
 	cs.Append(c.drawDefaultAxis())
 	for i := range series {
@@ -248,8 +250,6 @@ func (c LineChart) RenderElement(series []LineSerie) svg.Element {
 
 func (c *LineChart) checkDefault() {
 	c.Chart.checkDefault()
-	c.StretchX = defaultStretch
-	c.StretchY = defaultStretch
 }
 
 type pair struct {
@@ -258,6 +258,10 @@ type pair struct {
 }
 
 func (p pair) AxisRange() AxisOption {
+	return p.Domain()
+}
+
+func (p pair) Domain() AxisOption {
 	return WithNumberRange(p.Min, p.Max)
 }
 

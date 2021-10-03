@@ -29,7 +29,7 @@ type Common struct {
 }
 
 func makeCommon(title string) Common {
-	return Common {
+	return Common{
 		Title: title,
 	}
 }
@@ -167,8 +167,8 @@ func (c *Chart) drawDefaultAxis() svg.Element {
 	)
 	if c.YAxis != nil {
 		var (
-			opt = svg.WithTranslate(0, 0)
-			width = c.GetAreaWidth()
+			opt    = svg.WithTranslate(0, 0)
+			width  = c.GetAreaWidth()
 			height = c.GetAreaHeight()
 		)
 		if !c.YAxis.Left() {
@@ -181,8 +181,8 @@ func (c *Chart) drawDefaultAxis() svg.Element {
 	}
 	if c.XAxis != nil {
 		var (
-			opt = svg.WithTranslate(0, c.GetAreaHeight())
-			width = c.GetAreaWidth()
+			opt    = svg.WithTranslate(0, c.GetAreaHeight())
+			width  = c.GetAreaWidth()
 			height = c.GetAreaHeight()
 		)
 		if !c.XAxis.Bottom() {

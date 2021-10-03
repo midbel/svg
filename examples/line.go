@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"fmt"
 	"math/rand"
 	"os"
 
@@ -20,29 +21,49 @@ func main() {
 		c5 = getChart(chart.QuadraticCurve(0.5), "orange", false)
 		c6 = getChart(chart.StepCurve(), "teal", true)
 	)
-	area := svg.NewSVG(svg.WithDimension(1920, 960))
-	gp1 := svg.NewGroup(svg.WithTranslate(0, 0))
+	area := svg.NewSVG(svg.WithDimension(1920, 480*3))
+	gp0 := svg.NewGroup()
+	gp0.Append(multiserie())
+	area.Append(gp0.AsElement())
+	gp1 := svg.NewGroup(svg.WithTranslate(0, 480))
 	gp1.Append(c1)
 	area.Append(gp1.AsElement())
-	gp2 := svg.NewGroup(svg.WithTranslate(640, 0))
+	gp2 := svg.NewGroup(svg.WithTranslate(640, 480))
 	gp2.Append(c2)
 	area.Append(gp2.AsElement())
-	gp3 := svg.NewGroup(svg.WithTranslate(0, 480))
-	gp3.Append(c3)
-	area.Append(gp3.AsElement())
-	gp4 := svg.NewGroup(svg.WithTranslate(640, 480))
-	gp4.Append(c4)
-	area.Append(gp4.AsElement())
-	gp5 := svg.NewGroup(svg.WithTranslate(1280, 0))
+	gp5 := svg.NewGroup(svg.WithTranslate(1280, 480))
 	gp5.Append(c5)
 	area.Append(gp5.AsElement())
-	gp6 := svg.NewGroup(svg.WithTranslate(1280, 480))
+	gp3 := svg.NewGroup(svg.WithTranslate(0, 960))
+	gp3.Append(c3)
+	area.Append(gp3.AsElement())
+	gp4 := svg.NewGroup(svg.WithTranslate(640, 960))
+	gp4.Append(c4)
+	area.Append(gp4.AsElement())
+	gp6 := svg.NewGroup(svg.WithTranslate(1280, 960))
 	gp6.Append(c6)
 	area.Append(gp6.AsElement())
 
 	w := bufio.NewWriter(os.Stdout)
 	defer w.Flush()
 	area.Render(w)
+}
+
+func multiserie() svg.Element {
+	sr1 := getSerie(chart.LinearCurve(), "red")
+	sr1.Title = "blue"
+	sr1.YAxis = chart.CreateNumberAxis(chart.WithTicks(7), chart.WithPosition(chart.Left))
+	sr2 := getSerie(chart.LinearCurve(), "blue")
+	sr2.Title = "blue"
+	sr2.YAxis = chart.CreateNumberAxis(chart.WithTicks(7), chart.WithPosition(chart.Right))
+
+	var c chart.LineChart
+	c.Title = "red/blue chart"
+	c.Padding = chart.CreatePadding(60, 60)
+	c.Width = 1920
+	c.Height = 480
+	c.XAxis = chart.CreateNumberAxis(chart.WithTicks(15), chart.WithPosition(chart.Bottom))
+	return c.RenderElement([]chart.LineSerie{sr1, sr2})
 }
 
 func getSerie(curve chart.Curver, color string) chart.LineSerie {
@@ -70,8 +91,9 @@ func getChart(curve chart.Curver, color string, fill bool) svg.Element {
 	if fill {
 		s.Fill = f
 	}
+	c.Title = fmt.Sprintf("line serie (fill: %s)", color)
 	c.Padding = chart.Padding{
-		Top:    10,
+		Top:    30,
 		Left:   60,
 		Bottom: 60,
 		Right:  10,
