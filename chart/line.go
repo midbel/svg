@@ -23,8 +23,9 @@ type LineSerie struct {
 }
 
 func NewLineSerie(title string) LineSerie {
-	s := xyserie{Title: title}
-	return LineSerie{xyserie: s}
+	return LineSerie{
+		xyserie: xyserie{Common: makeCommon(title)},
+	}
 }
 
 func (is *LineSerie) GetStroke() svg.Stroke {
@@ -44,6 +45,14 @@ type ScatterSerie struct {
 	Shape ShapeType
 }
 
+func NewScatterSerie(title string) ScatterSerie {
+	c := xyserie{Common: makeCommon(title)}
+	return ScatterSerie{
+		xyserie: c,
+		Size: DefaultSize,
+	}
+}
+
 type AreaSerie struct {
 	Title string
 	svg.Stroke
@@ -59,11 +68,6 @@ func NewAreaSerie(title string, s1, s2 LineSerie) AreaSerie {
 		serie1: s1,
 		serie2: s2,
 	}
-}
-
-func NewScatterSerie(title string) ScatterSerie {
-	s := xyserie{Title: title}
-	return ScatterSerie{xyserie: s, Size: DefaultSize}
 }
 
 type AreaChart struct {
@@ -95,7 +99,7 @@ func (c AreaChart) RenderElement(serie AreaSerie) svg.Element {
 	return cs.AsElement()
 }
 
-func (c AreaChart) drawSerie(serie AreaSerie, rx, ry Pair) svg.Element {
+func (c AreaChart) drawSerie(serie AreaSerie, rx, ry Range) svg.Element {
 	var (
 		dx  = c.GetAreaWidth() / rx.Diff()
 		dy  = c.GetAreaHeight() / ry.Diff()
@@ -162,7 +166,7 @@ func (c ScatterChart) RenderElement(series []ScatterSerie) svg.Element {
 	return cs.AsElement()
 }
 
-func (c ScatterChart) drawSerie(serie ScatterSerie, rx, ry Pair) svg.Element {
+func (c ScatterChart) drawSerie(serie ScatterSerie, rx, ry Range) svg.Element {
 	var (
 		fill = serie.Fill.Option()
 		grp  = svg.NewGroup(fill)
@@ -228,7 +232,7 @@ func (c LineChart) RenderElement(series []LineSerie) svg.Element {
 		rx, ry = getLineDomains(series, 1)
 	)
 	ry = ry.extendBy(1.1)
-	cs.Append(c.Chart.drawAxis(rx.AxisRange(), ry.AxisRange()))
+	cs.Append(c.drawDefaultAxis())
 	for i := range series {
 		if series[i].Curver == nil {
 			series[i].Curver = LinearCurve()
@@ -281,7 +285,8 @@ type xypoint struct {
 }
 
 type xyserie struct {
-	Title  string
+	Common
+
 	values []xypoint
 	px     pair
 	py     pair

@@ -14,6 +14,13 @@ var (
 	axisstrok = svg.NewStroke("darkgray", 0.5)
 )
 
+type Axis interface {
+	Draw(Appender, float64, float64, ...svg.Option)
+	update(options ...AxisOption)
+	Left() bool
+	Bottom() bool
+}
+
 type AxisOption func(Axis)
 
 type FormatterFunc func(interface{}, Position) string
@@ -87,7 +94,7 @@ func WithTicks(n int) AxisOption {
 	}
 }
 
-func withPosition(p Position) AxisOption {
+func WithPosition(p Position) AxisOption {
 	return func(a Axis) {
 		switch a := a.(type) {
 		case *timeAxis:
@@ -107,7 +114,7 @@ const (
 	numtick = 5
 )
 
-type baseAxis struct {
+type AxisConfig struct {
 	WithTitle  bool
 	WithInner  bool
 	WithOuter  bool
@@ -122,7 +129,15 @@ type baseAxis struct {
 	svg.Stroke
 }
 
-func (a baseAxis) drawDomain(ap Appender, size float64) {
+func (a AxisConfig) Left() bool {
+	return a.Position == 0 || a.canLeft()
+}
+
+func (a AxisConfig) Bottom() bool {
+	return a.Position == 0 || a.canBottom()
+}
+
+func (a AxisConfig) drawDomain(ap Appender, size float64) {
 	if !a.WithDomain {
 		return
 	}
@@ -140,7 +155,7 @@ func (a baseAxis) drawDomain(ap Appender, size float64) {
 	ap.Append(line.AsElement())
 }
 
-func (a baseAxis) getInnerTick(off float64) svg.Element {
+func (a AxisConfig) getInnerTick(off float64) svg.Element {
 	if !a.WithInner {
 		return nil
 	}
@@ -156,7 +171,7 @@ func (a baseAxis) getInnerTick(off float64) svg.Element {
 	return line.AsElement()
 }
 
-func (a baseAxis) getOuterTick(off, rsize float64) svg.Element {
+func (a AxisConfig) getOuterTick(off, rsize float64) svg.Element {
 	if !a.WithOuter {
 		return nil
 	}
@@ -174,7 +189,7 @@ func (a baseAxis) getOuterTick(off, rsize float64) svg.Element {
 	return line.AsElement()
 }
 
-func (a baseAxis) getTickLabel(v interface{}, off float64) svg.Element {
+func (a AxisConfig) getTickLabel(v interface{}, off float64) svg.Element {
 	if !a.WithLabel {
 		return nil
 	}
@@ -212,11 +227,11 @@ func (a baseAxis) getTickLabel(v interface{}, off float64) svg.Element {
 	return text.AsElement()
 }
 
-func (a baseAxis) skip() bool {
+func (a AxisConfig) skip() bool {
 	return a.WithTicks == 0 || (!a.WithInner && !a.WithOuter && !a.WithLabel)
 }
 
-func (a baseAxis) adjustPosition(pos svg.Pos) svg.Pos {
+func (a AxisConfig) adjustPosition(pos svg.Pos) svg.Pos {
 	switch a.Position {
 	case Top:
 		pos.Y = -pos.Y
@@ -230,7 +245,7 @@ func (a baseAxis) adjustPosition(pos svg.Pos) svg.Pos {
 }
 
 type labelAxis struct {
-	baseAxis
+	AxisConfig
 	labels []string
 }
 
@@ -275,7 +290,8 @@ func (a *labelAxis) update(options ...AxisOption) {
 }
 
 type timeAxis struct {
-	baseAxis
+	AxisConfig
+
 	starts  time.Time
 	ends    time.Time
 	domains []time.Time
@@ -344,7 +360,8 @@ func (a *timeAxis) update(options ...AxisOption) {
 }
 
 type numberAxis struct {
-	baseAxis
+	AxisConfig
+
 	starts  float64
 	ends    float64
 	domains []float64

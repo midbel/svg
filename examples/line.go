@@ -78,7 +78,7 @@ func getChart(curve chart.Curver, color string, fill bool) svg.Element {
 	}
 	c.Width = 640
 	c.Height = 480
-	c.Axis.Left = chart.CreateNumberAxis(chart.WithTicks(7))
-	c.Axis.Bottom = chart.CreateNumberAxis(chart.WithTicks(5))
+	c.YAxis = chart.CreateNumberAxis(chart.WithTicks(7), chart.WithPosition(chart.Left))
+	c.XAxis = chart.CreateNumberAxis(chart.WithTicks(5), chart.WithPosition(chart.Bottom))
 	return c.RenderElement([]chart.LineSerie{s})
 }

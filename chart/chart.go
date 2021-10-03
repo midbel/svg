@@ -21,31 +21,25 @@ func init() {
 	}
 }
 
+type Common struct {
+	Title string
+
+	XAxis Axis
+	YAxis Axis
+}
+
+func makeCommon(title string) Common {
+	return Common {
+		Title: title,
+	}
+}
+
+func (c Common) hasAxis() bool {
+	return c.XAxis != nil || c.YAxis != nil
+}
+
 type Appender interface {
 	Append(svg.Element)
-}
-
-type Axis interface {
-	Draw(Appender, float64, float64, ...svg.Option)
-	update(options ...AxisOption)
-}
-
-type Pair interface {
-	Diff() float64
-	First() float64
-	Last() float64
-}
-
-type XYSerie interface {
-	Len() int
-	At(int) Point
-	GetStroke() svg.Stroke
-	GetFill() svg.Fill
-}
-
-type Point struct {
-	X float64
-	Y float64
 }
 
 type Position uint8
@@ -69,6 +63,22 @@ func (p Position) IsVertical() bool {
 	return p == Left || p == Right
 }
 
+func (p Position) canLeft() bool {
+	return p == BottomLeft || p == Left || p == TopLeft || p == Top
+}
+
+func (p Position) canTop() bool {
+	return p.canLeft()
+}
+
+func (p Position) canRight() bool {
+	return p == BottomRight || p == Right || p == TopRight || p == Bottom
+}
+
+func (p Position) canBottom() bool {
+	return p.canRight()
+}
+
 func (p Position) adjust(pos svg.Pos) svg.Pos {
 	switch p {
 	case Top:
@@ -88,7 +98,8 @@ type Legend struct {
 }
 
 type Chart struct {
-	Title  string
+	Common
+
 	Width  float64
 	Height float64
 	Legend
@@ -149,6 +160,44 @@ func (c *Chart) drawLegend() svg.Element {
 	return nil
 }
 
+func (c *Chart) drawDefaultAxis() svg.Element {
+	var (
+		ap = svg.NewGroup(svg.WithClass("axis"), svg.WithTranslate(c.Padding.Left, c.Padding.Top))
+		ok = c.hasAxis()
+	)
+	if c.YAxis != nil {
+		var (
+			opt = svg.WithTranslate(0, 0)
+			width = c.GetAreaWidth()
+			height = c.GetAreaHeight()
+		)
+		if !c.YAxis.Left() {
+			opt = svg.WithTranslate(c.GetAreaWidth(), 0)
+			width, height = height, width
+		}
+		grp := svg.NewGroup(opt)
+		ap.Append(grp.AsElement())
+		c.YAxis.Draw(&grp, c.GetAreaHeight(), c.GetAreaWidth())
+	}
+	if c.XAxis != nil {
+		var (
+			opt = svg.WithTranslate(0, c.GetAreaHeight())
+			width = c.GetAreaWidth()
+			height = c.GetAreaHeight()
+		)
+		if !c.XAxis.Bottom() {
+			opt = svg.WithTranslate(0, 0)
+		}
+		grp := svg.NewGroup(opt)
+		ap.Append(grp.AsElement())
+		c.XAxis.Draw(&grp, width, height)
+	}
+	if !ok {
+		return nil
+	}
+	return ap.AsElement()
+}
+
 func (c *Chart) drawAxis(rx, ry AxisOption, options ...AxisOption) svg.Element {
 	if c.Axis.Top == nil && c.Axis.Bottom == nil && c.Axis.Left == nil && c.Axis.Right == nil {
 		return nil
@@ -158,31 +207,31 @@ func (c *Chart) drawAxis(rx, ry AxisOption, options ...AxisOption) svg.Element {
 		grp := svg.NewGroup()
 		ap.Append(grp.AsElement())
 
-		options = append(options, rx, withPosition(Top))
+		options = append(options, rx, WithPosition(Top))
 		c.Axis.Top.update(options...)
 		c.Axis.Top.Draw(&grp, c.GetAreaWidth(), c.GetAreaHeight())
-	}
-	if c.Axis.Left != nil {
-		grp := svg.NewGroup()
-		ap.Append(grp.AsElement())
-
-		options = append(options, ry, withPosition(Left))
-		c.Axis.Left.update(options...)
-		c.Axis.Left.Draw(&grp, c.GetAreaHeight(), c.GetAreaWidth())
 	}
 	if c.Axis.Bottom != nil {
 		grp := svg.NewGroup(svg.WithTranslate(0, c.GetAreaHeight()))
 		ap.Append(grp.AsElement())
 
-		options = append(options, rx, withPosition(Bottom))
+		options = append(options, rx, WithPosition(Bottom))
 		c.Axis.Bottom.update(options...)
 		c.Axis.Bottom.Draw(&grp, c.GetAreaWidth(), c.GetAreaHeight())
+	}
+	if c.Axis.Left != nil {
+		grp := svg.NewGroup()
+		ap.Append(grp.AsElement())
+
+		options = append(options, ry, WithPosition(Left))
+		c.Axis.Left.update(options...)
+		c.Axis.Left.Draw(&grp, c.GetAreaHeight(), c.GetAreaWidth())
 	}
 	if c.Axis.Right != nil {
 		grp := svg.NewGroup(svg.WithTranslate(c.GetAreaWidth(), 0))
 		ap.Append(grp.AsElement())
 
-		options = append(options, ry, withPosition(Right))
+		options = append(options, ry, WithPosition(Right))
 		c.Axis.Right.update(options...)
 		c.Axis.Right.Draw(&grp, c.GetAreaHeight(), c.GetAreaWidth())
 	}

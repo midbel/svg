@@ -17,13 +17,31 @@ const (
 	CurveQuadratic
 )
 
-type Curver interface {
-	Draw(Chart, XYSerie, Pair, Pair) svg.Element
+type Point struct {
+	X float64
+	Y float64
 }
 
-type CurveFunc func(Chart, XYSerie, Pair, Pair) svg.Element
+type Range interface {
+	Diff() float64
+	First() float64
+	Last() float64
+}
 
-func (c CurveFunc) Draw(ch Chart, serie XYSerie, px, py Pair) svg.Element {
+type XYSerie interface {
+	Len() int
+	At(int) Point
+	GetStroke() svg.Stroke
+	GetFill() svg.Fill
+}
+
+type Curver interface {
+	Draw(Chart, XYSerie, Range, Range) svg.Element
+}
+
+type CurveFunc func(Chart, XYSerie, Range, Range) svg.Element
+
+func (c CurveFunc) Draw(ch Chart, serie XYSerie, px, py Range) svg.Element {
 	return c(ch, serie, px, py)
 }
 
@@ -36,7 +54,7 @@ func LinearCurve() Curver {
 	return linearcurve{}
 }
 
-func (c linearcurve) Draw(ch Chart, serie XYSerie, px, py Pair) svg.Element {
+func (c linearcurve) Draw(ch Chart, serie XYSerie, px, py Range) svg.Element {
 	var (
 		dx  = ch.GetAreaWidth() / px.Diff()
 		dy  = ch.GetAreaHeight() / py.Diff()
@@ -74,7 +92,7 @@ func StepAfterCurve() Curver {
 	return stepaftercurve{}
 }
 
-func (c stepaftercurve) Draw(ch Chart, serie XYSerie, px, py Pair) svg.Element {
+func (c stepaftercurve) Draw(ch Chart, serie XYSerie, px, py Range) svg.Element {
 	var (
 		dx  = ch.GetAreaWidth() / px.Diff()
 		dy  = ch.GetAreaHeight() / py.Diff()
@@ -111,7 +129,7 @@ func StepBeforeCurve() Curver {
 	return stepbeforecurve{}
 }
 
-func (c stepbeforecurve) Draw(ch Chart, serie XYSerie, px, py Pair) svg.Element {
+func (c stepbeforecurve) Draw(ch Chart, serie XYSerie, px, py Range) svg.Element {
 	var (
 		dx  = ch.GetAreaWidth() / px.Diff()
 		dy  = ch.GetAreaHeight() / py.Diff()
@@ -146,7 +164,7 @@ func StepCurve() Curver {
 	return stepcurve{}
 }
 
-func (c stepcurve) Draw(ch Chart, serie XYSerie, px, py Pair) svg.Element {
+func (c stepcurve) Draw(ch Chart, serie XYSerie, px, py Range) svg.Element {
 	var (
 		dx  = ch.GetAreaWidth() / px.Diff()
 		dy  = ch.GetAreaHeight() / py.Diff()
@@ -189,7 +207,7 @@ func CubicCurve(stretch float64) Curver {
 	}
 }
 
-func (c cubiccurve) Draw(ch Chart, serie XYSerie, px, py Pair) svg.Element {
+func (c cubiccurve) Draw(ch Chart, serie XYSerie, px, py Range) svg.Element {
 	var (
 		dx  = ch.GetAreaWidth() / px.Diff()
 		dy  = ch.GetAreaHeight() / py.Diff()
@@ -234,7 +252,7 @@ func QuadraticCurve(stretch float64) Curver {
 	}
 }
 
-func (c quadraticcurve) Draw(ch Chart, serie XYSerie, px, py Pair) svg.Element {
+func (c quadraticcurve) Draw(ch Chart, serie XYSerie, px, py Range) svg.Element {
 	var (
 		dx   = ch.GetAreaWidth() / px.Diff()
 		dy   = ch.GetAreaHeight() / py.Diff()
