@@ -399,6 +399,9 @@ func (a *numberAxis) drawTicks(ap Appender, size, rsize float64) {
 			grp = svg.NewGroup(svg.WithClass("tick"))
 			off = size - (float64(num-j) * coeff) - half
 		)
+		if a.Position.IsVertical() {
+			off = size - (float64(j) * coeff) - half
+		}
 		grp.Append(a.getInnerTick(off))
 		grp.Append(a.getTickLabel(v, off))
 		grp.Append(a.getOuterTick(off, rsize))

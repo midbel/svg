@@ -245,12 +245,10 @@ func (c LineChart) RenderElement(series []LineSerie) svg.Element {
 		}
 		if series[i].XAxis != nil {
 			cdx = series[i].px
-			series[i].XAxis.update(cdx.Domain())
 		}
 		if series[i].YAxis != nil {
 			cdy = series[i].py
 			cdy = cdy.extendBy(1.1)
-			series[i].YAxis.update(cdy.Domain())
 		}
 		elem := series[i].Curver.Draw(c.Chart, &series[i], cdx, cdy)
 		area.Append(elem)
@@ -263,6 +261,21 @@ func (c LineChart) RenderElement(series []LineSerie) svg.Element {
 
 func (c *LineChart) checkDefault() {
 	c.Chart.checkDefault()
+}
+
+func getAxis(series []LineSerie) ([]Axis, []Axis) {
+	var xs, ys []Axis
+	for i := range series {
+		if series[i].XAxis != nil {
+			series[i].XAxis.update(series[i].px.Domain())
+			xs = append(xs, series[i].XAxis)
+		}
+		if series[i].YAxis != nil {
+			series[i].YAxis.update(series[i].py.Domain())
+			xs = append(xs, series[i].YAxis)
+		}
+	}
+	return xs, ys
 }
 
 type pair struct {
