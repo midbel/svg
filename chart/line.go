@@ -226,15 +226,18 @@ func (c LineChart) RenderElement(series []LineSerie) svg.Element {
 		cs     = c.getCanvas()
 		area   = c.getArea()
 		rx, ry = getLineDomains(series, 1)
+		axis   = getAxis(series)
 	)
 	if c.XAxis != nil {
 		c.XAxis.update(rx.Domain())
+		axis = append(axis, c.XAxis)
 	}
 	if c.YAxis != nil {
 		c.YAxis.update(ry.Domain())
+		axis = append(axis, c.YAxis)
 	}
 	ry = ry.extendBy(1.1)
-	cs.Append(c.drawDefaultAxis())
+	cs.Append(c.drawAxisBis(axis))
 	for i := range series {
 		var (
 			cdx = rx
@@ -244,10 +247,10 @@ func (c LineChart) RenderElement(series []LineSerie) svg.Element {
 			series[i].Curver = LinearCurve()
 		}
 		if series[i].XAxis != nil {
-			cdx = series[i].px
+			cdx = series[i].XAxis.Domain().(pair)
 		}
 		if series[i].YAxis != nil {
-			cdy = series[i].py
+			cdy = series[i].YAxis.Domain().(pair)
 			cdy = cdy.extendBy(1.1)
 		}
 		elem := series[i].Curver.Draw(c.Chart, &series[i], cdx, cdy)
@@ -263,8 +266,8 @@ func (c *LineChart) checkDefault() {
 	c.Chart.checkDefault()
 }
 
-func getAxis(series []LineSerie) ([]Axis, []Axis) {
-	var xs, ys []Axis
+func getAxis(series []LineSerie) []Axis {
+	var xs []Axis
 	for i := range series {
 		if series[i].XAxis != nil {
 			series[i].XAxis.update(series[i].px.Domain())
@@ -275,7 +278,7 @@ func getAxis(series []LineSerie) ([]Axis, []Axis) {
 			xs = append(xs, series[i].YAxis)
 		}
 	}
-	return xs, ys
+	return xs
 }
 
 type pair struct {

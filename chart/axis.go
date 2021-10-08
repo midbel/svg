@@ -16,9 +16,12 @@ var (
 
 type Axis interface {
 	Draw(Appender, float64, float64, ...svg.Option)
+	Domain() Range
 	update(options ...AxisOption)
 	Left() bool
 	Bottom() bool
+	Horizontal() bool
+	Vertical() bool
 }
 
 type AxisOption func(Axis)
@@ -63,6 +66,9 @@ func WithNumberRange(starts, ends float64) AxisOption {
 		case *timeAxis:
 			a.starts, a.ends = time.Unix(int64(starts), 0), time.Unix(int64(ends), 0)
 		case *numberAxis:
+			if len(a.domains) > 0 {
+				return
+			}
 			a.starts, a.ends = starts, ends
 		case *labelAxis:
 			a.labels = append(a.labels, strconv.FormatFloat(starts, 'f', -1, 64))
@@ -80,15 +86,21 @@ func WithLabels(labels ...string) AxisOption {
 	}
 }
 
-func WithTicks(n int) AxisOption {
+func WithTicks(n int, inner, outer bool) AxisOption {
 	return func(a Axis) {
 		switch a := a.(type) {
 		case *timeAxis:
 			a.WithTicks = n
+			a.WithInner = inner
+			a.WithOuter = outer
 		case *numberAxis:
 			a.WithTicks = n
+			a.WithInner = inner
+			a.WithOuter = outer
 		case *labelAxis:
 			a.WithTicks = n
+			a.WithInner = inner
+			a.WithOuter = outer
 		default:
 		}
 	}
@@ -133,9 +145,17 @@ func (a AxisConfig) Left() bool {
 	return a.Position == 0 || a.canLeft()
 }
 
+// func (a AxisConfig )Horizontal() bool {
+// 	return a.Position.Horizontal()
+// }
+
 func (a AxisConfig) Bottom() bool {
 	return a.Position == 0 || a.canBottom()
 }
+
+// func (a AxisConfig) Vertical() bool {
+// 	return a.Position.Vertical()
+// }
 
 func (a AxisConfig) drawDomain(ap Appender, size float64) {
 	if !a.WithDomain {
@@ -146,7 +166,7 @@ func (a AxisConfig) drawDomain(ap Appender, size float64) {
 		pos2 svg.Pos
 		line svg.Line
 	)
-	if a.IsHorizontal() {
+	if a.Horizontal() {
 		pos2.X, pos2.Y = size, 0
 	} else {
 		pos2.X, pos2.Y = 0, size
@@ -163,7 +183,7 @@ func (a AxisConfig) getInnerTick(off float64) svg.Element {
 		pos1 = a.adjustPosition(svg.NewPos(-ticklen, off))
 		pos2 = svg.NewPos(0, off)
 	)
-	if a.IsHorizontal() {
+	if a.Horizontal() {
 		pos1.X, pos1.Y = off, 0
 		pos2.X, pos2.Y = pos1.X, ticklen
 	}
@@ -179,7 +199,7 @@ func (a AxisConfig) getOuterTick(off, rsize float64) svg.Element {
 		pos1 = svg.NewPos(0, off)
 		pos2 = a.adjustPosition(svg.NewPos(rsize, off))
 	)
-	if a.IsHorizontal() {
+	if a.Horizontal() {
 		pos1.X, pos1.Y = pos1.Y, pos1.X
 		pos2.X, pos2.Y = pos1.X, -rsize
 		pos2 = a.adjustPosition(pos2)
@@ -260,6 +280,10 @@ func CreateLabelAxis(options ...AxisOption) Axis {
 	return &a
 }
 
+func (a *labelAxis) Domain() Range {
+	return nil
+}
+
 func (a *labelAxis) Draw(ap Appender, size, rsize float64, options ...svg.Option) {
 	a.drawDomain(ap, size)
 	if len(a.labels) == 0 && a.skip() {
@@ -307,6 +331,10 @@ func CreateTimeAxis(options ...AxisOption) Axis {
 	a.WithTicks = numtick
 	a.update(options...)
 	return &a
+}
+
+func (a *timeAxis) Domain() Range {
+	return nil
 }
 
 func (a *timeAxis) Draw(ap Appender, size, rsize float64, options ...svg.Option) {
@@ -376,7 +404,25 @@ func CreateNumberAxis(options ...AxisOption) Axis {
 	a.WithLabel = true
 	a.WithTicks = numtick
 	a.update(options...)
+
+	if a.starts != 0 && a.ends != 0 && a.WithTicks > 0 {
+		diff := a.ends - a.starts
+		step := diff / float64(a.WithTicks)
+		value := a.starts + step
+		for i := 0; i < a.WithTicks; i++ {
+			a.domains = append(a.domains, value)
+			value += step
+		}
+	}
+
 	return &a
+}
+
+func (a *numberAxis) Domain() Range {
+	return pair{
+		Min: a.starts,
+		Max: a.ends,
+	}
 }
 
 func (a *numberAxis) Draw(ap Appender, size, rsize float64, options ...svg.Option) {
@@ -399,7 +445,7 @@ func (a *numberAxis) drawTicks(ap Appender, size, rsize float64) {
 			grp = svg.NewGroup(svg.WithClass("tick"))
 			off = size - (float64(num-j) * coeff) - half
 		)
-		if a.Position.IsVertical() {
+		if a.Position.Vertical() {
 			off = size - (float64(j) * coeff) - half
 		}
 		grp.Append(a.getInnerTick(off))

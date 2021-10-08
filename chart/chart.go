@@ -55,11 +55,11 @@ const (
 	TopRight
 )
 
-func (p Position) IsHorizontal() bool {
+func (p Position) Horizontal() bool {
 	return p == Top || p == Bottom
 }
 
-func (p Position) IsVertical() bool {
+func (p Position) Vertical() bool {
 	return p == Left || p == Right
 }
 
@@ -196,6 +196,47 @@ func (c *Chart) drawDefaultAxis() svg.Element {
 		return nil
 	}
 	return ap.AsElement()
+}
+
+func (c *Chart) drawAxisBis(axis []Axis) svg.Element {
+	if len(axis) == 0 {
+		return nil
+	}
+	ap := svg.NewGroup(svg.WithClass("axis"), svg.WithTranslate(c.Padding.Left, c.Padding.Top))
+	for i := range axis {
+		c.appendAxis(&ap, axis[i])
+	}
+	return ap.AsElement()
+}
+
+func (c *Chart) appendAxis(ap Appender, a Axis) {
+	if a.Vertical() {
+		var (
+			opt    = svg.WithTranslate(0, 0)
+			width  = c.GetAreaWidth()
+			height = c.GetAreaHeight()
+		)
+		if !a.Left() {
+			opt = svg.WithTranslate(c.GetAreaWidth(), 0)
+			width, height = height, width
+		}
+		grp := svg.NewGroup(opt)
+		ap.Append(grp.AsElement())
+		a.Draw(&grp, c.GetAreaHeight(), c.GetAreaWidth())
+	}
+	if a.Horizontal() {
+		var (
+			opt    = svg.WithTranslate(0, c.GetAreaHeight())
+			width  = c.GetAreaWidth()
+			height = c.GetAreaHeight()
+		)
+		if !a.Bottom() {
+			opt = svg.WithTranslate(0, 0)
+		}
+		grp := svg.NewGroup(opt)
+		ap.Append(grp.AsElement())
+		a.Draw(&grp, width, height)
+	}
 }
 
 func (c *Chart) drawAxis(rx, ry AxisOption, options ...AxisOption) svg.Element {

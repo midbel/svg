@@ -53,23 +53,23 @@ func multiserie() svg.Element {
 	sr1 := getSerie(chart.LinearCurve(), "red")
 	sr1.Title = "blue"
 	sr1.YAxis = chart.CreateNumberAxis(
-		chart.WithTicks(7),
+		chart.WithTicks(7, true, false),
 		chart.WithPosition(chart.Left),
 		chart.WithNumberRange(-100, 100),
 	)
 	sr2 := getSerie(chart.LinearCurve(), "blue")
 	sr2.Title = "blue"
 	sr2.YAxis = chart.CreateNumberAxis(
-		chart.WithTicks(7),
+		chart.WithTicks(4, true, false),
 		chart.WithPosition(chart.Right),
 	)
 
 	var c chart.LineChart
-	c.Title = "red/blue chart"
+	c.Title = "multi-axis red/blue chart"
 	c.Padding = chart.CreatePadding(60, 60)
 	c.Width = 1920
 	c.Height = 480
-	c.XAxis = chart.CreateNumberAxis(chart.WithTicks(15), chart.WithPosition(chart.Bottom))
+	c.XAxis = chart.CreateNumberAxis(chart.WithTicks(15, true, true), chart.WithPosition(chart.Bottom))
 	return c.RenderElement([]chart.LineSerie{sr1, sr2})
 }
 
@@ -107,7 +107,7 @@ func getChart(curve chart.Curver, color string, fill bool) svg.Element {
 	}
 	c.Width = 640
 	c.Height = 480
-	c.YAxis = chart.CreateNumberAxis(chart.WithTicks(7), chart.WithPosition(chart.Left))
-	c.XAxis = chart.CreateNumberAxis(chart.WithTicks(5), chart.WithPosition(chart.Bottom))
+	c.YAxis = chart.CreateNumberAxis(chart.WithTicks(7, true, true), chart.WithPosition(chart.Left))
+	c.XAxis = chart.CreateNumberAxis(chart.WithTicks(5, true, true), chart.WithPosition(chart.Bottom))
 	return c.RenderElement([]chart.LineSerie{s})
 }
