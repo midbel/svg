@@ -334,7 +334,10 @@ func CreateTimeAxis(options ...AxisOption) Axis {
 }
 
 func (a *timeAxis) Domain() Range {
-	return nil
+	return timepair{
+		Min: a.starts,
+		Max: a.ends,
+	}
 }
 
 func (a *timeAxis) Draw(ap Appender, size, rsize float64, options ...svg.Option) {

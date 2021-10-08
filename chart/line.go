@@ -226,7 +226,7 @@ func (c LineChart) RenderElement(series []LineSerie) svg.Element {
 		cs     = c.getCanvas()
 		area   = c.getArea()
 		rx, ry = getLineDomains(series, 1)
-		axis   = getAxis(series)
+		axis   = getLineAxis(series)
 	)
 	if c.XAxis != nil {
 		c.XAxis.update(rx.Domain())
@@ -266,7 +266,7 @@ func (c *LineChart) checkDefault() {
 	c.Chart.checkDefault()
 }
 
-func getAxis(series []LineSerie) []Axis {
+func getLineAxis(series []LineSerie) []Axis {
 	var xs []Axis
 	for i := range series {
 		if series[i].XAxis != nil {
