@@ -21,6 +21,11 @@ func init() {
 	}
 }
 
+// type Serie interface {
+// 	X() Axis
+// 	Y() Axis
+// }
+
 type Common struct {
 	Title string
 
