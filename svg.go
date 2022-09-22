@@ -75,7 +75,6 @@ func (i *List) Render(w Writer) {
 
 type Defs struct {
 	List
-
 	Transform
 }
 
