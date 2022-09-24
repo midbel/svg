@@ -1,6 +1,7 @@
 package svg
 
 import (
+	"fmt"
 	"io"
 	"strconv"
 )
@@ -22,9 +23,12 @@ type Writer interface {
 
 type Element interface {
 	Render(Writer)
+
 	setId(string)
 	setClass([]string)
 	setStyle(string, []string)
+	setClipPath(string)
+	setShape(string)
 }
 
 type Literal string
@@ -38,6 +42,8 @@ func (i Literal) Render(w Writer) {
 }
 
 func (_ Literal) setId(_ string)                {}
+func (_ Literal) setClipPath(_ string)           {}
+func (_ Literal) setShape(_ string)           {}
 func (_ Literal) setClass(_ []string)           {}
 func (_ Literal) setStyle(_ string, _ []string) {}
 
@@ -167,6 +173,14 @@ type ClipPath struct {
 	Fill
 	Stroke
 	Transform
+}
+
+func NewClipPath(options ...Option) ClipPath {
+	var c ClipPath
+	for _, o := range options {
+		o(&c)
+	}
+	return c
 }
 
 func (c *ClipPath) Render(w Writer) {
@@ -923,6 +937,9 @@ type node struct {
 	Id     string
 	Class  []string
 	Styles map[string][]string
+
+	Clip string
+	Rendering string
 }
 
 func (n *node) setId(id string) {
@@ -931,6 +948,14 @@ func (n *node) setId(id string) {
 
 func (n *node) setClass(class []string) {
 	n.Class = append(n.Class, class...)
+}
+
+func (n *node) setClipPath(path string) {
+	n.Clip = path
+}
+
+func (n *node) setShape(render string) {
+	n.Rendering = render
 }
 
 func (n *node) setStyle(prop string, values []string) {
@@ -947,6 +972,13 @@ func (n *node) Attributes() []string {
 	}
 	if len(n.Class) > 0 {
 		attrs = append(attrs, appendStringArray("class", n.Class, space))
+	}
+	if n.Clip != "" {
+		url := fmt.Sprintf("url(#%s)", n.Clip)
+		attrs = append(attrs, appendString("clip-path", url))
+	}
+	if n.Rendering != "" {
+		attrs = append(attrs, appendString("shape-rendering", n.Rendering))
 	}
 	if len(n.Data) > 0 {
 		for i := range n.Data {

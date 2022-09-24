@@ -39,6 +39,20 @@ func WithClass(class ...string) Option {
 	}
 }
 
+func WithClipPath(path string) Option {
+	return func(e Element) error {
+		e.setClipPath(path)
+		return nil
+	}
+}
+
+func WithRendering(render string) Option {
+	return func(e Element) error {
+		e.setShape(render)
+		return nil
+	}
+}
+
 func WithStyle(prop string, values ...string) Option {
 	return func(e Element) error {
 		e.setStyle(prop, values)

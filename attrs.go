@@ -264,6 +264,14 @@ func NewStroke(fill string, width float64) Stroke {
 	}
 }
 
+func (s *Stroke) DashArray(values ...int) {
+	s.Dash.Array = append(s.Dash.Array[:0], values...)
+}
+
+func (s *Stroke) DashOffset(values ...int) {
+	s.Dash.Offset = append(s.Dash.Offset[:0], values...)
+}
+
 func (s Stroke) Fill() Fill {
 	return NewFill(s.Color)
 }
