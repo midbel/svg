@@ -42,8 +42,8 @@ func (i Literal) Render(w Writer) {
 }
 
 func (_ Literal) setId(_ string)                {}
-func (_ Literal) setClipPath(_ string)           {}
-func (_ Literal) setShape(_ string)           {}
+func (_ Literal) setClipPath(_ string)          {}
+func (_ Literal) setShape(_ string)             {}
 func (_ Literal) setClass(_ []string)           {}
 func (_ Literal) setStyle(_ string, _ []string) {}
 
@@ -900,8 +900,8 @@ type command struct {
 }
 
 func makeCommand(cmd string, values ...[]float64) command {
-	vs := make([][]float64, 0, len(values))
-	vs = append(vs, values...)
+	vs := make([][]float64, len(values))
+	copy(vs, values)
 	return command{
 		cmd:    cmd,
 		values: vs,
@@ -938,7 +938,7 @@ type node struct {
 	Class  []string
 	Styles map[string][]string
 
-	Clip string
+	Clip      string
 	Rendering string
 }
 
