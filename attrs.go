@@ -133,6 +133,7 @@ func (f Font) Attributes() []string {
 		{Attr: "font-weight", Value: f.Weight},
 		{Attr: "font-variant", Value: f.Variant},
 		{Attr: "font-stretch", Value: f.Stretch},
+		{Attr: "fill", Value: f.Fill},
 	}
 	for _, v := range values {
 		if v.Value == "" {
@@ -368,6 +369,13 @@ type Transform struct {
 
 	KX float64
 	KY float64
+}
+
+func Translate(left, top float64) Transform {
+	return Transform{
+		TX: left,
+		TY: top,
+	}
 }
 
 func (t *Transform) SkewX(x float64) {
