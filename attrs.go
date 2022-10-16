@@ -79,10 +79,6 @@ type Datum struct {
 	Value interface{}
 }
 
-func (d Datum) Option() Option {
-	return WithData(d)
-}
-
 func (d Datum) Attributes() []string {
 	var a string
 	switch v := d.Value.(type) {
@@ -117,10 +113,6 @@ func NewFont(size float64, families ...string) Font {
 		Family: families,
 		Fill:   "black",
 	}
-}
-
-func (f Font) Option() Option {
-	return WithFont(f)
 }
 
 func (f Font) Attributes() []string {
@@ -167,10 +159,6 @@ func (p Pos) Adjust(x, y float64) Pos {
 	return p
 }
 
-func (p Pos) Option() Option {
-	return WithPos(p)
-}
-
 func (p Pos) Attributes() []string {
 	var attrs []string
 	if p.X != 0 {
@@ -209,10 +197,6 @@ func NewDim(w, h float64) Dim {
 	}
 }
 
-func (d Dim) Option() Option {
-	return WithDim(d)
-}
-
 func (d Dim) Attributes() []string {
 	var attrs []string
 	if d.W != 0 {
@@ -244,18 +228,14 @@ func (b Box) Attributes() []string {
 }
 
 type Stroke struct {
-	Dash struct {
-		Array  []int
-		Offset []int
-	}
-	Line struct {
-		Cap  string
-		Join string
-	}
-	Width   float64
-	Opacity float64
-	Miter   float64
-	Color   string
+	DashArray  []int
+	DashOffset []int
+	LineCap    string
+	LineJoin   string
+	Width      float64
+	Opacity    float64
+	Miter      float64
+	Color      string
 }
 
 func NewStroke(fill string, width float64) Stroke {
@@ -265,20 +245,8 @@ func NewStroke(fill string, width float64) Stroke {
 	}
 }
 
-func (s *Stroke) DashArray(values ...int) {
-	s.Dash.Array = append(s.Dash.Array[:0], values...)
-}
-
-func (s *Stroke) DashOffset(values ...int) {
-	s.Dash.Offset = append(s.Dash.Offset[:0], values...)
-}
-
 func (s Stroke) Fill() Fill {
 	return NewFill(s.Color)
-}
-
-func (s Stroke) Option() Option {
-	return WithStroke(s)
 }
 
 func (s Stroke) Attributes() []string {
@@ -288,17 +256,17 @@ func (s Stroke) Attributes() []string {
 	var attrs []string
 	attrs = append(attrs, appendString("stroke", s.Color))
 
-	if len(s.Dash.Array) > 0 {
-		attrs = append(attrs, appendIntArray("stroke-dasharray", s.Dash.Array, space))
+	if len(s.DashArray) > 0 {
+		attrs = append(attrs, appendIntArray("stroke-dasharray", s.DashArray, space))
 	}
-	if len(s.Dash.Offset) > 0 {
-		attrs = append(attrs, appendIntArray("stroke-dashoffset", s.Dash.Offset, space))
+	if len(s.DashOffset) > 0 {
+		attrs = append(attrs, appendIntArray("stroke-dashoffset", s.DashOffset, space))
 	}
-	if s.Line.Cap != "" {
-		attrs = append(attrs, appendString("stroke-linecap", s.Line.Cap))
+	if s.LineCap != "" {
+		attrs = append(attrs, appendString("stroke-linecap", s.LineCap))
 	}
-	if s.Line.Join != "" {
-		attrs = append(attrs, appendString("stroke-linejoin", s.Line.Join))
+	if s.LineJoin != "" {
+		attrs = append(attrs, appendString("stroke-linejoin", s.LineJoin))
 	}
 	if s.Width > 0 {
 		attrs = append(attrs, appendFloat("stroke-width", s.Width))
@@ -331,10 +299,6 @@ func NewFill(color string) Fill {
 
 func (f Fill) Stroke() Stroke {
 	return NewStroke(f.Color, 1)
-}
-
-func (f Fill) Option() Option {
-	return WithFill(f)
 }
 
 func (f Fill) Attributes() []string {

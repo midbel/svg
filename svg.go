@@ -1,35 +1,13 @@
 package svg
 
 import (
-	"fmt"
-	"io"
 	"strconv"
-)
-
-const (
-	namespace = "http://www.w3.org/2000/svg"
-	prolog    = "<?xml version=\"1.0\" encoding=\"utf-8\"?>"
 )
 
 const (
 	defaultWidth  = 800
 	defaultHeight = 600
 )
-
-type Writer interface {
-	io.ByteWriter
-	io.StringWriter
-}
-
-type Element interface {
-	Render(Writer)
-
-	setId(string)
-	setClass([]string)
-	setStyle(string, []string)
-	setClipPath(string)
-	setShape(string)
-}
 
 type Literal string
 
@@ -40,12 +18,6 @@ func NewLiteral(str string) Literal {
 func (i Literal) Render(w Writer) {
 	w.WriteString(string(i))
 }
-
-func (_ Literal) setId(_ string)                {}
-func (_ Literal) setClipPath(_ string)          {}
-func (_ Literal) setShape(_ string)             {}
-func (_ Literal) setClass(_ []string)           {}
-func (_ Literal) setStyle(_ string, _ []string) {}
 
 type List struct {
 	node
@@ -136,12 +108,9 @@ type SVG struct {
 	Stroke
 }
 
-func NewSVG(options ...Option) SVG {
+func NewSVG() SVG {
 	var s SVG
 	s.Dim = NewDim(defaultWidth, defaultHeight)
-	for _, o := range options {
-		o(&s)
-	}
 	return s
 }
 
@@ -175,11 +144,8 @@ type ClipPath struct {
 	Transform
 }
 
-func NewClipPath(options ...Option) ClipPath {
+func NewClipPath() ClipPath {
 	var c ClipPath
-	for _, o := range options {
-		o(&c)
-	}
 	return c
 }
 
@@ -208,16 +174,12 @@ type TextPath struct {
 	Transform
 }
 
-func NewTextPath(literal, path string, options ...Option) TextPath {
-	t := TextPath{
+func NewTextPath(literal, path string) TextPath {
+	return TextPath{
 		Literal: literal,
 		Path:    path,
 		Fill:    DefaultFill,
 	}
-	for _, o := range options {
-		o(&t)
-	}
-	return t
 }
 
 func (t *TextPath) Render(w Writer) {
@@ -270,14 +232,6 @@ type Group struct {
 	Transform
 }
 
-func NewGroup(options ...Option) Group {
-	var g Group
-	for _, o := range options {
-		o(&g)
-	}
-	return g
-}
-
 func (g *Group) Render(w Writer) {
 	g.render(w, "g", g.List, g.Stroke, g.Fill, g.Transform)
 }
@@ -295,12 +249,10 @@ type Image struct {
 	Dim
 }
 
-func NewImage(ref string, options ...Option) Image {
-	i := Image{Ref: ref}
-	for _, o := range options {
-		o(&i)
+func NewImage(ref string) Image {
+	return Image{
+		Ref: ref,
 	}
-	return i
 }
 
 func (i *Image) Render(w Writer) {
@@ -357,15 +309,6 @@ type Rect struct {
 	Transform
 }
 
-func NewRect(options ...Option) Rect {
-	var r Rect
-	r.Fill = NewFill("none")
-	for _, o := range options {
-		o(&r)
-	}
-	return r
-}
-
 func (r *Rect) Render(w Writer) {
 	r.render(w, "rect", r.List, r, r.Dim, r.Pos, r.Stroke, r.Transform, r.Fill)
 }
@@ -393,14 +336,6 @@ type Polygon struct {
 	Fill
 	Stroke
 	Transform
-}
-
-func NewPolygon(pos []Pos, options ...Option) Polygon {
-	p := Polygon{Points: pos}
-	for _, o := range options {
-		o(&p)
-	}
-	return p
 }
 
 func (p *Polygon) Render(w Writer) {
@@ -432,14 +367,6 @@ type Ellipse struct {
 	Transform
 }
 
-func NewEllipse(options ...Option) Ellipse {
-	var e Ellipse
-	for _, o := range options {
-		o(&e)
-	}
-	return e
-}
-
 func (e *Ellipse) Render(w Writer) {
 	e.render(w, "ellipse", e.List, e, e.Stroke, e.Fill, e.Transform)
 }
@@ -465,15 +392,6 @@ type Circle struct {
 	Fill
 	Stroke
 	Transform
-}
-
-func NewCircle(options ...Option) Circle {
-	var c Circle
-	c.Fill = NewFill("none")
-	for _, o := range options {
-		o(&c)
-	}
-	return c
 }
 
 func (c *Circle) Render(w Writer) {
@@ -506,12 +424,9 @@ type Text struct {
 	Transform
 }
 
-func NewText(str string, options ...Option) Text {
+func NewText(str string) Text {
 	var t Text
 	t.Append(Literal(str))
-	for _, o := range options {
-		o(&t)
-	}
 	return t
 }
 
@@ -585,15 +500,11 @@ type Line struct {
 	Transform
 }
 
-func NewLine(starts, ends Pos, options ...Option) Line {
-	i := Line{
+func NewLine(starts, ends Pos) Line {
+	return Line{
 		Starts: starts,
 		Ends:   ends,
 	}
-	for _, o := range options {
-		o(&i)
-	}
-	return i
 }
 
 func (i *Line) Render(w Writer) {
@@ -621,14 +532,6 @@ type PolyLine struct {
 	Stroke
 	Fill
 	Transform
-}
-
-func NewPolyLine(pos []Pos, options ...Option) PolyLine {
-	p := PolyLine{Points: pos}
-	for _, o := range options {
-		o(&p)
-	}
-	return p
 }
 
 func (p *PolyLine) Render(w Writer) {
@@ -716,15 +619,6 @@ type Path struct {
 	Fill
 	Stroke
 	Transform
-}
-
-func NewPath(options ...Option) Path {
-	var p Path
-	p.Fill = NewFill("none")
-	for _, o := range options {
-		o(&p)
-	}
-	return p
 }
 
 func (p *Path) Render(w Writer) {
@@ -924,129 +818,4 @@ func (c command) String() string {
 		}
 	}
 	return string(buf)
-}
-
-type node struct {
-	Title string
-	Desc  string
-	Data  []Datum
-
-	Display    string
-	Visibility string
-
-	Id     string
-	Class  []string
-	Styles map[string][]string
-
-	Clip      string
-	Rendering string
-}
-
-func (n *node) setId(id string) {
-	n.Id = id
-}
-
-func (n *node) setClass(class []string) {
-	n.Class = append(n.Class, class...)
-}
-
-func (n *node) setClipPath(path string) {
-	n.Clip = path
-}
-
-func (n *node) setShape(render string) {
-	n.Rendering = render
-}
-
-func (n *node) setStyle(prop string, values []string) {
-	if n.Styles == nil {
-		n.Styles = make(map[string][]string)
-	}
-	n.Styles[prop] = append(n.Styles[prop], values...)
-}
-
-func (n *node) Attributes() []string {
-	var attrs []string
-	if n.Id != "" {
-		attrs = append(attrs, appendString("id", n.Id))
-	}
-	if len(n.Class) > 0 {
-		attrs = append(attrs, appendStringArray("class", n.Class, space))
-	}
-	if n.Clip != "" {
-		url := fmt.Sprintf("url(#%s)", n.Clip)
-		attrs = append(attrs, appendString("clip-path", url))
-	}
-	if n.Rendering != "" {
-		attrs = append(attrs, appendString("shape-rendering", n.Rendering))
-	}
-	if len(n.Data) > 0 {
-		for i := range n.Data {
-			attrs = append(attrs, n.Data[i].Attributes()...)
-		}
-	}
-	return attrs
-}
-
-func (n *node) render(w Writer, name string, list List, attrs ...Attribute) {
-	var as []string
-	attrs = append(attrs, n)
-	for _, a := range attrs {
-		as = append(as, a.Attributes()...)
-	}
-	writeElement(w, name, as, func() {
-		writeTitle(w, n.Title)
-		writeDesc(w, n.Desc)
-		list.Render(w)
-	})
-}
-
-func writeElement(w Writer, name string, attrs []string, inner func()) {
-	closed := inner == nil
-	writeOpenElement(w, name, closed, attrs)
-	if !closed {
-		inner()
-		writeCloseElement(w, name)
-	}
-}
-
-func writeTitle(w Writer, str string) {
-	if str == "" {
-		return
-	}
-	writeString(w, "title", str)
-}
-
-func writeDesc(w Writer, str string) {
-	if str == "" {
-		return
-	}
-	writeString(w, "desc", str)
-}
-
-func writeString(w Writer, name, str string) {
-	writeOpenElement(w, name, false, nil)
-	w.WriteString(str)
-	writeCloseElement(w, name)
-}
-
-func writeOpenElement(w Writer, name string, closed bool, attrs []string) {
-	w.WriteByte(langle)
-	w.WriteString(name)
-	for i := range attrs {
-		w.WriteByte(space)
-		w.WriteString(attrs[i])
-	}
-	if closed {
-		w.WriteByte(space)
-		w.WriteByte(slash)
-	}
-	w.WriteByte(rangle)
-}
-
-func writeCloseElement(w Writer, name string) {
-	w.WriteByte(langle)
-	w.WriteByte(slash)
-	w.WriteString(name)
-	w.WriteByte(rangle)
 }
