@@ -161,12 +161,8 @@ func (p Pos) Adjust(x, y float64) Pos {
 
 func (p Pos) Attributes() []string {
 	var attrs []string
-	if p.X != 0 {
-		attrs = append(attrs, appendFloat("x", p.X))
-	}
-	if p.Y != 0 {
-		attrs = append(attrs, appendFloat("y", p.Y))
-	}
+	attrs = append(attrs, appendFloat("x", p.X))
+	attrs = append(attrs, appendFloat("y", p.Y))
 	return attrs
 }
 
@@ -376,10 +372,7 @@ func (t Transform) Attributes() []string {
 	}
 	if t.RA != 0 {
 		var args []float64
-		args = append(args, t.RA)
-		if t.RX != 0 && t.RY != 0 {
-			args = append(args, t.RX, t.RY)
-		}
+		args = append(args, t.RA, t.RX, t.RY)
 		attrs = append(attrs, appendFunc("rotate", args...))
 	}
 	if t.KX != 0 {
