@@ -153,6 +153,10 @@ func NewPos(x, y float64) Pos {
 	}
 }
 
+func (p Pos) IsZero() bool {
+	return p.X == 0 && p.Y == 0
+}
+
 func (p Pos) Adjust(x, y float64) Pos {
 	p.X += x
 	p.Y += y
@@ -193,6 +197,10 @@ func NewDim(w, h float64) Dim {
 	}
 }
 
+func (d Dim) IsZero() bool {
+	return d.W == 0 && d.H == 0
+}
+
 func (d Dim) Attributes() []string {
 	var attrs []string
 	if d.W != 0 {
@@ -208,16 +216,18 @@ func (d Dim) array() []float64 {
 	return []float64{d.W, d.H}
 }
 
-type Box struct {
+type ViewBox struct {
 	Pos
 	Dim
 }
 
-func (b Box) Attributes() []string {
-	if b.W <= 0 || b.H <= 0 {
-		return nil
-	}
-	arr := append([]float64{}, b.Pos.array()...)
+func (b ViewBox) IsZero() bool {
+	return b.Pos.IsZero() && b.Pos.IsZero()
+}
+
+func (b ViewBox) Attributes() []string {
+	var arr []float64
+	arr = append(arr, b.Pos.array()...)
 	arr = append(arr, b.Dim.array()...)
 	a := appendFloatArray("viewBox", arr, space)
 	return []string{a}

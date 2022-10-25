@@ -100,8 +100,11 @@ type SVG struct {
 	List
 
 	OmitProlog    bool
-	PreserveRatio []string
-	Box
+	PreserveRatio struct {
+		Align       string
+		MeetOrSlice string
+	}
+	ViewBox
 	Pos
 	Dim
 	Fill
@@ -118,7 +121,11 @@ func (s *SVG) Render(w Writer) {
 	if !s.OmitProlog {
 		w.WriteString(prolog)
 	}
-	s.render(w, "svg", s.List, s, s.Pos, s.Dim, s.Box)
+	if s.ViewBox.IsZero() {
+		s.ViewBox.Pos = NewPos(0, 0)
+		s.ViewBox.Dim = s.Dim
+	}
+	s.render(w, "svg", s.List, s, s.Pos, s.Dim, s.ViewBox)
 }
 
 func (s *SVG) AsElement() Element {
@@ -128,10 +135,17 @@ func (s *SVG) AsElement() Element {
 func (s *SVG) Attributes() []string {
 	var attrs []string
 	attrs = append(attrs, appendString("xmlns", namespace))
-	if len(s.PreserveRatio) == 0 {
-		return attrs
+	if s.PreserveRatio.Align == "" {
+		s.PreserveRatio.Align = "xMinYMid"
 	}
-	attrs = append(attrs, appendStringArray("preserveAspectRatio", s.PreserveRatio, space))
+	if s.PreserveRatio.MeetOrSlice == "" {
+		s.PreserveRatio.MeetOrSlice = "meet"
+	}
+	preserveRatio := []string{
+		s.PreserveRatio.Align,
+		s.PreserveRatio.MeetOrSlice,
+	}
+	attrs = append(attrs, appendStringArray("preserveAspectRatio", preserveRatio, space))
 	return attrs
 }
 
