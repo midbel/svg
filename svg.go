@@ -186,6 +186,10 @@ type TextPath struct {
 	Fill
 	Stroke
 	Transform
+
+	Shift Pos
+	Font
+	Anchor string
 }
 
 func NewTextPath(literal, path string) TextPath {
@@ -200,7 +204,12 @@ func (t *TextPath) Render(w Writer) {
 	if t.Path == "" {
 		return
 	}
-	writeElement(w, "text", nil, func() {
+	var as []string
+	as = append(as, t.Font.Attributes()...)
+	as = append(as, appendFloat("dx", t.Shift.X))
+	as = append(as, appendFloat("dy", t.Shift.Y))
+	as = append(as, appendString("text-anchor", t.Anchor))
+	writeElement(w, "text", as, func() {
 		list := NewList(Literal(t.Literal))
 		t.render(w, "textPath", list, t, t.Fill, t.Stroke, t.Transform)
 	})
