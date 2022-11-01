@@ -222,7 +222,7 @@ type ViewBox struct {
 }
 
 func (b ViewBox) IsZero() bool {
-	return b.Pos.IsZero() && b.Pos.IsZero()
+	return b.Pos.IsZero() && b.Dim.IsZero()
 }
 
 func (b ViewBox) Attributes() []string {
