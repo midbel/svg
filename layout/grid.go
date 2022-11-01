@@ -8,10 +8,6 @@ import (
 	"github.com/midbel/svg"
 )
 
-type Renderer interface {
-	Element() svg.Element
-}
-
 type Cell struct {
 	X    int
 	Y    int
