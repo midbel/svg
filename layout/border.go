@@ -3,6 +3,8 @@ package layout
 import (
 	"bufio"
 	"io"
+
+	"github.com/midbel/svg"
 )
 
 type Position int
@@ -22,7 +24,7 @@ func (b Border) Render(w io.Writer) error {
 	var (
 		grid svg.SVG
 	)
-	grid.Dim = svg.NewDim(g.Width, g.Height)
+	grid.Dim = svg.NewDim(b.Width, b.Height)
 
 	ws := bufio.NewWriter(w)
 	defer ws.Flush()

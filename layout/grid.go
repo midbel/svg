@@ -46,7 +46,6 @@ func (g Grid) Render(w io.Writer) error {
 		if e, ok := el.(*svg.SVG); ok {
 			e.ViewBox.Dim = e.Dim
 			e.Dim = svg.NewDim(float64(c.W)*width, float64(c.H)*height)
-			e.PreserveRatio.Align = "none"
 			el = e.AsElement()
 		}
 		g.Append(el)

@@ -136,7 +136,7 @@ func (s *SVG) Attributes() []string {
 	var attrs []string
 	attrs = append(attrs, appendString("xmlns", namespace))
 	if s.PreserveRatio.Align == "" {
-		s.PreserveRatio.Align = "xMinYMid"
+		s.PreserveRatio.Align = "xMidYMid"
 	}
 	if s.PreserveRatio.MeetOrSlice == "" {
 		s.PreserveRatio.MeetOrSlice = "meet"
