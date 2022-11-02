@@ -99,11 +99,8 @@ type SVG struct {
 	node
 	List
 
-	OmitProlog    bool
-	PreserveRatio struct {
-		Align       string
-		MeetOrSlice string
-	}
+	OmitProlog bool
+	Ratio
 	ViewBox
 	Pos
 	Dim
@@ -135,17 +132,7 @@ func (s *SVG) AsElement() Element {
 func (s *SVG) Attributes() []string {
 	var attrs []string
 	attrs = append(attrs, appendString("xmlns", namespace))
-	if s.PreserveRatio.Align == "" {
-		s.PreserveRatio.Align = "xMidYMid"
-	}
-	if s.PreserveRatio.MeetOrSlice == "" {
-		s.PreserveRatio.MeetOrSlice = "meet"
-	}
-	preserveRatio := []string{
-		s.PreserveRatio.Align,
-		s.PreserveRatio.MeetOrSlice,
-	}
-	attrs = append(attrs, appendStringArray("preserveAspectRatio", preserveRatio, space))
+	attrs = append(attrs, s.Ratio.Attributes()...)
 	return attrs
 }
 

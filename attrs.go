@@ -96,6 +96,26 @@ func (d Datum) Attributes() []string {
 	return []string{a}
 }
 
+type Ratio struct {
+	Align       string
+	MeetOrSlice string
+}
+
+func (r Ratio) Attributes() []string {
+	var attrs []string
+	if r.Align == "" && r.MeetOrSlice == "" {
+		return append(attrs, appendString("preserveAspectRatio", "none"))
+	}
+	if r.Align == "" {
+		r.Align = "xMidYMid"
+	}
+	if r.MeetOrSlice == "" {
+		r.MeetOrSlice = "meet"
+	}
+	str := appendStringArray("preserveAspectRatio", []string{r.Align, r.MeetOrSlice}, space)
+	return append(attrs, str)
+}
+
 type Font struct {
 	Family  []string
 	Style   string

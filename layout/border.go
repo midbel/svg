@@ -25,7 +25,7 @@ func (b Border) Element() svg.Element {
 		grid svg.SVG
 	)
 	grid.Dim = svg.NewDim(b.Width, b.Height)
-	return grid.AsElement()	
+	return grid.AsElement()
 }
 
 func (b Border) Render(w io.Writer) error {

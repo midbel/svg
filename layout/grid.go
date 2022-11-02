@@ -52,13 +52,13 @@ func (g Grid) Element() svg.Element {
 
 		grid.Append(g.AsElement())
 	}
-	return grid.AsElement()	
+	return grid.AsElement()
 }
 
 func (g Grid) Render(w io.Writer) error {
 	ws := bufio.NewWriter(w)
 	defer ws.Flush()
-	
+
 	g.Element().Render(ws)
 	return nil
 }
