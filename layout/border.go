@@ -20,15 +20,18 @@ type Border struct {
 	West    []Renderer
 }
 
-func (b Border) Render(w io.Writer) error {
+func (b Border) Element() svg.Element {
 	var (
 		grid svg.SVG
 	)
 	grid.Dim = svg.NewDim(b.Width, b.Height)
+	return grid.AsElement()	
+}
 
+func (b Border) Render(w io.Writer) error {
 	ws := bufio.NewWriter(w)
 	defer ws.Flush()
 
-	grid.Render(ws)
+	b.Element().Render(ws)
 	return nil
 }

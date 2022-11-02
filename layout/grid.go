@@ -25,7 +25,7 @@ type Grid struct {
 	Cells []Cell
 }
 
-func (g Grid) Render(w io.Writer) error {
+func (g Grid) Element() svg.Element {
 	var (
 		width  = g.Width / float64(g.Cols)
 		height = g.Height / float64(g.Rows)
@@ -52,9 +52,13 @@ func (g Grid) Render(w io.Writer) error {
 
 		grid.Append(g.AsElement())
 	}
+	return grid.AsElement()	
+}
 
+func (g Grid) Render(w io.Writer) error {
 	ws := bufio.NewWriter(w)
 	defer ws.Flush()
-	grid.Render(ws)
+	
+	g.Element().Render(ws)
 	return nil
 }
