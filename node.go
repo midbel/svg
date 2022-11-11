@@ -72,7 +72,7 @@ func (n *node) render(w Writer, name string, list List, attrs ...Attribute) {
 }
 
 func writeElement(w Writer, name string, attrs []string, inner func()) {
-	writeOpenElement(w, name, closed, attrs)
+	writeOpenElement(w, name, inner == nil, attrs)
 	if inner != nil {
 		inner()
 		writeCloseElement(w, name)
