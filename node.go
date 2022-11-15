@@ -79,6 +79,18 @@ func writeElement(w Writer, name string, attrs []string, inner func()) {
 	}
 }
 
+func writeData(w Writer, str, prefix string) {
+	if str == "" {
+		return
+	}
+	w.WriteString(prefix)
+	w.WriteString("<![CDATA[\n")
+	w.WriteString(str)
+	w.WriteString("\n")
+	w.WriteString(prefix)
+	w.WriteString("]]>")
+}
+
 func writeTitle(w Writer, str string) {
 	if str == "" {
 		return

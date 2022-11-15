@@ -600,10 +600,25 @@ func (s *Switch) AsElement() Element {
 
 type Style struct {
 	node
+	Media   string
+	Type    string
+	Content string
 }
 
 func (s *Style) Render(w Writer) {
-
+	if s.Type == "" {
+		s.Type = "text/css"
+	}
+	if s.Media == "" {
+		s.Media = "all"
+	}
+	attrs := []string{
+		appendString("type", s.Type),
+		appendString("media", s.Media),
+	}
+	writeElement(w, "style", attrs, func() {
+		writeData(w, s.Content, "")
+	})
 }
 
 func (s *Style) AsElement() Element {
@@ -612,10 +627,27 @@ func (s *Style) AsElement() Element {
 
 type Script struct {
 	node
+	Type    string
+	Cors    string
+	Url     string
+	Content string
 }
 
 func (s *Script) Render(w Writer) {
-
+	var attrs []string
+	if s.Type == "" {
+		s.Type = "application/ecmascript"
+	}
+	attrs = append(attrs, appendString("type", s.Type))
+	if s.Cors != "" {
+		attrs = append(attrs, appendString("crossorigin", s.Cors))
+	}
+	if s.Url != "" {
+		attrs = append(attrs, appendString("href", s.Url))
+	}
+	writeElement(w, "script", attrs, func() {
+		writeData(w, s.Content, "//")
+	})
 }
 
 func (s *Script) AsElement() Element {
