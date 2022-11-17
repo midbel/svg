@@ -1,7 +1,6 @@
 package svg
 
 import (
-	"fmt"
 	"io"
 )
 
@@ -44,7 +43,7 @@ func (n *node) Attributes() []string {
 		attrs = append(attrs, appendStringArray("class", n.Class, space))
 	}
 	if n.Clip != "" {
-		url := fmt.Sprintf("url(#%s)", n.Clip)
+		url := UrlFor(n.Clip)
 		attrs = append(attrs, appendString("clip-path", url))
 	}
 	if n.Rendering != "" {
